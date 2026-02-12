@@ -3,8 +3,8 @@
 
 	let inputMinutes = $state(5);
 	let remaining = $state<number | null>(null);
-	let interval = $state<ReturnType<typeof setInterval> | null>(null);
 	let expired = $state(false);
+	let timer: ReturnType<typeof setInterval> | null = null;
 
 	function tick() {
 		if (!socketStore.timerEnd) {
@@ -16,8 +16,8 @@
 		remaining = left;
 		if (left === 0) {
 			expired = true;
-			if (interval) clearInterval(interval);
-			interval = null;
+			if (timer) clearInterval(timer);
+			timer = null;
 		}
 	}
 
@@ -25,16 +25,17 @@
 		if (socketStore.timerEnd) {
 			expired = false;
 			tick();
-			if (interval) clearInterval(interval);
-			interval = setInterval(tick, 250);
+			if (timer) clearInterval(timer);
+			timer = setInterval(tick, 250);
 		} else {
 			remaining = null;
 			expired = false;
-			if (interval) clearInterval(interval);
-			interval = null;
+			if (timer) clearInterval(timer);
+			timer = null;
 		}
 		return () => {
-			if (interval) clearInterval(interval);
+			if (timer) clearInterval(timer);
+			timer = null;
 		};
 	});
 
@@ -56,7 +57,7 @@
 
 {#if remaining !== null}
 	<div
-		class="flex items-center gap-2 rounded-lg border px-2.5 py-1 text-sm font-medium transition-colors {expired
+		class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors {expired
 			? 'animate-pulse border-red-300 bg-red-50 text-red-600 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400'
 			: 'border-border bg-surface-card text-text-primary'}"
 	>

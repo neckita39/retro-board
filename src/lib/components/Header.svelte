@@ -1,7 +1,6 @@
 <script lang="ts">
 	import ThemeToggle from './ThemeToggle.svelte';
 	import UserCount from './UserCount.svelte';
-	import Timer from './Timer.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 
 	let { showOnline = false }: { showOnline?: boolean } = $props();
@@ -23,7 +22,6 @@
 				<UserCount />
 			{/if}
 			{#if boardStore.board}
-				<Timer />
 				<a
 					href="/{boardStore.board.slug}/export"
 					download
