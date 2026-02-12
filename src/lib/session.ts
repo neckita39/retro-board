@@ -1,14 +1,29 @@
 import { browser } from '$app/environment';
 
+const TOKEN_KEY = 'retro-session-token';
+const LEGACY_KEY = 'retro-session-id';
+
+export function getSessionToken(): string | null {
+	if (!browser) return null;
+	return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setSessionToken(token: string): void {
+	if (!browser) return;
+	localStorage.setItem(TOKEN_KEY, token);
+}
+
 export function getSessionId(): string {
 	if (!browser) return '';
-	let id = localStorage.getItem('retro-session-id');
-	if (!id) {
-		id = crypto.randomUUID?.() ??
-			Array.from(crypto.getRandomValues(new Uint8Array(16)))
-				.map((b) => b.toString(16).padStart(2, '0'))
-				.join('');
-		localStorage.setItem('retro-session-id', id);
-	}
+	const token = localStorage.getItem(TOKEN_KEY);
+	if (token) return token.split('.')[0];
+	// Fallback to legacy if no signed token yet
+	return localStorage.getItem(LEGACY_KEY) || '';
+}
+
+export function getLegacySessionId(): string | null {
+	if (!browser) return null;
+	const id = localStorage.getItem(LEGACY_KEY);
+	if (id) localStorage.removeItem(LEGACY_KEY);
 	return id;
 }

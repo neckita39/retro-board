@@ -1,5 +1,10 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import Header from '$lib/components/Header.svelte';
+	import { generateKey } from '$lib/crypto.js';
+
+	let error = $state('');
 </script>
 
 <svelte:head>
@@ -20,7 +25,24 @@
 				</p>
 			</div>
 
-			<form method="POST" class="space-y-4">
+			{#if error}
+				<p class="text-sm text-red-500">{error}</p>
+			{/if}
+
+			<form
+				method="POST"
+				class="space-y-4"
+				use:enhance={() => {
+					return async ({ result }) => {
+						if (result.type === 'success' && result.data?.slug) {
+							const key = generateKey();
+							await goto(`/${result.data.slug}#${key}`);
+						} else if (result.type === 'failure' || (result.type === 'success' && result.data?.error)) {
+							error = result.data?.error || 'Something went wrong';
+						}
+					};
+				}}
+			>
 				<input
 					type="text"
 					name="title"
