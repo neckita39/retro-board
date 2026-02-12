@@ -62,87 +62,56 @@ const pool = new pg.Pool({
 });
 const db = drizzle(pool, { schema });
 
-// --- Signed sessions ---
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+// --- Server-side encryption (data at rest) ---
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || null;
+let encKey = null;
 
-function signSession(id) {
-	const hmac = crypto.createHmac('sha256', SESSION_SECRET).update(id).digest();
-	const sig = hmac.toString('base64url');
-	return `${id}.${sig}`;
-}
-
-function verifySession(token) {
-	if (!token || typeof token !== 'string') return null;
-	const dotIdx = token.indexOf('.');
-	if (dotIdx === -1) return null;
-	const id = token.slice(0, dotIdx);
-	const sig = token.slice(dotIdx + 1);
-	const expected = crypto.createHmac('sha256', SESSION_SECRET).update(id).digest('base64url');
-	if (sig.length !== expected.length) return null;
-	if (!crypto.timingSafeCompare(Buffer.from(sig), Buffer.from(expected))) return null;
-	return id;
-}
-
-// --- Input validation ---
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VALID_COLUMNS = ['went_well', 'didnt_go_well', 'improve'];
-const VALID_VOTE_TYPES = ['like', 'dislike'];
-const MAX_CONTENT_LEN = 5000;
-const MAX_AUTHOR_LEN = 100;
-
-function isValidUUID(v) {
-	return typeof v === 'string' && UUID_RE.test(v);
-}
-
-function isValidString(v, maxLen) {
-	return typeof v === 'string' && v.length > 0 && v.length <= maxLen;
-}
-
-// --- Rate limiting ---
-const RATE_LIMITS = {
-	'card:create': { max: 30, windowMs: 60_000 },
-	'card:update': { max: 60, windowMs: 60_000 },
-	'card:delete': { max: 30, windowMs: 60_000 },
-	'vote:toggle': { max: 60, windowMs: 60_000 },
-	'comment:create': { max: 30, windowMs: 60_000 },
-	'timer:start': { max: 10, windowMs: 60_000 },
-	'timer:stop': { max: 10, windowMs: 60_000 }
-};
-
-function checkRateLimit(socket, event) {
-	const limit = RATE_LIMITS[event];
-	if (!limit) return true;
-
-	if (!socket.data.rateLimits) socket.data.rateLimits = {};
-	const now = Date.now();
-	let bucket = socket.data.rateLimits[event];
-
-	if (!bucket || now - bucket.windowStart > limit.windowMs) {
-		bucket = { windowStart: now, count: 0 };
-		socket.data.rateLimits[event] = bucket;
+if (ENCRYPTION_KEY) {
+	encKey = Buffer.from(ENCRYPTION_KEY, 'hex');
+	if (encKey.length !== 32) {
+		console.error('ENCRYPTION_KEY must be 64 hex chars (32 bytes). Encryption disabled.');
+		encKey = null;
 	}
+}
 
-	bucket.count++;
-	if (bucket.count > limit.max) {
-		socket.emit('error', { message: `Rate limit exceeded for ${event}` });
-		return false;
+function encrypt(plaintext) {
+	if (!encKey || !plaintext) return plaintext;
+	const iv = crypto.randomBytes(12);
+	const cipher = crypto.createCipheriv('aes-256-gcm', encKey, iv);
+	const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+	const tag = cipher.getAuthTag();
+	return iv.toString('base64url') + '.' + Buffer.concat([encrypted, tag]).toString('base64url');
+}
+
+function decrypt(data) {
+	if (!encKey || !data) return data;
+	if (!data.includes('.')) return data; // unencrypted legacy data
+	try {
+		const [ivStr, ctStr] = data.split('.');
+		const iv = Buffer.from(ivStr, 'base64url');
+		const buf = Buffer.from(ctStr, 'base64url');
+		const tag = buf.subarray(buf.length - 16);
+		const encrypted = buf.subarray(0, buf.length - 16);
+		const decipher = crypto.createDecipheriv('aes-256-gcm', encKey, iv);
+		decipher.setAuthTag(tag);
+		return decipher.update(encrypted, null, 'utf8') + decipher.final('utf8');
+	} catch {
+		return data; // unencrypted legacy data
 	}
-	return true;
+}
+
+function decryptCard(card) {
+	return { ...card, content: decrypt(card.content), authorName: decrypt(card.authorName) };
+}
+
+function decryptComment(comment) {
+	return { ...comment, content: decrypt(comment.content), authorName: decrypt(comment.authorName) };
 }
 
 // --- HTTP + Socket.IO ---
-const origin = process.env.ORIGIN || undefined;
-
-const httpServer = createServer((req, res) => {
-	// Security headers
-	res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-	res.setHeader('X-Frame-Options', 'DENY');
-	res.setHeader('X-Content-Type-Options', 'nosniff');
-	handler(req, res);
-});
-
+const httpServer = createServer(handler);
 const io = new SocketIOServer(httpServer, {
-	cors: { origin: origin || '*' }
+	cors: { origin: '*' }
 });
 
 const roomUsers = new Map();
@@ -151,25 +120,7 @@ const roomTimers = new Map();
 io.on('connection', (socket) => {
 	let currentRoom = null;
 
-	// --- Session handshake ---
-	const token = socket.handshake.auth?.token;
-	const legacyId = socket.handshake.auth?.legacySessionId;
-	let sessionId = verifySession(token);
-
-	if (!sessionId && legacyId && typeof legacyId === 'string' && legacyId.length <= 64) {
-		sessionId = legacyId;
-	}
-
-	if (!sessionId) {
-		sessionId = crypto.randomUUID();
-	}
-
-	socket.data.sessionId = sessionId;
-	socket.emit('session:init', { token: signSession(sessionId) });
-
 	socket.on('board:join', async ({ slug }) => {
-		if (typeof slug !== 'string' || slug.length === 0 || slug.length > 100) return;
-
 		if (currentRoom) {
 			socket.leave(currentRoom);
 			const users = roomUsers.get(currentRoom);
@@ -209,9 +160,9 @@ io.on('connection', (socket) => {
 
 			socket.emit('board:state', {
 				board,
-				cards: boardCards,
+				cards: boardCards.map(decryptCard),
 				votes: boardVotes,
-				comments: boardComments
+				comments: boardComments.map(decryptComment)
 			});
 
 			const timer = roomTimers.get(slug);
@@ -224,44 +175,36 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('card:create', async ({ boardId, column, content, authorName }) => {
-		if (!checkRateLimit(socket, 'card:create')) return;
-		if (!isValidUUID(boardId)) return;
-		if (!VALID_COLUMNS.includes(column)) return;
-		if (!isValidString(content, MAX_CONTENT_LEN)) return;
-		if (authorName != null && !isValidString(authorName, MAX_AUTHOR_LEN)) return;
-
 		try {
 			const [card] = await db
 				.insert(cards)
-				.values({ boardId, columnType: column, content, authorName: authorName || null })
+				.values({
+					boardId,
+					columnType: column,
+					content: encrypt(content),
+					authorName: encrypt(authorName) || null
+				})
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('card:created', { card });
+			if (currentRoom) io.to(currentRoom).emit('card:created', { card: decryptCard(card) });
 		} catch (err) {
 			console.error('Error creating card:', err);
 		}
 	});
 
 	socket.on('card:update', async ({ cardId, content }) => {
-		if (!checkRateLimit(socket, 'card:update')) return;
-		if (!isValidUUID(cardId)) return;
-		if (!isValidString(content, MAX_CONTENT_LEN)) return;
-
 		try {
 			const [card] = await db
 				.update(cards)
-				.set({ content })
+				.set({ content: encrypt(content) })
 				.where(eq(cards.id, cardId))
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('card:updated', { card });
+			if (currentRoom) io.to(currentRoom).emit('card:updated', { card: decryptCard(card) });
 		} catch (err) {
 			console.error('Error updating card:', err);
 		}
 	});
 
 	socket.on('card:delete', async ({ cardId }) => {
-		if (!checkRateLimit(socket, 'card:delete')) return;
-		if (!isValidUUID(cardId)) return;
-
 		try {
 			await db.delete(cards).where(eq(cards.id, cardId));
 			if (currentRoom) io.to(currentRoom).emit('card:deleted', { cardId });
@@ -270,22 +213,16 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('vote:toggle', async ({ cardId, type }) => {
-		if (!checkRateLimit(socket, 'vote:toggle')) return;
-		if (!isValidUUID(cardId)) return;
-		if (!VALID_VOTE_TYPES.includes(type)) return;
-
-		const sid = socket.data.sessionId;
-
+	socket.on('vote:toggle', async ({ cardId, type, sessionId }) => {
 		try {
 			const existing = await db.query.votes.findFirst({
-				where: and(eq(votes.cardId, cardId), eq(votes.sessionId, sid), eq(votes.type, type))
+				where: and(eq(votes.cardId, cardId), eq(votes.sessionId, sessionId), eq(votes.type, type))
 			});
 
 			if (existing) {
 				await db.delete(votes).where(eq(votes.id, existing.id));
 			} else {
-				await db.insert(votes).values({ cardId, type, sessionId: sid });
+				await db.insert(votes).values({ cardId, type, sessionId });
 			}
 
 			const cardVotes = await db.query.votes.findMany({
@@ -299,25 +236,22 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('comment:create', async ({ cardId, content, authorName }) => {
-		if (!checkRateLimit(socket, 'comment:create')) return;
-		if (!isValidUUID(cardId)) return;
-		if (!isValidString(content, MAX_CONTENT_LEN)) return;
-		if (authorName != null && !isValidString(authorName, MAX_AUTHOR_LEN)) return;
-
 		try {
 			const [comment] = await db
 				.insert(comments)
-				.values({ cardId, content, authorName: authorName || null })
+				.values({
+					cardId,
+					content: encrypt(content),
+					authorName: encrypt(authorName) || null
+				})
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('comment:created', { comment });
+			if (currentRoom) io.to(currentRoom).emit('comment:created', { comment: decryptComment(comment) });
 		} catch (err) {
 			console.error('Error creating comment:', err);
 		}
 	});
 
 	socket.on('timer:start', ({ duration }) => {
-		if (!checkRateLimit(socket, 'timer:start')) return;
-		if (typeof duration !== 'number' || duration <= 0 || duration > 3600) return;
 		if (!currentRoom) return;
 		const endTime = Date.now() + duration * 1000;
 		roomTimers.set(currentRoom, { endTime, duration });
@@ -325,7 +259,6 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('timer:stop', () => {
-		if (!checkRateLimit(socket, 'timer:stop')) return;
 		if (!currentRoom) return;
 		roomTimers.delete(currentRoom);
 		io.to(currentRoom).emit('timer:state', { endTime: null, duration: null });
@@ -346,4 +279,6 @@ io.on('connection', (socket) => {
 const port = parseInt(process.env.PORT || '3000');
 httpServer.listen(port, () => {
 	console.log(`Retro Board running on http://localhost:${port}`);
+	if (encKey) console.log('Database encryption: ENABLED');
+	else console.log('Database encryption: DISABLED (set ENCRYPTION_KEY to enable)');
 });

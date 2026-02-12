@@ -15,7 +15,7 @@
 	let hasDisliked = $derived(cardVotes.some((v: Vote) => v.type === 'dislike' && v.sessionId === sessionId));
 
 	function vote(type: 'like' | 'dislike') {
-		socketStore.toggleVote(cardId, type);
+		socketStore.toggleVote(cardId, type, sessionId);
 	}
 </script>
 

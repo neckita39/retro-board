@@ -1,3 +1,4 @@
+import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { boards } from '$lib/server/db/schema.js';
 import { nanoid } from 'nanoid';
@@ -19,6 +20,6 @@ export const actions: Actions = {
 			slug
 		});
 
-		return { slug };
+		throw redirect(303, `/${slug}`);
 	}
 };
