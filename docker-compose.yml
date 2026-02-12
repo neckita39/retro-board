@@ -1,0 +1,44 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3777:3000"
+    environment:
+      DATABASE_URL: postgresql://retro:retro@db:5432/retro
+      PORT: "3000"
+      ORIGIN: http://localhost:3777
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 384m
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: retro
+      POSTGRES_PASSWORD: retro
+      POSTGRES_DB: retro
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retro"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    shm_size: 128mb
+    mem_limit: 512m
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "work_mem=4MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
