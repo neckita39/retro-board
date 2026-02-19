@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { boards, cards, votes, comments } from '$lib/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
+import { decrypt } from '$lib/server/crypto.js';
 import type { RequestHandler } from './$types.js';
 
 export const GET: RequestHandler = async ({ params, url }) => {
@@ -41,12 +42,12 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		columns[col] = boardCards
 			.filter((c) => c.columnType === col)
 			.map((card) => ({
-				content: card.content,
-				authorName: card.authorName,
+				content: decrypt(card.content) ?? card.content,
+				authorName: decrypt(card.authorName),
 				likes: boardVotes.filter((v) => v.cardId === card.id && v.type === 'like').length,
 				comments: boardComments
 					.filter((c) => c.cardId === card.id)
-					.map((c) => ({ content: c.content, authorName: c.authorName }))
+					.map((c) => ({ content: decrypt(c.content) ?? c.content, authorName: decrypt(c.authorName) }))
 			}));
 	}
 
