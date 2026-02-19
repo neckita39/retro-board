@@ -4,7 +4,8 @@ import { boards, cards, votes, comments } from '$lib/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types.js';
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, url }) => {
+	const format = url.searchParams.get('format') || 'json';
 	const board = await db.query.boards.findFirst({
 		where: eq(boards.slug, params.slug)
 	});
@@ -58,12 +59,54 @@ export const GET: RequestHandler = async ({ params }) => {
 		columns
 	};
 
-	const filename = `board-${board.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
+	const safeTitle = board.title.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+	if (format === 'md') {
+		const columnTitles: Record<string, string> = {
+			went_well: 'Went Well',
+			didnt_go_well: "Didn't Go Well",
+			improve: 'To Improve'
+		};
+
+		let md = `# ${board.title}\n\n`;
+		md += `*Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}*\n\n`;
+		md += `---\n\n`;
+
+		for (const col of columnTypes) {
+			const items = columns[col];
+			md += `## ${columnTitles[col]}\n\n`;
+
+			if (items.length === 0) {
+				md += `*No cards*\n\n`;
+				continue;
+			}
+
+			for (const card of items) {
+				const author = card.authorName ? ` — *${card.authorName}*` : '';
+				const likes = card.likes > 0 ? ` [${card.likes} like${card.likes !== 1 ? 's' : ''}]` : '';
+				md += `- ${card.content}${author}${likes}\n`;
+
+				for (const comment of card.comments) {
+					const commentAuthor = comment.authorName ? ` — *${comment.authorName}*` : '';
+					md += `  - ${comment.content}${commentAuthor}\n`;
+				}
+			}
+
+			md += `\n`;
+		}
+
+		return new Response(md, {
+			headers: {
+				'Content-Type': 'text/markdown; charset=utf-8',
+				'Content-Disposition': `attachment; filename="board-${safeTitle}.md"`
+			}
+		});
+	}
 
 	return new Response(JSON.stringify(exported, null, 2), {
 		headers: {
 			'Content-Type': 'application/json',
-			'Content-Disposition': `attachment; filename="${filename}"`
+			'Content-Disposition': `attachment; filename="board-${safeTitle}.json"`
 		}
 	});
 };
