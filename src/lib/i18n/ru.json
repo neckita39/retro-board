@@ -4,6 +4,9 @@
 	"home.placeholder": "Название доски, например Спринт 42 Ретро",
 	"home.create": "Создать доску",
 	"home.note": "Регистрация не нужна. Любой со ссылкой может участвовать.",
+	"home.join": "Уже есть ссылка на доску?",
+	"home.join.placeholder": "Вставьте ссылку или код доски",
+	"home.join.button": "Перейти",
 
 	"header.brand": "Ретроспектрикс",
 
@@ -33,9 +36,15 @@
 
 	"user.online": "{n} онлайн",
 
+	"tooltip.theme": "Тема",
+	"tooltip.locale": "Язык",
+
+	"export.title": "Экспорт",
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
 
-	"copy.link": "Скопировать ссылку",
+	"copy.title": "Ссылка",
+	"copy.link": "Ссылку",
+	"copy.code": "Код доски",
 	"copy.copied": "Скопировано!"
 }

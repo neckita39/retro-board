@@ -4,6 +4,9 @@
 	"home.placeholder": "Board title, e.g. Sprint 42 Retro",
 	"home.create": "Create Board",
 	"home.note": "No signup required. Anyone with the link can participate.",
+	"home.join": "Already have a board link?",
+	"home.join.placeholder": "Paste a link or board code",
+	"home.join.button": "Join",
 
 	"header.brand": "Retrospectrix",
 
@@ -33,9 +36,15 @@
 
 	"user.online": "{n} online",
 
+	"tooltip.theme": "Theme",
+	"tooltip.locale": "Language",
+
+	"export.title": "Export",
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
 
-	"copy.link": "Copy link",
+	"copy.title": "Link",
+	"copy.link": "Link",
+	"copy.code": "Board code",
 	"copy.copied": "Copied!"
 }

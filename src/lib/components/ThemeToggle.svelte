@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { themeStore } from '$lib/stores/theme.svelte.js';
+	import { t } from '$lib/i18n/index.js';
 </script>
 
 <button
 	onclick={() => themeStore.toggle()}
 	class="flex h-9 w-9 items-center justify-center rounded-lg border border-border transition-colors hover:bg-surface-hover"
-	aria-label="Toggle theme"
+	aria-label={t('tooltip.theme')}
+	title={t('tooltip.theme')}
 >
 	{#if themeStore.dark}
 		<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

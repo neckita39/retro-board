@@ -1,6 +1,17 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import { t } from '$lib/i18n/index.js';
+
+	let joinOpen = $state(false);
+	let joinValue = $state('');
+
+	function goToBoard() {
+		const raw = joinValue.trim();
+		if (!raw) return;
+		// Extract slug from full URL or use as-is
+		const slug = raw.includes('/') ? raw.split('/').filter(Boolean).pop() : raw;
+		if (slug) window.location.href = `/${slug}`;
+	}
 </script>
 
 <svelte:head>
@@ -40,6 +51,33 @@
 					{t('home.create')}
 				</button>
 			</form>
+
+			<div class="space-y-3">
+				{#if !joinOpen}
+					<button
+						onclick={() => (joinOpen = true)}
+						class="text-sm text-text-muted transition-colors hover:text-text-secondary"
+					>
+						{t('home.join')}
+					</button>
+				{:else}
+					<div class="flex gap-2">
+						<input
+							type="text"
+							bind:value={joinValue}
+							placeholder={t('home.join.placeholder')}
+							onkeydown={(e) => e.key === 'Enter' && goToBoard()}
+							class="flex-1 rounded-xl border border-border bg-surface-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+						/>
+						<button
+							onclick={goToBoard}
+							class="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
+						>
+							{t('home.join.button')}
+						</button>
+					</div>
+				{/if}
+			</div>
 
 			<p class="text-xs text-text-muted">
 				{t('home.note')}
