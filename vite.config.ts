@@ -6,5 +6,8 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	ssr: {
 		external: ['dgram']
+	},
+	test: {
+		include: ['src/**/*.test.ts']
 	}
 });

@@ -2,6 +2,7 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import CommentForm from './CommentForm.svelte';
 	import type { Comment } from '$lib/types.js';
+	import { t } from '$lib/i18n/index.js';
 
 	let { cardId }: { cardId: string } = $props();
 
@@ -18,7 +19,7 @@
 		onclick={() => (expanded = !expanded)}
 		class="text-xs text-text-muted hover:text-text-secondary transition-colors"
 	>
-		{cardComments.length} comment{cardComments.length !== 1 ? 's' : ''}
+		{t('comment.count', { n: cardComments.length })}
 		{expanded ? '▴' : '▾'}
 	</button>
 

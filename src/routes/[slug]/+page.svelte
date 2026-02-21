@@ -5,6 +5,7 @@
 	import Timer from '$lib/components/Timer.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { t } from '$lib/i18n/index.js';
 
 	let { data } = $props();
 
@@ -23,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.board.title} — Retro Board</title>
+	<title>{data.board.title} — {t('header.brand')}</title>
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">

@@ -1,0 +1,41 @@
+{
+	"home.title": "Start a Retrospective",
+	"home.subtitle": "Create a board and share the link with your team.",
+	"home.placeholder": "Board title, e.g. Sprint 42 Retro",
+	"home.create": "Create Board",
+	"home.note": "No signup required. Anyone with the link can participate.",
+
+	"header.brand": "Retrospectrix",
+
+	"column.went_well": "Went Well",
+	"column.didnt_go_well": "Didn't Go Well",
+	"column.improve": "To Improve",
+	"column.cards": "{n} card(s)",
+
+	"card.edit": "Edit",
+	"card.delete": "Delete",
+	"card.placeholder": "What's on your mind?",
+	"card.cancel": "Cancel",
+	"card.add": "Add",
+	"card.addCard": "+ Add a card",
+
+	"comment.placeholder": "Add a comment...",
+	"comment.send": "Send",
+	"comment.count": "{n} comment(s)",
+
+	"summary.title": "Summary",
+	"summary.empty": "No cards yet. Add some cards to see the summary.",
+
+	"timer.min": "min",
+	"timer.start": "Start",
+	"timer.stop": "Stop",
+	"timer.expired": "Time's up!",
+
+	"user.online": "{n} online",
+
+	"export.json": "JSON",
+	"export.markdown": "Markdown",
+
+	"copy.link": "Copy link",
+	"copy.copied": "Copied!"
+}

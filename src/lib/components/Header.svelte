@@ -1,11 +1,14 @@
 <script lang="ts">
 	import ThemeToggle from './ThemeToggle.svelte';
+	import LocaleToggle from './LocaleToggle.svelte';
 	import UserCount from './UserCount.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { t } from '$lib/i18n/index.js';
 
 	let { showOnline = false }: { showOnline?: boolean } = $props();
 
 	let exportOpen = $state(false);
+	let copied = $state(false);
 
 	function closeExport() {
 		exportOpen = false;
@@ -20,6 +23,12 @@
 		a.click();
 		exportOpen = false;
 	}
+
+	async function copyLink() {
+		await navigator.clipboard.writeText(window.location.href);
+		copied = true;
+		setTimeout(() => (copied = false), 2000);
+	}
 </script>
 
 <svelte:window onclick={() => exportOpen && closeExport()} />
@@ -28,7 +37,7 @@
 	<div class="mx-auto flex max-w-7xl items-center justify-between">
 		<div class="flex items-center gap-3">
 			<a href="/" class="text-lg font-bold tracking-tight text-text-primary">
-				Retro Board
+				{t('header.brand')}
 			</a>
 			{#if boardStore.board}
 				<span class="text-text-muted">/</span>
@@ -40,6 +49,25 @@
 				<UserCount />
 			{/if}
 			{#if boardStore.board}
+				<!-- Copy link button -->
+				<button
+					onclick={copyLink}
+					class="flex h-9 w-9 items-center justify-center rounded-lg border border-border transition-colors hover:bg-surface-hover {copied ? 'text-emerald-500' : ''}"
+					aria-label={t('copy.link')}
+					title={copied ? t('copy.copied') : t('copy.link')}
+				>
+					{#if copied}
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"/>
+						</svg>
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+							<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+						</svg>
+					{/if}
+				</button>
+				<!-- Export dropdown -->
 				<div class="relative">
 					<button
 						onclick={(e) => { e.stopPropagation(); exportOpen = !exportOpen; }}
@@ -64,19 +92,20 @@
 								class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary transition-colors hover:bg-surface-hover"
 							>
 								<span class="font-mono text-xs text-text-muted">{'{}'}</span>
-								JSON
+								{t('export.json')}
 							</button>
 							<button
 								onclick={() => handleExport('md')}
 								class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary transition-colors hover:bg-surface-hover"
 							>
 								<span class="font-mono text-xs text-text-muted">MD</span>
-								Markdown
+								{t('export.markdown')}
 							</button>
 						</div>
 					{/if}
 				</div>
 			{/if}
+			<LocaleToggle />
 			<ThemeToggle />
 		</div>
 	</div>

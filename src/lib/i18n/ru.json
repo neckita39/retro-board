@@ -1,0 +1,41 @@
+{
+	"home.title": "Начать ретроспективу",
+	"home.subtitle": "Создайте доску и поделитесь ссылкой с командой.",
+	"home.placeholder": "Название доски, например Спринт 42 Ретро",
+	"home.create": "Создать доску",
+	"home.note": "Регистрация не нужна. Любой со ссылкой может участвовать.",
+
+	"header.brand": "Ретроспектрикс",
+
+	"column.went_well": "Что прошло хорошо",
+	"column.didnt_go_well": "Что пошло не так",
+	"column.improve": "Что улучшить",
+	"column.cards": "{n} карточек",
+
+	"card.edit": "Редактировать",
+	"card.delete": "Удалить",
+	"card.placeholder": "О чём думаете?",
+	"card.cancel": "Отмена",
+	"card.add": "Добавить",
+	"card.addCard": "+ Добавить карточку",
+
+	"comment.placeholder": "Добавить комментарий...",
+	"comment.send": "Отправить",
+	"comment.count": "{n} комментариев",
+
+	"summary.title": "Итоги",
+	"summary.empty": "Пока нет карточек. Добавьте карточки, чтобы увидеть итоги.",
+
+	"timer.min": "мин",
+	"timer.start": "Старт",
+	"timer.stop": "Стоп",
+	"timer.expired": "Время вышло!",
+
+	"user.online": "{n} онлайн",
+
+	"export.json": "JSON",
+	"export.markdown": "Markdown",
+
+	"copy.link": "Скопировать ссылку",
+	"copy.copied": "Скопировано!"
+}

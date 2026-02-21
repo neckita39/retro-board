@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { t } from '$lib/i18n/index.js';
 </script>
 
 <div class="flex items-center gap-1.5 text-sm text-text-secondary">
@@ -11,5 +12,5 @@
 			<span class="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
 		{/if}
 	</span>
-	<span>{socketStore.usersCount} online</span>
+	<span>{t('user.online', { n: socketStore.usersCount })}</span>
 </div>

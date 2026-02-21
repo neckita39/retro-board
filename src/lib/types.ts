@@ -40,8 +40,8 @@ export interface BoardState {
 	comments: Comment[];
 }
 
-export const COLUMN_CONFIG: Record<ColumnType, { title: string; emoji: string }> = {
-	went_well: { title: 'Went Well', emoji: '+' },
-	didnt_go_well: { title: "Didn't Go Well", emoji: '-' },
-	improve: { title: 'To Improve', emoji: '!' }
+export const COLUMN_CONFIG: Record<ColumnType, { emoji: string }> = {
+	went_well: { emoji: '+' },
+	didnt_go_well: { emoji: '-' },
+	improve: { emoji: '!' }
 };

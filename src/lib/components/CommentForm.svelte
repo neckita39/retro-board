@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { t } from '$lib/i18n/index.js';
 
 	let { cardId }: { cardId: string } = $props();
 
@@ -25,7 +26,7 @@
 		type="text"
 		bind:value={content}
 		onkeydown={handleKeydown}
-		placeholder="Add a comment..."
+		placeholder={t('comment.placeholder')}
 		class="flex-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
 	/>
 	<button
@@ -33,6 +34,6 @@
 		disabled={!content.trim()}
 		class="rounded-md bg-text-primary px-2.5 py-1.5 text-xs font-medium text-surface transition-opacity disabled:opacity-30"
 	>
-		Send
+		{t('comment.send')}
 	</button>
 </form>

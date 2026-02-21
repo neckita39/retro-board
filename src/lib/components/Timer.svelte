@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { t } from '$lib/i18n/index.js';
 
-	let inputMinutes = $state(5);
+	const PRESETS = [3, 5, 10];
+	let selectedMinutes = $state(5);
 	let remaining = $state<number | null>(null);
+	let totalSeconds = $state(0);
 	let expired = $state(false);
 	let timer: ReturnType<typeof setInterval> | null = null;
 
@@ -40,8 +43,9 @@
 	});
 
 	function start() {
-		if (inputMinutes <= 0) return;
-		socketStore.startTimer(inputMinutes * 60);
+		if (selectedMinutes <= 0) return;
+		totalSeconds = selectedMinutes * 60;
+		socketStore.startTimer(totalSeconds);
 	}
 
 	function stop() {
@@ -53,45 +57,104 @@
 		const s = secs % 60;
 		return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 	}
+
+	// SVG circle constants
+	const SIZE = 80;
+	const STROKE = 5;
+	const RADIUS = (SIZE - STROKE) / 2;
+	const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+	let progress = $derived(
+		remaining !== null && totalSeconds > 0
+			? Math.max(0, Math.min(1, remaining / totalSeconds))
+			: 1
+	);
+
+	let strokeOffset = $derived(CIRCUMFERENCE * (1 - progress));
+
+	let ringColor = $derived(
+		expired
+			? 'stroke-red-500'
+			: progress > 0.5
+				? 'stroke-emerald-500'
+				: progress > 0.2
+					? 'stroke-yellow-500'
+					: 'stroke-red-500'
+	);
 </script>
 
 {#if remaining !== null}
-	<div
-		class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors {expired
-			? 'animate-pulse border-red-300 bg-red-50 text-red-600 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400'
-			: 'border-border bg-surface-card text-text-primary'}"
-	>
-		<span class="tabular-nums">{formatTime(remaining)}</span>
+	<!-- Running / Expired state -->
+	<div class="flex flex-col items-center gap-2">
+		<div class="relative {expired ? 'animate-pulse' : ''}">
+			<svg width={SIZE} height={SIZE} class="-rotate-90">
+				<!-- Background ring -->
+				<circle
+					cx={SIZE / 2}
+					cy={SIZE / 2}
+					r={RADIUS}
+					fill="none"
+					stroke-width={STROKE}
+					class="stroke-border"
+				/>
+				<!-- Progress ring -->
+				<circle
+					cx={SIZE / 2}
+					cy={SIZE / 2}
+					r={RADIUS}
+					fill="none"
+					stroke-width={STROKE}
+					stroke-linecap="round"
+					stroke-dasharray={CIRCUMFERENCE}
+					stroke-dashoffset={strokeOffset}
+					class="{ringColor} transition-[stroke-dashoffset] duration-300 ease-linear"
+				/>
+			</svg>
+			<!-- Time display centered in ring -->
+			<div class="absolute inset-0 flex items-center justify-center">
+				{#if expired}
+					<span class="text-xs font-bold text-red-500">{t('timer.expired')}</span>
+				{:else}
+					<span class="text-sm font-semibold tabular-nums text-text-primary">{formatTime(remaining)}</span>
+				{/if}
+			</div>
+		</div>
 		<button
 			onclick={stop}
-			class="flex h-5 w-5 items-center justify-center rounded text-text-muted hover:text-text-primary"
-			aria-label="Stop timer"
+			class="flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
+			aria-label={t('timer.stop')}
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<line x1="18" y1="6" x2="6" y2="18"/>
 				<line x1="6" y1="6" x2="18" y2="18"/>
 			</svg>
+			{t('timer.stop')}
 		</button>
 	</div>
 {:else}
-	<div class="flex items-center gap-1">
-		<input
-			type="number"
-			min="1"
-			max="99"
-			bind:value={inputMinutes}
-			class="h-9 w-12 rounded-lg border border-border bg-surface-card px-1.5 text-center text-sm text-text-primary outline-none transition-colors focus:border-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-			aria-label="Minutes"
-		/>
+	<!-- Idle state: presets + start -->
+	<div class="flex items-center gap-2">
+		<div class="flex rounded-lg border border-border">
+			{#each PRESETS as mins}
+				<button
+					onclick={() => (selectedMinutes = mins)}
+					class="px-2.5 py-1.5 text-xs font-medium transition-colors first:rounded-l-lg last:rounded-r-lg {selectedMinutes === mins
+						? 'bg-text-primary text-surface'
+						: 'text-text-secondary hover:bg-surface-hover'}"
+				>
+					{mins}
+				</button>
+			{/each}
+		</div>
 		<button
 			onclick={start}
-			class="flex h-9 items-center gap-1 rounded-lg border border-border px-2 text-sm text-text-secondary transition-colors hover:bg-surface-hover"
-			aria-label="Start timer"
+			class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
+			aria-label={t('timer.start')}
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<polygon points="5 3 19 12 5 21 5 3"/>
 			</svg>
-			<span>min</span>
+			{t('timer.start')}
 		</button>
 	</div>
 {/if}

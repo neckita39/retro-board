@@ -2,6 +2,7 @@
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import type { ColumnType } from '$lib/types.js';
+	import { t } from '$lib/i18n/index.js';
 
 	let { column }: { column: ColumnType } = $props();
 
@@ -33,7 +34,7 @@
 		<textarea
 			bind:value={content}
 			onkeydown={handleKeydown}
-			placeholder="What's on your mind?"
+			placeholder={t('card.placeholder')}
 			class="w-full resize-none rounded-lg border border-border bg-surface-card p-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
 			rows="3"
 		></textarea>
@@ -43,14 +44,14 @@
 				onclick={() => { expanded = false; content = ''; }}
 				class="rounded-lg px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
 			>
-				Cancel
+				{t('card.cancel')}
 			</button>
 			<button
 				type="submit"
 				disabled={!content.trim()}
 				class="rounded-lg bg-text-primary px-3 py-1.5 text-xs font-medium text-surface transition-opacity disabled:opacity-30"
 			>
-				Add
+				{t('card.add')}
 			</button>
 		</div>
 	</form>
@@ -59,6 +60,6 @@
 		onclick={() => (expanded = true)}
 		class="w-full rounded-lg border border-dashed border-border p-2.5 text-sm text-text-muted transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-text-secondary"
 	>
-		+ Add a card
+		{t('card.addCard')}
 	</button>
 {/if}

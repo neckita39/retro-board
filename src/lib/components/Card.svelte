@@ -3,6 +3,7 @@
 	import CommentList from './CommentList.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import type { Card } from '$lib/types.js';
+	import { t } from '$lib/i18n/index.js';
 
 	let { card }: { card: Card } = $props();
 
@@ -55,7 +56,7 @@
 				<button
 					onclick={startEdit}
 					class="rounded p-1 text-text-muted opacity-0 transition-all hover:bg-surface-hover hover:text-text-secondary group-hover:opacity-100"
-					aria-label="Edit"
+					aria-label={t('card.edit')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -65,7 +66,7 @@
 				<button
 					onclick={deleteCard}
 					class="rounded p-1 text-text-muted opacity-0 transition-all hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 group-hover:opacity-100"
-					aria-label="Delete"
+					aria-label={t('card.delete')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<line x1="18" y1="6" x2="6" y2="18"/>
