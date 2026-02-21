@@ -139,7 +139,7 @@
 				<button
 					onclick={() => (selectedMinutes = mins)}
 					class="px-2.5 py-1.5 text-xs font-medium transition-colors first:rounded-l-lg last:rounded-r-lg {selectedMinutes === mins
-						? 'bg-text-primary text-surface'
+						? 'bg-surface-hover text-text-primary font-semibold'
 						: 'text-text-secondary hover:bg-surface-hover'}"
 				>
 					{mins}
