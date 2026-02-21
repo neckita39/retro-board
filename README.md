@@ -66,6 +66,26 @@ npm test
 3. Собирает проект
 4. Деплоит на сервер через SSH
 
+## Мониторинг
+
+Приложение отправляет метрики через **StatsD** (UDP) и пишет логи через **Pino**.
+
+### Переменные
+
+```
+STATSD_HOST=netdata       # хост StatsD-сервера (по умолчанию localhost)
+STATSD_PORT=8125          # порт StatsD (по умолчанию 8125)
+LOG_LEVEL=info            # уровень логирования: debug, info, warn, error
+```
+
+В `docker-compose.prod.yml` уже настроен контейнер **Netdata**, который принимает StatsD-метрики и предоставляет дашборд. Метрики: `retro.board.created`, `retro.card.created` и др.
+
+### Health check
+
+```
+GET /health → 200 OK
+```
+
 ## Архитектура
 
 - **Фронтенд**: SvelteKit (Svelte 5 runes), Tailwind CSS 4
@@ -73,3 +93,4 @@ npm test
 - **База данных**: PostgreSQL через Drizzle ORM
 - **Тесты**: Vitest
 - **CI/CD**: GitHub Actions
+- **Мониторинг**: StatsD + Netdata, Pino logging
