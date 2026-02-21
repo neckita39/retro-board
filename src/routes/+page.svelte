@@ -13,7 +13,7 @@
 	<main class="flex flex-1 items-center justify-center p-4">
 		<div class="w-full max-w-md space-y-8 text-center">
 			<div class="flex justify-center">
-				<img src="/logo.png" alt="Retrospectrix" width="64" height="64" class="dark:invert" />
+				<img src="/logo.png" alt="Retrospectrix" width="96" height="96" class="dark:invert" />
 			</div>
 
 			<div class="space-y-2">
