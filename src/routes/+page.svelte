@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
+	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
+
+	boardStore.board = null;
 
 	let joinOpen = $state(false);
 	let joinValue = $state('');
