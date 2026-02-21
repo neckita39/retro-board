@@ -36,7 +36,8 @@
 <header class="border-b border-border bg-surface-card px-4 py-3 transition-colors sm:px-6">
 	<div class="mx-auto flex max-w-7xl items-center justify-between">
 		<div class="flex items-center gap-3">
-			<a href="/" class="text-lg font-bold tracking-tight text-text-primary">
+			<a href="/" class="flex items-center gap-2 text-lg font-bold tracking-tight text-text-primary">
+				<img src="/logo.png" alt="" width="24" height="24" class="dark:invert" />
 				{t('header.brand')}
 			</a>
 			{#if boardStore.board}

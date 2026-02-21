@@ -12,18 +12,8 @@
 
 	<main class="flex flex-1 items-center justify-center p-4">
 		<div class="w-full max-w-md space-y-8 text-center">
-			<!-- Retro icon: circular arrow (iteration) + play triangle (move forward) -->
 			<div class="flex justify-center">
-				<svg width="56" height="56" viewBox="0 0 56 56" fill="none" class="text-text-muted opacity-60">
-					<!-- Outer ring -->
-					<circle cx="28" cy="28" r="26" stroke="currentColor" stroke-width="2" />
-					<!-- Play triangle -->
-					<path d="M22 19 L37 28 L22 37Z" fill="currentColor" opacity="0.25" />
-					<!-- Circular arrow: 270° clockwise from 9 o'clock to 6 o'clock -->
-					<path d="M18 28 A10 10 0 1 1 28 38" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
-					<!-- Arrowhead at arc end (28,38), pointing left -->
-					<polyline points="32,35 28,38 32,41" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-				</svg>
+				<img src="/logo.png" alt="Retrospectrix" width="64" height="64" class="dark:invert" />
 			</div>
 
 			<div class="space-y-2">
