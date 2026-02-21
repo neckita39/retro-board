@@ -3,8 +3,10 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import crypto from 'crypto';
 import pg from 'pg';
+import dgram from 'dgram';
+import pino from 'pino';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import {
 	pgTable,
 	uuid,
@@ -13,6 +15,19 @@ import {
 	pgEnum,
 	unique
 } from 'drizzle-orm/pg-core';
+
+// --- Logger ---
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
+
+// --- StatsD UDP client ---
+const statsd = dgram.createSocket('udp4');
+const STATSD_HOST = process.env.STATSD_HOST || 'localhost';
+const STATSD_PORT = parseInt(process.env.STATSD_PORT || '8125');
+
+function metric(name, value, type = 'c') {
+	const msg = Buffer.from(`${name}:${value}|${type}`);
+	statsd.send(msg, STATSD_PORT, STATSD_HOST);
+}
 
 // --- Schema (duplicated for standalone server) ---
 const columnTypeEnum = pgEnum('column_type', ['went_well', 'didnt_go_well', 'improve']);
@@ -69,7 +84,7 @@ let encKey = null;
 if (ENCRYPTION_KEY) {
 	encKey = Buffer.from(ENCRYPTION_KEY, 'hex');
 	if (encKey.length !== 32) {
-		console.error('ENCRYPTION_KEY must be 64 hex chars (32 bytes). Encryption disabled.');
+		logger.warn('ENCRYPTION_KEY must be 64 hex chars (32 bytes). Encryption disabled.');
 		encKey = null;
 	}
 }
@@ -108,8 +123,96 @@ function decryptComment(comment) {
 	return { ...comment, content: decrypt(comment.content), authorName: decrypt(comment.authorName) };
 }
 
+// --- In-memory metrics counters ---
+const metrics = {
+	requestCount: 0,
+	errorCount: 0,
+	wsConnections: 0,
+	startedAt: Date.now()
+};
+
 // --- HTTP + Socket.IO ---
-const httpServer = createServer(handler);
+const httpServer = createServer(async (req, res) => {
+	// Health/Ready/Metrics endpoints
+	if (req.method === 'GET' && req.url === '/health') {
+		const data = {
+			status: 'ok',
+			uptime: process.uptime(),
+			wsConnections: metrics.wsConnections,
+			timestamp: new Date().toISOString()
+		};
+		res.writeHead(200, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify(data));
+		return;
+	}
+
+	if (req.method === 'GET' && req.url === '/ready') {
+		try {
+			await pool.query('SELECT 1');
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify({ status: 'ready', db: 'ok' }));
+		} catch (err) {
+			logger.error({ err }, 'Readiness check failed');
+			res.writeHead(503, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify({ status: 'error', db: 'unreachable' }));
+		}
+		return;
+	}
+
+	if (req.method === 'GET' && req.url === '/metrics') {
+		const mem = process.memoryUsage();
+		let pgStats = null;
+		try {
+			const [connResult, cacheResult, sizeResult] = await Promise.all([
+				pool.query("SELECT count(*) AS total FROM pg_stat_activity WHERE datname = current_database()"),
+				pool.query("SELECT ROUND(sum(blks_hit)::numeric / NULLIF(sum(blks_hit) + sum(blks_read), 0), 4) AS ratio FROM pg_stat_database WHERE datname = current_database()"),
+				pool.query("SELECT pg_database_size(current_database()) AS size")
+			]);
+			pgStats = {
+				connections: parseInt(connResult.rows[0].total),
+				cacheHitRatio: parseFloat(cacheResult.rows[0].ratio) || 0,
+				dbSizeBytes: parseInt(sizeResult.rows[0].size)
+			};
+		} catch (err) {
+			logger.error({ err }, 'Failed to collect PG stats');
+		}
+
+		const data = {
+			process: {
+				memoryMB: {
+					rss: Math.round(mem.rss / 1048576),
+					heapUsed: Math.round(mem.heapUsed / 1048576),
+					heapTotal: Math.round(mem.heapTotal / 1048576)
+				},
+				uptime: process.uptime()
+			},
+			counters: {
+				requests: metrics.requestCount,
+				errors: metrics.errorCount
+			},
+			ws: {
+				connections: metrics.wsConnections
+			},
+			pool: {
+				total: pool.totalCount,
+				idle: pool.idleCount,
+				waiting: pool.waitingCount
+			},
+			pg: pgStats,
+			timestamp: new Date().toISOString()
+		};
+		res.writeHead(200, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify(data));
+		return;
+	}
+
+	// Track requests for metrics
+	metrics.requestCount++;
+
+	// Pass to SvelteKit handler
+	handler(req, res);
+});
+
 const io = new SocketIOServer(httpServer, {
 	cors: { origin: '*' }
 });
@@ -118,6 +221,7 @@ const roomUsers = new Map();
 const roomTimers = new Map();
 
 io.on('connection', (socket) => {
+	metrics.wsConnections++;
 	let currentRoom = null;
 
 	socket.on('board:join', async ({ slug }) => {
@@ -170,7 +274,7 @@ io.on('connection', (socket) => {
 				socket.emit('timer:state', timer);
 			}
 		} catch (err) {
-			console.error('Error loading board state:', err);
+			logger.error({ err, event: 'board:join', slug }, 'Failed to load board state');
 		}
 	});
 
@@ -186,8 +290,9 @@ io.on('connection', (socket) => {
 				})
 				.returning();
 			if (currentRoom) io.to(currentRoom).emit('card:created', { card: decryptCard(card) });
+			metric('retro.card.created', 1);
 		} catch (err) {
-			console.error('Error creating card:', err);
+			logger.error({ err, event: 'card:create' }, 'Failed to create card');
 		}
 	});
 
@@ -200,7 +305,7 @@ io.on('connection', (socket) => {
 				.returning();
 			if (currentRoom) io.to(currentRoom).emit('card:updated', { card: decryptCard(card) });
 		} catch (err) {
-			console.error('Error updating card:', err);
+			logger.error({ err, event: 'card:update', cardId }, 'Failed to update card');
 		}
 	});
 
@@ -209,7 +314,7 @@ io.on('connection', (socket) => {
 			await db.delete(cards).where(eq(cards.id, cardId));
 			if (currentRoom) io.to(currentRoom).emit('card:deleted', { cardId });
 		} catch (err) {
-			console.error('Error deleting card:', err);
+			logger.error({ err, event: 'card:delete', cardId }, 'Failed to delete card');
 		}
 	});
 
@@ -231,7 +336,7 @@ io.on('connection', (socket) => {
 
 			if (currentRoom) io.to(currentRoom).emit('vote:toggled', { cardId, votes: cardVotes });
 		} catch (err) {
-			console.error('Error toggling vote:', err);
+			logger.error({ err, event: 'vote:toggle', cardId }, 'Failed to toggle vote');
 		}
 	});
 
@@ -247,7 +352,7 @@ io.on('connection', (socket) => {
 				.returning();
 			if (currentRoom) io.to(currentRoom).emit('comment:created', { comment: decryptComment(comment) });
 		} catch (err) {
-			console.error('Error creating comment:', err);
+			logger.error({ err, event: 'comment:create', cardId }, 'Failed to create comment');
 		}
 	});
 
@@ -265,6 +370,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('disconnect', () => {
+		metrics.wsConnections--;
 		if (currentRoom) {
 			const users = roomUsers.get(currentRoom);
 			if (users) {
@@ -278,7 +384,5 @@ io.on('connection', (socket) => {
 
 const port = parseInt(process.env.PORT || '3000');
 httpServer.listen(port, () => {
-	console.log(`Retro Board running on http://localhost:${port}`);
-	if (encKey) console.log('Database encryption: ENABLED');
-	else console.log('Database encryption: DISABLED (set ENCRYPTION_KEY to enable)');
+	logger.info({ port, encryption: !!encKey }, 'Retro Board started');
 });

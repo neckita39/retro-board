@@ -8,9 +8,22 @@ services:
       PORT: "3000"
       ORIGIN: ${ORIGIN:-http://localhost}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      STATSD_HOST: netdata
+      STATSD_PORT: "8125"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     mem_limit: 384m
     restart: unless-stopped
 
@@ -38,7 +51,34 @@ services:
       - "work_mem=4MB"
       - "-c"
       - "effective_cache_size=512MB"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+
+  netdata:
+    image: netdata/netdata:stable
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    environment:
+      - NETDATA_CLAIM_TOKEN=${NETDATA_CLAIM_TOKEN:-}
+      - NETDATA_CLAIM_ROOMS=${NETDATA_CLAIM_ROOMS:-}
+      - NETDATA_CLAIM_URL=https://app.netdata.cloud
+    mem_limit: 150m
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
     restart: unless-stopped
 
 volumes:
   pgdata:
+  netdataconfig:
+  netdatalib:
+  netdatacache:
