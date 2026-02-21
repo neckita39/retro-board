@@ -36,4 +36,4 @@ jobs:
           script: |
             cd ${{ secrets.PROJECT_PATH }}
             git pull origin main
-            docker compose -f docker-compose.prod.yml up --build -d
+            docker compose -f docker-compose.prod.yml up --build -d --force-recreate --remove-orphans
