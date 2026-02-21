@@ -78,7 +78,44 @@ STATSD_PORT=8125          # порт StatsD (по умолчанию 8125)
 LOG_LEVEL=info            # уровень логирования: debug, info, warn, error
 ```
 
-В `docker-compose.prod.yml` уже настроен контейнер **Netdata**, который принимает StatsD-метрики и предоставляет дашборд. Метрики: `retro.board.created`, `retro.card.created` и др.
+В `docker-compose.prod.yml` уже настроен контейнер **Netdata**. Если хотите добавить мониторинг в свой docker-compose, добавьте:
+
+**1. В секцию `services.app.environment`:**
+```yaml
+      STATSD_HOST: netdata
+      STATSD_PORT: "8125"
+```
+
+**2. Новый сервис `netdata`:**
+```yaml
+  netdata:
+    image: netdata/netdata:stable
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    environment:
+      - NETDATA_CLAIM_TOKEN=${NETDATA_CLAIM_TOKEN:-}
+      - NETDATA_CLAIM_ROOMS=${NETDATA_CLAIM_ROOMS:-}
+      - NETDATA_CLAIM_URL=https://app.netdata.cloud
+    mem_limit: 150m
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    restart: unless-stopped
+```
+
+**3. В секцию `volumes`:**
+```yaml
+  netdataconfig:
+  netdatalib:
+  netdatacache:
+```
+
+Netdata собирает StatsD-метрики приложения (`retro.board.created`, `retro.card.created` и др.) и системные метрики (CPU, RAM, диск). Для привязки к Netdata Cloud задайте `NETDATA_CLAIM_TOKEN` и `NETDATA_CLAIM_ROOMS` в `.env`.
 
 ### Health check
 
