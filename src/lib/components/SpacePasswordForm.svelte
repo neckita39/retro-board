@@ -14,17 +14,19 @@
 	</div>
 
 	<form method="POST" action="?/verify" class="space-y-3">
-		<input
-			type="password"
-			name="password"
-			placeholder={t('space.password.placeholder')}
-			required
-			maxlength="100"
-			class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-		/>
-		{#if error}
-			<p class="text-sm text-red-500">{error}</p>
-		{/if}
+		<div>
+			<input
+				type="password"
+				name="password"
+				placeholder={t('space.password.placeholder')}
+				required
+				maxlength="100"
+				class="w-full rounded-xl border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 {error ? 'border-red-400 focus:border-red-400 focus:ring-red-200 dark:focus:ring-red-900/40' : 'border-border focus:border-border-strong focus:ring-border'}"
+			/>
+			{#if error}
+				<p class="mt-1.5 text-xs text-red-500">{error}</p>
+			{/if}
+		</div>
 		<button
 			type="submit"
 			class="w-full rounded-xl bg-text-primary px-4 py-3 font-medium text-surface transition-opacity hover:opacity-90"
