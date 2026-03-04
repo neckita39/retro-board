@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
-	const PRESETS = [3, 5, 10];
+	let { creatorToken = null }: { creatorToken?: string | null } = $props();
+
 	let selectedMinutes = $state(5);
 	let remaining = $state<number | null>(null);
 	let totalSeconds = $state(0);
@@ -45,11 +47,11 @@
 	function start() {
 		if (selectedMinutes <= 0) return;
 		totalSeconds = selectedMinutes * 60;
-		socketStore.startTimer(totalSeconds);
+		socketStore.startTimer(totalSeconds, creatorToken);
 	}
 
 	function stop() {
-		socketStore.stopTimer();
+		socketStore.stopTimer(creatorToken);
 	}
 
 	function formatTime(secs: number): string {
@@ -112,39 +114,35 @@
 			</svg>
 			<!-- Time display centered in ring -->
 			<div class="absolute inset-0 flex items-center justify-center">
-				{#if expired}
-					<span class="text-xs font-bold text-red-500">{t('timer.expired')}</span>
-				{:else}
-					<span class="text-sm font-semibold tabular-nums text-text-primary">{formatTime(remaining)}</span>
-				{/if}
+				<span class="text-sm font-semibold tabular-nums {expired ? 'text-red-500' : 'text-text-primary'}">{formatTime(expired ? 0 : remaining)}</span>
 			</div>
 		</div>
-		<button
-			onclick={stop}
-			class="flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
-			aria-label={t('timer.stop')}
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<line x1="18" y1="6" x2="6" y2="18"/>
-				<line x1="6" y1="6" x2="18" y2="18"/>
-			</svg>
-			{t('timer.stop')}
-		</button>
+		{#if boardStore.isCreator}
+			<button
+				onclick={stop}
+				class="flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
+				aria-label={t('timer.stop')}
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="18" y1="6" x2="6" y2="18"/>
+					<line x1="6" y1="6" x2="18" y2="18"/>
+				</svg>
+				{t('timer.stop')}
+			</button>
+		{/if}
 	</div>
-{:else}
-	<!-- Idle state: presets + start -->
+{:else if boardStore.isCreator}
+	<!-- Idle state: duration input + start (creator only) -->
 	<div class="flex items-center gap-2">
-		<div class="flex rounded-lg border border-border">
-			{#each PRESETS as mins}
-				<button
-					onclick={() => (selectedMinutes = mins)}
-					class="px-2.5 py-1.5 text-xs font-medium transition-colors first:rounded-l-lg last:rounded-r-lg {selectedMinutes === mins
-						? 'bg-surface-hover text-text-primary font-semibold'
-						: 'text-text-secondary hover:bg-surface-hover'}"
-				>
-					{mins}
-				</button>
-			{/each}
+		<div class="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5">
+			<input
+				type="number"
+				min="1"
+				max="120"
+				bind:value={selectedMinutes}
+				class="w-10 bg-transparent text-center text-xs font-medium text-text-primary focus:outline-none"
+			/>
+			<span class="text-xs text-text-secondary">{t('timer.min')}</span>
 		</div>
 		<button
 			onclick={start}

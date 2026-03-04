@@ -5,6 +5,7 @@ class BoardStore {
 	cards = $state<Card[]>([]);
 	votes = $state<Vote[]>([]);
 	comments = $state<Comment[]>([]);
+	isCreator = $state(false);
 
 	setState(data: BoardState) {
 		this.board = data.board;

@@ -37,6 +37,7 @@ const boards = pgTable('boards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	slug: text('slug').notNull().unique(),
 	title: text('title').notNull(),
+	creatorToken: text('creator_token').notNull().default(''),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -219,12 +220,15 @@ const io = new SocketIOServer(httpServer, {
 
 const roomUsers = new Map();
 const roomTimers = new Map();
+const roomCreatorTokens = new Map();
 
 io.on('connection', (socket) => {
 	metrics.wsConnections++;
 	let currentRoom = null;
+	let socketCreatorToken = '';
 
-	socket.on('board:join', async ({ slug }) => {
+	socket.on('board:join', async ({ slug, creatorToken: joinToken }) => {
+		socketCreatorToken = joinToken || '';
 		if (currentRoom) {
 			socket.leave(currentRoom);
 			const users = roomUsers.get(currentRoom);
@@ -246,6 +250,8 @@ io.on('connection', (socket) => {
 				where: eq(boards.slug, slug)
 			});
 			if (!board) return;
+
+			roomCreatorTokens.set(slug, board.creatorToken || '');
 
 			const boardCards = await db.query.cards.findMany({
 				where: eq(cards.boardId, board.id)
@@ -356,15 +362,19 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('timer:start', ({ duration }) => {
+	socket.on('timer:start', ({ duration, creatorToken }) => {
 		if (!currentRoom) return;
+		const roomToken = roomCreatorTokens.get(currentRoom) || '';
+		if (roomToken && creatorToken !== roomToken) return;
 		const endTime = Date.now() + duration * 1000;
 		roomTimers.set(currentRoom, { endTime, duration });
 		io.to(currentRoom).emit('timer:state', { endTime, duration });
 	});
 
-	socket.on('timer:stop', () => {
+	socket.on('timer:stop', ({ creatorToken } = {}) => {
 		if (!currentRoom) return;
+		const roomToken = roomCreatorTokens.get(currentRoom) || '';
+		if (roomToken && creatorToken !== roomToken) return;
 		roomTimers.delete(currentRoom);
 		io.to(currentRoom).emit('timer:state', { endTime: null, duration: null });
 	});
@@ -376,7 +386,10 @@ io.on('connection', (socket) => {
 			if (users) {
 				users.delete(socket.id);
 				io.to(currentRoom).emit('users:count', { count: users.size });
-				if (users.size === 0) roomUsers.delete(currentRoom);
+				if (users.size === 0) {
+					roomUsers.delete(currentRoom);
+					roomCreatorTokens.delete(currentRoom);
+				}
 			}
 		}
 	});

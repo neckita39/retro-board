@@ -48,6 +48,7 @@ function makeComment(overrides: Partial<Comment> = {}): Comment {
 
 beforeEach(() => {
 	boardStore.setState({ board, cards: [], votes: [], comments: [] });
+	boardStore.isCreator = false;
 });
 
 describe('BoardStore', () => {
@@ -126,6 +127,21 @@ describe('BoardStore', () => {
 			makeVote({ id: 'v3', cardId: 'c1', type: 'like' })
 		]);
 		expect(boardStore.getCardLikes('c1')).toBe(2);
+	});
+
+	it('isCreator defaults to false', () => {
+		expect(boardStore.isCreator).toBe(false);
+	});
+
+	it('isCreator can be set to true', () => {
+		boardStore.isCreator = true;
+		expect(boardStore.isCreator).toBe(true);
+	});
+
+	it('setState does not reset isCreator', () => {
+		boardStore.isCreator = true;
+		boardStore.setState({ board, cards: [], votes: [], comments: [] });
+		expect(boardStore.isCreator).toBe(true);
 	});
 
 	it('getSummaryCards sorts by column order then by likes desc', () => {

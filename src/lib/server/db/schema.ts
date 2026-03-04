@@ -7,6 +7,7 @@ export const boards = pgTable('boards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	slug: text('slug').notNull().unique(),
 	title: text('title').notNull(),
+	creatorToken: text('creator_token').notNull().default(''),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 

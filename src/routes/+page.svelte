@@ -44,7 +44,6 @@
 					type="text"
 					name="title"
 					placeholder={t('home.placeholder')}
-					required
 					class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
 				/>
 				<button

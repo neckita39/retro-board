@@ -5,7 +5,16 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
-	let { showOnline = false }: { showOnline?: boolean } = $props();
+	let { showOnline = false, adminLink = null }: { showOnline?: boolean; adminLink?: string | null } = $props();
+
+	let deleteConfirming = $state(false);
+
+	async function deleteBoard() {
+		if (!boardStore.board) return;
+		deleteConfirming = false;
+		const res = await fetch(`/${boardStore.board.slug}`, { method: 'DELETE' });
+		if (res.ok) window.location.href = '/';
+	}
 
 	let exportOpen = $state(false);
 	let copyOpen = $state(false);
@@ -14,6 +23,7 @@
 	function closeDropdowns() {
 		exportOpen = false;
 		copyOpen = false;
+		deleteConfirming = false;
 	}
 
 	function handleExport(format: 'json' | 'md') {
@@ -38,14 +48,14 @@
 
 <header class="border-b border-border bg-surface-card px-4 py-3 transition-colors sm:px-6">
 	<div class="mx-auto flex max-w-7xl items-center justify-between">
-		<div class="flex items-center gap-3">
-			<a href="/" class="flex items-center gap-2 text-lg font-bold tracking-tight text-text-primary">
+		<div class="flex min-w-0 items-center gap-3">
+			<a href="/" class="flex shrink-0 items-center gap-2 text-lg font-bold tracking-tight text-text-primary">
 				<img src="/logo.png" alt="" width="24" height="24" class="dark:invert" />
-				{t('header.brand')}
+				<span class="hidden sm:inline">{t('header.brand')}</span>
 			</a>
 			{#if boardStore.board}
 				<span class="text-text-muted">/</span>
-				<span class="text-sm font-medium text-text-secondary">{boardStore.board.title}</span>
+				<span class="min-w-0 truncate text-sm font-medium text-text-secondary">{boardStore.board.title}</span>
 			{/if}
 		</div>
 		<div class="flex items-center gap-3">
@@ -99,6 +109,19 @@
 								</svg>
 								{t('copy.code')}
 							</button>
+							{#if adminLink}
+								<hr class="my-1 border-border" />
+								<button
+									onclick={() => copyText(adminLink!)}
+									class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-amber-600 transition-colors hover:bg-surface-hover dark:text-amber-400"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+										<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+									</svg>
+									{t('copy.admin')}
+								</button>
+							{/if}
 						</div>
 					{/if}
 				</div>
@@ -140,6 +163,43 @@
 						</div>
 					{/if}
 				</div>
+			{/if}
+			{#if boardStore.board && boardStore.isCreator}
+				<!-- Delete board -->
+				{#if deleteConfirming}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div class="flex items-center gap-1" onclick={(e) => e.stopPropagation()}>
+						<span class="text-xs text-text-secondary">{t('board.delete.confirm')}</span>
+						<button
+							onclick={deleteBoard}
+							class="rounded-lg bg-red-500 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
+						>
+							{t('board.delete')}
+						</button>
+						<button
+							onclick={() => (deleteConfirming = false)}
+							class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
+						>
+							{t('card.cancel')}
+						</button>
+					</div>
+				{:else}
+					<button
+						onclick={(e) => { e.stopPropagation(); deleteConfirming = true; }}
+						class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+						aria-label={t('board.delete')}
+						title={t('board.delete')}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="3 6 5 6 21 6"/>
+							<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+							<path d="M10 11v6"/>
+							<path d="M14 11v6"/>
+							<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+						</svg>
+					</button>
+				{/if}
 			{/if}
 			<LocaleToggle />
 			<ThemeToggle />

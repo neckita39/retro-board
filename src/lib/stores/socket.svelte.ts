@@ -55,8 +55,8 @@ class SocketStore {
 		});
 	}
 
-	joinBoard(slug: string) {
-		this.socket?.emit('board:join', { slug });
+	joinBoard(slug: string, creatorToken?: string | null) {
+		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '' });
 	}
 
 	createCard(boardId: string, column: string, content: string, authorName?: string) {
@@ -71,12 +71,12 @@ class SocketStore {
 		this.socket?.emit('card:delete', { cardId });
 	}
 
-	startTimer(duration: number) {
-		this.socket?.emit('timer:start', { duration });
+	startTimer(duration: number, creatorToken?: string | null) {
+		this.socket?.emit('timer:start', { duration, creatorToken: creatorToken ?? '' });
 	}
 
-	stopTimer() {
-		this.socket?.emit('timer:stop');
+	stopTimer(creatorToken?: string | null) {
+		this.socket?.emit('timer:stop', { creatorToken: creatorToken ?? '' });
 	}
 
 	toggleVote(cardId: string, type: 'like' | 'dislike', sessionId: string) {

@@ -1,7 +1,7 @@
 {
 	"home.title": "Start a Retrospective",
 	"home.subtitle": "Create a board and share the link with your team.",
-	"home.placeholder": "Board title, e.g. Sprint 42 Retro",
+	"home.placeholder": "Board title (optional)",
 	"home.create": "Create Board",
 	"home.note": "No signup required. Anyone with the link can participate.",
 	"home.join": "Already have a board link?",
@@ -13,7 +13,7 @@
 	"column.went_well": "Went Well",
 	"column.didnt_go_well": "Didn't Go Well",
 	"column.improve": "To Improve",
-	"column.cards": "{n} card(s)",
+	"column.cards": "{n} card|{n} cards",
 
 	"card.edit": "Edit",
 	"card.delete": "Delete",
@@ -24,7 +24,7 @@
 
 	"comment.placeholder": "Add a comment...",
 	"comment.send": "Send",
-	"comment.count": "{n} comment(s)",
+	"comment.count": "{n} comment|{n} comments",
 
 	"summary.title": "Summary",
 	"summary.empty": "No cards yet. Add some cards to see the summary.",
@@ -32,7 +32,6 @@
 	"timer.min": "min",
 	"timer.start": "Start",
 	"timer.stop": "Stop",
-	"timer.expired": "Time's up!",
 
 	"user.online": "{n} online",
 
@@ -43,8 +42,18 @@
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
 
+	"board.delete": "Delete Board",
+	"board.delete.confirm": "Delete board?",
+
+	"admin.banner.title": "You created this board",
+	"admin.banner.desc": "Save the link below — it's the only way to manage the timer and delete the board from another device or browser.",
+	"admin.banner.copy": "Copy link",
+	"admin.banner.saved": "Saved? Then you can close this.",
+	"admin.banner.close": "Close",
+
 	"copy.title": "Link",
 	"copy.link": "Link",
 	"copy.code": "Board code",
+	"copy.admin": "Admin link",
 	"copy.copied": "Copied!"
 }

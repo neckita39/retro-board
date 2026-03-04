@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
+	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import Board from '$lib/components/Board.svelte';
 	import Timer from '$lib/components/Timer.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
@@ -11,11 +12,12 @@
 
 	$effect(() => {
 		boardStore.setState(data);
+		boardStore.isCreator = data.isCreator;
 	});
 
 	onMount(() => {
 		socketStore.connect();
-		socketStore.joinBoard(data.board.slug);
+		socketStore.joinBoard(data.board.slug, data.creatorToken);
 	});
 
 	onDestroy(() => {
@@ -28,11 +30,14 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-	<Header showOnline={true} />
+	<Header showOnline={true} adminLink={data.adminLink} />
+	{#if data.showAdminBanner && data.adminLink}
+		<AdminBanner adminLink={data.adminLink} />
+	{/if}
 	<Board />
 	<footer class="sticky bottom-0 border-t border-border bg-surface-card px-4 py-3 transition-colors sm:px-6">
 		<div class="mx-auto flex max-w-7xl items-center justify-center">
-			<Timer />
+			<Timer creatorToken={data.creatorToken} />
 		</div>
 	</footer>
 </div>
