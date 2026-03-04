@@ -94,7 +94,7 @@
 							class="absolute right-0 top-full z-50 mt-2 w-44 rounded-lg border border-border bg-surface-card py-1 shadow-lg"
 						>
 							<button
-								onclick={() => copyText(window.location.href)}
+								onclick={() => copyText(`${window.location.origin}/${boardStore.board?.slug ?? ''}`)}
 								class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary transition-colors hover:bg-surface-hover"
 							>
 								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted">

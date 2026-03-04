@@ -11,13 +11,21 @@
 	boardStore.board = null;
 
 	let deleteConfirming = $state(false);
-	let copied = $state(false);
+	let copiedShare = $state(false);
+	let copiedAdmin = $state(false);
+
+	async function copyShareLink() {
+		const link = `${window.location.origin}/spaces/${data.space.slug}`;
+		await navigator.clipboard.writeText(link);
+		copiedShare = true;
+		setTimeout(() => (copiedShare = false), 2000);
+	}
 
 	async function copyAdminLink() {
 		if (!data.adminLink) return;
 		await navigator.clipboard.writeText(data.adminLink);
-		copied = true;
-		setTimeout(() => (copied = false), 2000);
+		copiedAdmin = true;
+		setTimeout(() => (copiedAdmin = false), 2000);
 	}
 
 	async function deleteSpace() {
@@ -48,24 +56,41 @@
 			<div class="w-full max-w-4xl space-y-6">
 				<div class="flex items-center justify-between">
 					<h1 class="text-2xl font-bold text-text-primary">{data.space.name}</h1>
+					<div class="flex items-center gap-2">
+						<button
+							onclick={copyShareLink}
+							class="flex h-9 items-center gap-1.5 rounded-lg border border-border px-2.5 text-sm transition-colors hover:bg-surface-hover {copiedShare ? 'text-emerald-500' : 'text-text-muted'}"
+							title={copiedShare ? t('copy.copied') : t('copy.share')}
+						>
+							{#if copiedShare}
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<polyline points="20 6 9 17 4 12"/>
+								</svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+									<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+								</svg>
+							{/if}
+							{t('copy.share')}
+						</button>
 					{#if data.isCreator}
-						<div class="flex items-center gap-2">
 						{#if data.adminLink}
 							<button
 								onclick={copyAdminLink}
-								class="flex h-9 w-9 items-center justify-center rounded-lg border border-border transition-colors hover:bg-surface-hover {copied ? 'text-emerald-500' : 'text-text-muted'}"
-								title={copied ? t('copy.copied') : t('copy.admin')}
+								class="flex h-9 items-center gap-1.5 rounded-lg border border-border px-2.5 text-sm transition-colors hover:bg-surface-hover {copiedAdmin ? 'text-emerald-500' : 'text-text-muted'}"
+								title={copiedAdmin ? t('copy.copied') : t('copy.admin')}
 							>
-								{#if copied}
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								{#if copiedAdmin}
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<polyline points="20 6 9 17 4 12"/>
 									</svg>
 								{:else}
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-										<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
 									</svg>
 								{/if}
+								{t('copy.admin')}
 							</button>
 						{/if}
 						{#if deleteConfirming}
@@ -99,8 +124,8 @@
 								</svg>
 							</button>
 						{/if}
-						</div>
 					{/if}
+					</div>
 				</div>
 				<SpaceBoardGrid boards={data.boards} spaceSlug={data.space.slug} />
 			</div>
