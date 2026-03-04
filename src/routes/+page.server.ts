@@ -57,6 +57,8 @@ export const actions: Actions = {
 			maxAge: 60 * 60 * 24 * 365
 		});
 
+		metric('retro.space.created', 1);
+
 		throw redirect(303, `/spaces/${slug}?admin=${creatorToken}`);
 	}
 };
