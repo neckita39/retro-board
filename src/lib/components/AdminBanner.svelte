@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.js';
 
-	let { adminLink }: { adminLink: string } = $props();
+	let { adminLink, titleKey = 'admin.banner.title', descKey = 'admin.banner.desc', copyKey = 'admin.banner.copy' }: { adminLink: string; titleKey?: string; descKey?: string; copyKey?: string } = $props();
 
 	let visible = $state(true);
 	let copied = $state(false);
@@ -33,8 +33,8 @@
 			</svg>
 			<div class="flex min-w-0 flex-1 flex-col gap-2">
 				<div>
-					<p class="text-sm font-semibold text-amber-900 dark:text-amber-200">{t('admin.banner.title')}</p>
-					<p class="mt-0.5 text-xs text-amber-700 dark:text-amber-400">{t('admin.banner.desc')}</p>
+					<p class="text-sm font-semibold text-amber-900 dark:text-amber-200">{t(titleKey)}</p>
+					<p class="mt-0.5 text-xs text-amber-700 dark:text-amber-400">{t(descKey)}</p>
 				</div>
 				<div class="flex items-center gap-2">
 					<input
@@ -50,7 +50,7 @@
 							? 'bg-emerald-500 text-white'
 							: 'bg-amber-500 text-white hover:bg-amber-600'}"
 					>
-						{copied ? t('copy.copied') : t('admin.banner.copy')}
+						{copied ? t('copy.copied') : t(copyKey)}
 					</button>
 				</div>
 				<p class="text-xs text-amber-600 dark:text-amber-500">{t('admin.banner.saved')}</p>

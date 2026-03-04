@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { boards, cards, votes, comments } from '$lib/server/db/schema.js';
+import { boards, cards, votes, comments, spaces } from '$lib/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import type { PageServerLoad } from './$types.js';
 
@@ -49,6 +49,15 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 
 	const adminLink = isCreator ? `${url.origin}/${params.slug}?admin=${board.creatorToken}` : null;
 
+	// Load parent space if board belongs to one
+	let space: { slug: string; name: string } | null = null;
+	if (board.spaceId) {
+		const s = await db.query.spaces.findFirst({
+			where: eq(spaces.id, board.spaceId)
+		});
+		if (s) space = { slug: s.slug, name: s.name };
+	}
+
 	return {
 		board: {
 			id: board.id,
@@ -56,6 +65,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			title: board.title,
 			createdAt: board.createdAt.toISOString()
 		},
+		space,
 		isCreator,
 		showAdminBanner,
 		adminLink,

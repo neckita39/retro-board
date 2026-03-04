@@ -5,7 +5,7 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
-	let { showOnline = false, adminLink = null }: { showOnline?: boolean; adminLink?: string | null } = $props();
+	let { showOnline = false, adminLink = null, spaceName = null, spaceSlug = null }: { showOnline?: boolean; adminLink?: string | null; spaceName?: string | null; spaceSlug?: string | null } = $props();
 
 	let deleteConfirming = $state(false);
 
@@ -53,6 +53,10 @@
 				<img src="/logo.png" alt="" width="24" height="24" class="dark:invert" />
 				<span class="hidden sm:inline">{t('header.brand')}</span>
 			</a>
+			{#if spaceName}
+				<span class="text-text-muted">/</span>
+				<a href="/spaces/{spaceSlug}" class="min-w-0 truncate text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">{spaceName}</a>
+			{/if}
 			{#if boardStore.board}
 				<span class="text-text-muted">/</span>
 				<span class="min-w-0 truncate text-sm font-medium text-text-secondary">{boardStore.board.title}</span>

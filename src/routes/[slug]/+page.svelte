@@ -30,7 +30,7 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-	<Header showOnline={true} adminLink={data.adminLink} />
+	<Header showOnline={true} adminLink={data.adminLink} spaceName={data.space?.name} spaceSlug={data.space?.slug} />
 	{#if data.showAdminBanner && data.adminLink}
 		<AdminBanner adminLink={data.adminLink} />
 	{/if}

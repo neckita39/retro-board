@@ -45,7 +45,7 @@
 	});
 
 	function start() {
-		if (selectedMinutes <= 0) return;
+		selectedMinutes = Math.max(1, Math.min(60, Math.round(selectedMinutes)));
 		totalSeconds = selectedMinutes * 60;
 		socketStore.startTimer(totalSeconds, creatorToken);
 	}
@@ -138,7 +138,7 @@
 			<input
 				type="number"
 				min="1"
-				max="120"
+				max="60"
 				bind:value={selectedMinutes}
 				class="w-10 bg-transparent text-center text-xs font-medium text-text-primary focus:outline-none"
 			/>

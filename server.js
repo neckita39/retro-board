@@ -33,11 +33,21 @@ function metric(name, value, type = 'c') {
 const columnTypeEnum = pgEnum('column_type', ['went_well', 'didnt_go_well', 'improve']);
 const voteTypeEnum = pgEnum('vote_type', ['like', 'dislike']);
 
+const spaces = pgTable('spaces', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	passwordHash: text('password_hash').notNull(),
+	creatorToken: text('creator_token').notNull().default(''),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 const boards = pgTable('boards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	slug: text('slug').notNull().unique(),
 	title: text('title').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
+	spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -70,7 +80,7 @@ const comments = pgTable('comments', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-const schema = { boards, cards, votes, comments };
+const schema = { spaces, boards, cards, votes, comments };
 
 // --- DB ---
 const pool = new pg.Pool({
@@ -285,6 +295,8 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('card:create', async ({ boardId, column, content, authorName }) => {
+		if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) return;
+		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
 		try {
 			const [card] = await db
 				.insert(cards)
@@ -303,6 +315,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('card:update', async ({ cardId, content }) => {
+		if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) return;
 		try {
 			const [card] = await db
 				.update(cards)
@@ -333,6 +346,14 @@ io.on('connection', (socket) => {
 			if (existing) {
 				await db.delete(votes).where(eq(votes.id, existing.id));
 			} else {
+				// Remove opposite vote first
+				const opposite = type === 'like' ? 'dislike' : 'like';
+				const oppositeVote = await db.query.votes.findFirst({
+					where: and(eq(votes.cardId, cardId), eq(votes.sessionId, sessionId), eq(votes.type, opposite))
+				});
+				if (oppositeVote) {
+					await db.delete(votes).where(eq(votes.id, oppositeVote.id));
+				}
 				await db.insert(votes).values({ cardId, type, sessionId });
 			}
 
@@ -347,6 +368,8 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('comment:create', async ({ cardId, content, authorName }) => {
+		if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 1000) return;
+		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
 		try {
 			const [comment] = await db
 				.insert(comments)
@@ -364,6 +387,7 @@ io.on('connection', (socket) => {
 
 	socket.on('timer:start', ({ duration, creatorToken }) => {
 		if (!currentRoom) return;
+		if (!Number.isFinite(duration) || duration < 60 || duration > 3600) return;
 		const roomToken = roomCreatorTokens.get(currentRoom) || '';
 		if (roomToken && creatorToken !== roomToken) return;
 		const endTime = Date.now() + duration * 1000;

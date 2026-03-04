@@ -26,6 +26,7 @@
 		type="text"
 		bind:value={content}
 		onkeydown={handleKeydown}
+		maxlength="1000"
 		placeholder={t('comment.placeholder')}
 		class="flex-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
 	/>

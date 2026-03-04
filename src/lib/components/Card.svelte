@@ -47,6 +47,7 @@
 				bind:value={editContent}
 				onkeydown={handleEditKeydown}
 				onblur={saveEdit}
+				maxlength="2000"
 				class="flex-1 resize-none rounded border border-border bg-surface p-1.5 text-sm text-text-primary focus:border-border-strong focus:outline-none"
 				rows="2"
 			></textarea>

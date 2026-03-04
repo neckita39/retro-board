@@ -35,6 +35,7 @@
 			bind:value={content}
 			onkeydown={handleKeydown}
 			placeholder={t('card.placeholder')}
+			maxlength="2000"
 			class="w-full resize-none rounded-lg border border-border bg-surface-card p-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
 			rows="3"
 		></textarea>

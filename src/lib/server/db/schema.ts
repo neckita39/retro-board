@@ -3,11 +3,21 @@ import { pgTable, uuid, text, timestamp, pgEnum, unique } from 'drizzle-orm/pg-c
 export const columnTypeEnum = pgEnum('column_type', ['went_well', 'didnt_go_well', 'improve']);
 export const voteTypeEnum = pgEnum('vote_type', ['like', 'dislike']);
 
+export const spaces = pgTable('spaces', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	passwordHash: text('password_hash').notNull(),
+	creatorToken: text('creator_token').notNull().default(''),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const boards = pgTable('boards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	slug: text('slug').notNull().unique(),
 	title: text('title').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
+	spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
