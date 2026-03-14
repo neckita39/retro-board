@@ -4,6 +4,8 @@
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import Board from '$lib/components/Board.svelte';
 	import Timer from '$lib/components/Timer.svelte';
+	import NamePrompt from '$lib/components/NamePrompt.svelte';
+	import Onboarding from '$lib/components/Onboarding.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
@@ -34,8 +36,10 @@
 	{#if data.showAdminBanner && data.adminLink}
 		<AdminBanner adminLink={data.adminLink} />
 	{/if}
+	<Onboarding />
+	<NamePrompt />
 	<Board />
-	<footer class="sticky bottom-0 border-t border-border bg-surface-card px-4 py-3 transition-colors sm:px-6">
+	<footer class="sticky bottom-0 border-t border-border bg-surface px-4 py-2.5 transition-colors">
 		<div class="mx-auto flex max-w-7xl items-center justify-center">
 			<Timer creatorToken={data.creatorToken} />
 		</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { browser } from '$app/environment';
 	import { t } from '$lib/i18n/index.js';
 
 	let { cardId }: { cardId: string } = $props();
@@ -9,7 +10,8 @@
 	function submit() {
 		const text = content.trim();
 		if (!text) return;
-		socketStore.createComment(cardId, text);
+		const authorName = browser ? localStorage.getItem('retro_name') || '' : '';
+		socketStore.createComment(cardId, text, authorName || undefined);
 		content = '';
 	}
 

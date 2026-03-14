@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { browser } from '$app/environment';
 	import type { ColumnType } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -8,11 +9,19 @@
 
 	let content = $state('');
 	let expanded = $state(false);
+	let textareaRef = $state<HTMLTextAreaElement | null>(null);
+
+	$effect(() => {
+		if (expanded && textareaRef) {
+			textareaRef.focus();
+		}
+	});
 
 	function submit() {
 		const text = content.trim();
 		if (!text || !boardStore.board) return;
-		socketStore.createCard(boardStore.board.id, column, text);
+		const authorName = browser ? localStorage.getItem('retro_name') || '' : '';
+		socketStore.createCard(boardStore.board.id, column, text, authorName || undefined);
 		content = '';
 		expanded = false;
 	}
@@ -32,6 +41,7 @@
 {#if expanded}
 	<form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-2">
 		<textarea
+			bind:this={textareaRef}
 			bind:value={content}
 			onkeydown={handleKeydown}
 			placeholder={t('card.placeholder')}
@@ -59,7 +69,7 @@
 {:else}
 	<button
 		onclick={() => (expanded = true)}
-		class="w-full rounded-lg border border-dashed border-border p-2.5 text-sm text-text-muted transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-text-secondary"
+		class="w-full rounded-xl border border-dashed border-border/60 py-2 text-[12px] text-text-muted transition-all hover:border-border-strong hover:text-text-secondary"
 	>
 		{t('card.addCard')}
 	</button>

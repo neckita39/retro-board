@@ -12,35 +12,28 @@
 
 	let columnCards = $derived(boardStore.getColumnCards(column));
 
-	const colorClasses: Record<ColumnType, { header: string; accent: string }> = {
-		went_well: {
-			header: 'bg-well-bg border-well-border text-well',
-			accent: 'border-l-well'
-		},
-		didnt_go_well: {
-			header: 'bg-bad-bg border-bad-border text-bad',
-			accent: 'border-l-bad'
-		},
-		improve: {
-			header: 'bg-improve-bg border-improve-border text-improve',
-			accent: 'border-l-improve'
-		}
+	const dotColor: Record<ColumnType, string> = {
+		went_well: 'bg-well',
+		didnt_go_well: 'bg-bad',
+		improve: 'bg-improve'
 	};
 </script>
 
-<div class="flex flex-col gap-3">
-	<div class="rounded-lg border {colorClasses[column].header} px-3 py-2">
-		<h2 class="text-sm font-semibold">
+<div class="flex flex-col gap-2">
+	<!-- Column header — dot indicator style -->
+	<div class="flex items-center gap-2 rounded-[10px] border border-border bg-surface-hover px-3 py-2.5 transition-colors">
+		<div class="h-2 w-2 rounded-full {dotColor[column]}"></div>
+		<h2 class="text-[13px] font-semibold text-text-primary">
 			{t(`column.${column}`)}
 		</h2>
-		<p class="text-xs opacity-70">{t('column.cards', { n: columnCards.length })}</p>
+		<span class="ml-auto text-[11px] tabular-nums text-text-muted">{columnCards.length}</span>
 	</div>
 
 	<CardForm {column} />
 
 	<div class="flex flex-col gap-2">
-		{#each columnCards as card (card.id)}
-			<div class="group border-l-2 {colorClasses[column].accent} pl-0 rounded-lg">
+		{#each columnCards as card, i (card.id)}
+			<div class="group" style="animation: cardEnter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) {i * 0.05}s both;">
 				<CardComponent {card} />
 			</div>
 		{/each}

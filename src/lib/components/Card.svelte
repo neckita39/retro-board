@@ -40,7 +40,7 @@
 	}
 </script>
 
-<div class="card-enter overflow-hidden rounded-lg border border-border bg-surface-card p-3 shadow-sm transition-colors hover:shadow-md">
+<div class="overflow-hidden rounded-[14px] border border-border bg-surface-card px-3.5 py-3 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-0.5 hover:scale-[1.005] hover:border-border-strong hover:shadow-md">
 	<div class="flex items-start justify-between gap-2">
 		{#if editing}
 			<textarea
@@ -52,7 +52,7 @@
 				rows="2"
 			></textarea>
 		{:else}
-			<p class="flex-1 text-sm leading-relaxed text-text-primary whitespace-pre-wrap break-words">{card.content}</p>
+			<p class="flex-1 text-[13px] leading-relaxed text-text-primary whitespace-pre-wrap break-words">{card.content}</p>
 			<div class="flex shrink-0 gap-0.5">
 				<button
 					onclick={startEdit}
@@ -79,7 +79,7 @@
 	</div>
 
 	{#if card.authorName}
-		<p class="mt-1 text-xs text-text-muted">— {card.authorName}</p>
+		<p class="mt-1 text-[11px] text-text-muted">— {card.authorName}</p>
 	{/if}
 
 	<div class="mt-2 flex items-center justify-between">

@@ -27,7 +27,7 @@
 	"comment.count": "{n} комментарий|{n} комментария|{n} комментариев",
 
 	"summary.title": "Итоги",
-	"summary.empty": "Пока нет карточек. Добавьте карточки, чтобы увидеть итоги.",
+	"summary.empty": "Здесь появятся итоги, когда вы добавите карточки.",
 
 	"timer.min": "мин",
 	"timer.start": "Старт",
@@ -72,7 +72,9 @@
 	"space.password.button": "Войти",
 	"space.password.error": "Неверный пароль",
 	"space.boards.title": "Доски",
+	"space.boards.search": "Поиск досок...",
 	"space.boards.empty": "Пока нет досок. Создайте первую!",
+	"space.boards.no_results": "Доски не найдены",
 	"space.boards.create": "Новая доска",
 	"space.boards.create.placeholder": "Название доски (необязательно)",
 	"space.boards.cards": "{n} карточка|{n} карточки|{n} карточек",
@@ -80,5 +82,23 @@
 	"space.delete.confirm": "Удалить пространство?",
 	"space.admin.title": "Вы создали это пространство",
 	"space.admin.desc": "Сохраните ссылку ниже — только с ней вы сможете удалить пространство с другого устройства или браузера.",
-	"space.admin.copy": "Скопировать ссылку"
+	"space.admin.copy": "Скопировать ссылку",
+	"space.board_count": "{n} доска|{n} доски|{n} досок",
+
+	"name.title": "Как вас зовут?",
+	"name.desc": "Имя будет отображаться на карточках, которые вы создаёте",
+	"name.placeholder": "Ваше имя",
+	"name.save": "Сохранить",
+	"name.skip": "Пропустить",
+	"name.greeting": "Привет, {name}!",
+
+	"onboarding.share.title": "Поделитесь доской с командой",
+	"onboarding.share.desc": "Нажмите на иконку ссылки, чтобы скопировать URL. Любой со ссылкой может участвовать.",
+	"onboarding.cards.title": "Добавляйте карточки в колонки",
+	"onboarding.cards.desc": "Расскажите, что прошло хорошо, что нет и что улучшить.",
+	"onboarding.vote.title": "Голосуйте и обсуждайте",
+	"onboarding.vote.desc": "Голосуйте за важные пункты. В итогах карточки ранжируются по голосам.",
+	"onboarding.next": "Дальше",
+	"onboarding.skip": "Пропустить",
+	"onboarding.done": "Понятно"
 }

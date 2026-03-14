@@ -66,6 +66,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			createdAt: board.createdAt.toISOString()
 		},
 		space,
+		spaceName: space?.name ?? null,
+		spaceSlug: space?.slug ?? null,
 		isCreator,
 		showAdminBanner,
 		adminLink,

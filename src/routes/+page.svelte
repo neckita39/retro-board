@@ -36,9 +36,9 @@
 	<Header />
 
 	<main class="flex flex-1 items-center justify-center p-4">
-		<div class="w-full max-w-md space-y-8 text-center">
+		<div class="w-full max-w-md space-y-6 text-center">
 			<div class="flex justify-center">
-				<img src="/logo.png" alt="Retrospectrix" width="96" height="96" class="dark:invert" />
+				<img src="/logo.png" alt="Retrospectrix" width="64" height="64" class="dark:invert" />
 			</div>
 
 			<!-- Tab switcher -->
@@ -63,7 +63,7 @@
 
 			{#if mode === 'board'}
 				<div class="space-y-2">
-					<h1 class="text-3xl font-bold tracking-tight text-text-primary">
+					<h1 class="font-heading text-2xl font-bold tracking-tight text-text-primary">
 						{t('home.title')}
 					</h1>
 					<p class="text-text-secondary">
@@ -71,7 +71,7 @@
 					</p>
 				</div>
 
-				<form method="POST" action="?/createBoard" class="space-y-4">
+				<form method="POST" action="?/createBoard" class="space-y-2.5">
 					<input
 						type="text"
 						name="title"
@@ -81,7 +81,7 @@
 					/>
 					<button
 						type="submit"
-						class="w-full rounded-xl bg-text-primary px-4 py-3 font-medium text-surface transition-opacity hover:opacity-90"
+						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
 					>
 						{t('home.create')}
 					</button>
@@ -119,7 +119,7 @@
 				</p>
 			{:else}
 				<div class="space-y-2">
-					<h1 class="text-3xl font-bold tracking-tight text-text-primary">
+					<h1 class="font-heading text-2xl font-bold tracking-tight text-text-primary">
 						{t('space.title')}
 					</h1>
 					<p class="text-text-secondary">
@@ -127,7 +127,7 @@
 					</p>
 				</div>
 
-				<form method="POST" action="?/createSpace" class="space-y-4">
+				<form method="POST" action="?/createSpace" class="space-y-2.5">
 					<input
 						type="text"
 						name="name"
@@ -147,7 +147,7 @@
 					/>
 					<button
 						type="submit"
-						class="w-full rounded-xl bg-text-primary px-4 py-3 font-medium text-surface transition-opacity hover:opacity-90"
+						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
 					>
 						{t('space.create.button')}
 					</button>

@@ -72,7 +72,9 @@
 	"space.password.button": "Enter",
 	"space.password.error": "Wrong password",
 	"space.boards.title": "Boards",
+	"space.boards.search": "Search boards...",
 	"space.boards.empty": "No boards yet. Create the first one!",
+	"space.boards.no_results": "No boards found",
 	"space.boards.create": "New board",
 	"space.boards.create.placeholder": "Board title (optional)",
 	"space.boards.cards": "{n} card|{n} cards",
@@ -80,5 +82,23 @@
 	"space.delete.confirm": "Delete space?",
 	"space.admin.title": "You created this space",
 	"space.admin.desc": "Save the link below — it's the only way to delete the space from another device or browser.",
-	"space.admin.copy": "Copy link"
+	"space.admin.copy": "Copy link",
+	"space.board_count": "{n} board|{n} boards",
+
+	"name.title": "How should we call you?",
+	"name.desc": "Your name will appear on cards you create",
+	"name.placeholder": "Your name",
+	"name.save": "Save",
+	"name.skip": "Skip",
+	"name.greeting": "Hi, {name}!",
+
+	"onboarding.share.title": "Share this board with your team",
+	"onboarding.share.desc": "Click the link icon to copy the board URL. Anyone with the link can participate.",
+	"onboarding.cards.title": "Add cards to each column",
+	"onboarding.cards.desc": "Share what went well, what didn't, and what to improve.",
+	"onboarding.vote.title": "Vote and discuss",
+	"onboarding.vote.desc": "Upvote important items. The summary ranks cards by votes.",
+	"onboarding.next": "Next",
+	"onboarding.skip": "Skip",
+	"onboarding.done": "Got it"
 }

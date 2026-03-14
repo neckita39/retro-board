@@ -1,20 +1,23 @@
 @import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Varela+Round&display=swap');
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-	--color-surface: #f8fafc;
+	--color-surface: #f9f9f9;
 	--color-surface-card: #ffffff;
-	--color-surface-hover: #f1f5f9;
-	--color-text-primary: #0f172a;
-	--color-text-secondary: #475569;
-	--color-text-muted: #94a3b8;
-	--color-border: #e2e8f0;
-	--color-border-strong: #cbd5e1;
+	--color-surface-hover: #f2f2f2;
+	--color-text-primary: #1a1a1a;
+	--color-text-secondary: #5c5c5c;
+	--color-text-muted: #858585;
+	--color-border: #e2e2e2;
+	--color-border-strong: #cfcfcf;
 
-	--color-well: #10b981;
-	--color-well-bg: #ecfdf5;
-	--color-well-border: #a7f3d0;
+	--color-accent: #0d9488;
+	--color-accent-hover: #0f766e;
+	--color-well: #22c55e;
+	--color-well-bg: #f0fdf4;
+	--color-well-border: #bbf7d0;
 	--color-bad: #ef4444;
 	--color-bad-bg: #fef2f2;
 	--color-bad-border: #fecaca;
@@ -25,50 +28,103 @@
 
 :root {
 	font-family:
-		'Inter',
+		'Nunito Sans',
 		system-ui,
 		-apple-system,
 		sans-serif;
 }
 
-.dark {
-	--color-surface: #0f172a;
-	--color-surface-card: #1e293b;
-	--color-surface-hover: #334155;
-	--color-text-primary: #f1f5f9;
-	--color-text-secondary: #cbd5e1;
-	--color-text-muted: #64748b;
-	--color-border: #334155;
-	--color-border-strong: #475569;
+.font-heading {
+	font-family: 'Varela Round', 'Nunito Sans', sans-serif;
+}
 
-	--color-well-bg: #064e3b;
-	--color-well-border: #065f46;
-	--color-bad-bg: #7f1d1d;
-	--color-bad-border: #991b1b;
-	--color-improve-bg: #1e3a5f;
-	--color-improve-border: #1e40af;
+.dark {
+	--color-surface: #141414;
+	--color-surface-card: #1c1c1c;
+	--color-surface-hover: #262626;
+	--color-text-primary: #e8e8e8;
+	--color-text-secondary: #a0a0a0;
+	--color-text-muted: #6b6b6b;
+	--color-border: #2a2a2a;
+	--color-border-strong: #3a3a3a;
+
+	--color-accent: #2dd4bf;
+	--color-accent-hover: #14b8a6;
+	--color-well-bg: #052e16;
+	--color-well-border: #14532d;
+	--color-bad-bg: #450a0a;
+	--color-bad-border: #7f1d1d;
+	--color-improve-bg: #172554;
+	--color-improve-border: #1e3a5f;
 }
 
 body {
 	background-color: var(--color-surface);
 	color: var(--color-text-primary);
 	overflow-x: hidden;
+	-webkit-font-smoothing: antialiased;
 	transition:
-		background-color 0.2s,
-		color 0.2s;
+		background-color 0.6s cubic-bezier(0.25, 1, 0.5, 1),
+		color 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-@keyframes slideIn {
-	from {
-		opacity: 0;
-		transform: translateY(-8px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
+/* Cursor on clickable elements */
+button, a, [role="button"], input[type="submit"] {
+	cursor: pointer;
 }
 
+/* ============================================================
+   ANIMATIONS — micro-interactions (50-300ms)
+   ============================================================ */
+
+/* Card entrance — 0.55s spring, stagger via inline style */
+@keyframes cardEnter {
+	from { opacity: 0; transform: translateY(12px) scale(0.98); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
 .card-enter {
-	animation: slideIn 0.25s ease-out;
+	animation: cardEnter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Tile entrance — 0.6s spring */
+@keyframes tileEnter {
+	from { opacity: 0; transform: translateY(16px) scale(0.97); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tile-enter {
+	animation: tileEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Vote bounce — 0.3s spring */
+@keyframes voteBounce {
+	0% { transform: scale(1); }
+	40% { transform: scale(1.2); }
+	100% { transform: scale(1); }
+}
+.vote-bounce {
+	animation: voteBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Fade up — tab panels, name prompt */
+@keyframes fadeUp {
+	from { opacity: 0; transform: translateY(6px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+/* Shake — password error */
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	20% { transform: translateX(-5px); }
+	40% { transform: translateX(4px); }
+	60% { transform: translateX(-2px); }
+	80% { transform: translateX(1px); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }

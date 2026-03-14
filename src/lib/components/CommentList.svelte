@@ -17,10 +17,10 @@
 <div class="mt-2 border-t border-border pt-2">
 	<button
 		onclick={() => (expanded = !expanded)}
-		class="text-xs text-text-muted hover:text-text-secondary transition-colors"
+		class="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
 	>
+		<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 		{t('comment.count', { n: cardComments.length })}
-		{expanded ? '▴' : '▾'}
 	</button>
 
 	{#if expanded}

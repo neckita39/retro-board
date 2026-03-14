@@ -19,10 +19,13 @@
 </script>
 
 <div class="border-t border-border bg-surface-card/50 p-4 sm:p-6 lg:p-8">
-	<h2 class="mb-4 text-lg font-bold text-text-primary">{t('summary.title')}</h2>
+	<h2 class="font-heading mb-4 text-lg font-bold text-text-primary">{t('summary.title')}</h2>
 
 	{#if summaryCards.length === 0}
-		<p class="text-sm text-text-muted">{t('summary.empty')}</p>
+		<div class="flex flex-col items-center gap-2 py-6 text-center">
+			<svg class="h-8 w-8 text-text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+			<p class="text-[13px] text-text-muted">{t('summary.empty')}</p>
+		</div>
 	{:else}
 		<div class="flex flex-col gap-2">
 			{#each summaryCards as card, i (card.id)}
@@ -34,11 +37,11 @@
 						</span>
 					</div>
 				{/if}
-				<div class="flex items-center gap-3 rounded-lg border border-border bg-surface-card p-2.5 border-l-2 {accentColors[card.columnType]}">
-					<span class="shrink-0 min-w-6 text-center text-xs font-medium text-text-muted">
+				<div class="flex items-center gap-2.5 rounded-[10px] border border-border bg-surface-card py-2 px-2.5 transition-all duration-300 hover:translate-x-0.5 hover:border-border-strong">
+					<span class="shrink-0 min-w-6 text-center text-[11px] font-semibold tabular-nums text-text-muted">
 						{boardStore.getCardLikes(card.id)} &uarr;
 					</span>
-					<p class="flex-1 text-sm text-text-primary">{card.content}</p>
+					<p class="flex-1 text-[13px] text-text-primary">{card.content}</p>
 				</div>
 			{/each}
 		</div>

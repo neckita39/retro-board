@@ -7,7 +7,7 @@ CREATE TABLE "spaces" (
     "created_at" timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT "spaces_slug_unique" UNIQUE("slug")
 );
-
+--> statement-breakpoint
 ALTER TABLE "boards" ADD COLUMN "space_id" uuid;
-ALTER TABLE "boards" ADD CONSTRAINT "boards_space_id_spaces_id_fk"
-    FOREIGN KEY ("space_id") REFERENCES "public"."spaces"("id") ON DELETE set null;
+--> statement-breakpoint
+ALTER TABLE "boards" ADD CONSTRAINT "boards_space_id_spaces_id_fk" FOREIGN KEY ("space_id") REFERENCES "public"."spaces"("id") ON DELETE set null ON UPDATE no action;
