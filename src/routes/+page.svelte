@@ -1,30 +1,27 @@
 <script lang="ts">
-	import Header from '$lib/components/Header.svelte';
-	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n/index.js';
 
-	boardStore.board = null;
+	let sections: HTMLElement[] = [];
+	let shown = $state<Record<string, boolean>>({});
 
-	let mode = $state<'board' | 'space'>('board');
+	onMount(() => {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((e) => {
+					if (e.isIntersecting) {
+						shown[e.target.id] = true;
+					}
+				});
+			},
+			{ threshold: 0.15 }
+		);
+		sections.forEach((s) => s && observer.observe(s));
+		return () => observer.disconnect();
+	});
 
-	let joinOpen = $state(false);
-	let joinValue = $state('');
-
-	let spaceJoinOpen = $state(false);
-	let spaceJoinValue = $state('');
-
-	function goToBoard() {
-		const raw = joinValue.trim();
-		if (!raw) return;
-		const slug = raw.includes('/') ? raw.split('/').filter(Boolean).pop() : raw;
-		if (slug) window.location.href = `/${slug}`;
-	}
-
-	function goToSpace() {
-		const raw = spaceJoinValue.trim();
-		if (!raw) return;
-		const slug = raw.includes('/') ? raw.split('/').filter(Boolean).pop() : raw;
-		if (slug) window.location.href = `/spaces/${slug}`;
+	function v(id: string) {
+		return !!shown[id];
 	}
 </script>
 
@@ -32,154 +29,166 @@
 	<title>{t('header.brand')}</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
-	<Header />
-
-	<main class="flex flex-1 items-center justify-center p-4">
-		<div class="w-full max-w-md space-y-6 text-center">
-			<div class="flex justify-center">
-				<img src="/logo.png" alt="Retrospectrix" width="64" height="64" class="dark:invert" />
-			</div>
-
-			<!-- Tab switcher -->
-			<div class="flex rounded-xl border border-border bg-surface-card p-1">
-				<button
-					onclick={() => (mode = 'board')}
-					class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors {mode === 'board'
-						? 'bg-text-primary text-surface'
-						: 'text-text-muted hover:text-text-secondary'}"
-				>
-					{t('home.create')}
-				</button>
-				<button
-					onclick={() => (mode = 'space')}
-					class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors {mode === 'space'
-						? 'bg-text-primary text-surface'
-						: 'text-text-muted hover:text-text-secondary'}"
-				>
-					{t('space.create')}
-				</button>
-			</div>
-
-			{#if mode === 'board'}
-				<div class="space-y-2">
-					<h1 class="font-heading text-2xl font-bold tracking-tight text-text-primary">
-						{t('home.title')}
-					</h1>
-					<p class="text-text-secondary">
-						{t('home.subtitle')}
-					</p>
-				</div>
-
-				<form method="POST" action="?/createBoard" class="space-y-2.5">
-					<input
-						type="text"
-						name="title"
-						maxlength="100"
-						placeholder={t('home.placeholder')}
-						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-					/>
-					<button
-						type="submit"
-						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
-					>
-						{t('home.create')}
-					</button>
-				</form>
-
-				<div class="space-y-3">
-					{#if !joinOpen}
-						<button
-							onclick={() => (joinOpen = true)}
-							class="text-sm text-text-muted transition-colors hover:text-text-secondary"
-						>
-							{t('home.join')}
-						</button>
-					{:else}
-						<div class="flex gap-2">
-							<input
-								type="text"
-								bind:value={joinValue}
-								placeholder={t('home.join.placeholder')}
-								onkeydown={(e) => e.key === 'Enter' && goToBoard()}
-								class="flex-1 rounded-xl border border-border bg-surface-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-							/>
-							<button
-								onclick={goToBoard}
-								class="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
-							>
-								{t('home.join.button')}
-							</button>
-						</div>
-					{/if}
-				</div>
-
-				<p class="text-xs text-text-muted">
-					{t('home.note')}
-				</p>
-			{:else}
-				<div class="space-y-2">
-					<h1 class="font-heading text-2xl font-bold tracking-tight text-text-primary">
-						{t('space.title')}
-					</h1>
-					<p class="text-text-secondary">
-						{t('space.subtitle')}
-					</p>
-				</div>
-
-				<form method="POST" action="?/createSpace" class="space-y-2.5">
-					<input
-						type="text"
-						name="name"
-						required
-						maxlength="100"
-						placeholder={t('space.create.name')}
-						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-					/>
-					<input
-						type="password"
-						name="password"
-						required
-						minlength="1"
-						maxlength="100"
-						placeholder={t('space.create.password')}
-						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-					/>
-					<button
-						type="submit"
-						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
-					>
-						{t('space.create.button')}
-					</button>
-				</form>
-
-				<div class="space-y-3">
-					{#if !spaceJoinOpen}
-						<button
-							onclick={() => (spaceJoinOpen = true)}
-							class="text-sm text-text-muted transition-colors hover:text-text-secondary"
-						>
-							{t('space.join')}
-						</button>
-					{:else}
-						<div class="flex gap-2">
-							<input
-								type="text"
-								bind:value={spaceJoinValue}
-								placeholder={t('space.join.placeholder')}
-								onkeydown={(e) => e.key === 'Enter' && goToSpace()}
-								class="flex-1 rounded-xl border border-border bg-surface-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-							/>
-							<button
-								onclick={goToSpace}
-								class="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
-							>
-								{t('space.join.button')}
-							</button>
-						</div>
-					{/if}
-				</div>
-			{/if}
+<div class="min-h-screen bg-surface">
+	<header class="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-md px-6 py-3">
+		<div class="mx-auto flex max-w-5xl items-center justify-between">
+			<a href="/" class="font-heading text-[15px] font-bold text-text-primary">{t('header.brand')}</a>
+			<a href="/new" class="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-accent-hover">
+				{t('home.create')}
+			</a>
 		</div>
-	</main>
+	</header>
+
+	<!-- HERO -->
+	<section class="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
+		<div class="mx-auto max-w-2xl" style="animation: fadeUp 0.8s cubic-bezier(0.25,1,0.5,1) both;">
+			<div class="mb-6 inline-flex items-center gap-2 rounded-full border border-border px-4 py-1.5 text-[12px] font-medium text-text-secondary">
+				<svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+				{t('help.badge')}
+			</div>
+			<h1 class="font-heading text-4xl font-bold leading-tight tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
+				{t('help.hero.title1')}<br />
+				<span class="text-accent">{t('help.hero.title2')}</span>
+			</h1>
+			<p class="mt-6 text-lg leading-relaxed text-text-secondary">{t('help.hero.desc')}</p>
+			<div class="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+				<a href="/new" class="rounded-xl bg-accent px-8 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 active:scale-[0.98]">
+					{t('help.hero.cta')}
+				</a>
+				<a href="#features" class="text-[14px] font-medium text-text-secondary transition-colors hover:text-text-primary">
+					{t('help.hero.learn')}
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- FEATURES -->
+	<section id="features" class="px-6 py-24">
+		<div class="mx-auto max-w-5xl">
+			<!-- Spaces -->
+			<div bind:this={sections[0]} id="f0" class="grid items-center gap-16 py-16 md:grid-cols-2 transition-all duration-700 {v('f0') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}">
+				<div>
+					<div class="mb-3 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold text-accent">
+						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+						{t('help.spaces.tag')}
+					</div>
+					<h2 class="font-heading text-3xl font-bold text-text-primary">{t('help.spaces.title')}</h2>
+					<p class="mt-4 text-[15px] leading-relaxed text-text-secondary">{t('help.spaces.desc')}</p>
+				</div>
+				<div class="rounded-2xl border border-border bg-surface-card p-6 shadow-sm">
+					<div class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-text-muted">BOARDS · 4</div>
+					<div class="grid grid-cols-2 gap-3">
+						{#each ['Sprint 42', 'Sprint 41', 'Sprint 40', 'Sprint 39'] as name, i}
+							<div class="rounded-xl border border-border bg-surface-hover p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+								<div class="mb-2 flex gap-1">
+									<div class="h-1 w-6 rounded-full bg-well/30"></div>
+									<div class="h-1 w-4 rounded-full bg-bad/30"></div>
+									<div class="h-1 w-5 rounded-full bg-improve/30"></div>
+								</div>
+								<div class="text-[13px] font-semibold text-text-primary">{name}</div>
+								<div class="text-[11px] text-text-muted">14 Mar · 7 cards</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<!-- Boards -->
+			<div bind:this={sections[1]} id="f1" class="grid items-center gap-16 py-16 md:grid-cols-2 transition-all duration-700 {v('f1') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}">
+				<div class="order-2 md:order-1 rounded-2xl border border-border bg-surface-card p-6 shadow-sm">
+					<div class="flex gap-4">
+						{#each [
+							{ dot: 'bg-well', title: t('column.went_well'), n: 3 },
+							{ dot: 'bg-bad', title: t('column.didnt_go_well'), n: 2 },
+							{ dot: 'bg-improve', title: t('column.improve'), n: 2 }
+						] as col}
+							<div class="flex-1">
+								<div class="mb-2 flex items-center gap-1.5">
+									<div class="h-2 w-2 rounded-full {col.dot}"></div>
+									<span class="text-[11px] font-semibold text-text-primary">{col.title}</span>
+								</div>
+								{#each Array(col.n) as _}
+									<div class="mb-1.5 rounded-lg border border-border bg-surface p-2">
+										<div class="mb-1 h-2 w-full rounded bg-border/60"></div>
+										<div class="h-2 w-3/4 rounded bg-border/40"></div>
+									</div>
+								{/each}
+							</div>
+						{/each}
+					</div>
+				</div>
+				<div class="order-1 md:order-2">
+					<div class="mb-3 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold text-accent">
+						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+						{t('help.boards.tag')}
+					</div>
+					<h2 class="font-heading text-3xl font-bold text-text-primary">{t('help.boards.title')}</h2>
+					<p class="mt-4 text-[15px] leading-relaxed text-text-secondary">{t('help.boards.desc')}</p>
+				</div>
+			</div>
+
+			<!-- Timer -->
+			<div bind:this={sections[2]} id="f2" class="grid items-center gap-16 py-16 md:grid-cols-2 transition-all duration-700 {v('f2') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}">
+				<div>
+					<div class="mb-3 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold text-accent">
+						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+						{t('help.timer.tag')}
+					</div>
+					<h2 class="font-heading text-3xl font-bold text-text-primary">{t('help.timer.title')}</h2>
+					<p class="mt-4 text-[15px] leading-relaxed text-text-secondary">{t('help.timer.desc')}</p>
+				</div>
+				<div class="flex items-center justify-center rounded-2xl border border-border bg-surface-card p-8 shadow-sm">
+					<div class="flex flex-col items-center gap-4">
+						<div class="flex items-center overflow-hidden rounded-xl border border-border">
+							<div class="flex h-10 w-9 items-center justify-center text-text-muted">−</div>
+							<div class="flex h-10 w-12 items-center justify-center border-x border-border text-[15px] font-bold">5</div>
+							<div class="flex h-10 w-9 items-center justify-center text-text-muted">+</div>
+							<div class="flex h-10 w-10 items-center justify-center rounded-r-xl bg-accent text-white">
+								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+							</div>
+						</div>
+						<div class="flex items-center gap-3 rounded-xl border border-border px-4 py-2.5">
+							<span class="text-xl font-bold tabular-nums">03:42</span>
+							<div class="h-[3px] w-20 overflow-hidden rounded-full bg-border">
+								<div class="h-full w-[65%] rounded-full bg-well"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- HOW IT WORKS -->
+	<section class="border-t border-border px-6 py-24">
+		<div class="mx-auto max-w-3xl text-center">
+			<h2 bind:this={sections[3]} id="f3" class="font-heading text-3xl font-bold text-text-primary transition-all duration-700 {v('f3') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}">
+				{t('help.how.title')}
+			</h2>
+			<div class="mt-16 grid gap-12 sm:grid-cols-3">
+				{#each [1, 2, 3] as n, i}
+					<div bind:this={sections[4 + i]} id="f{4 + i}" class="transition-all duration-700 {v(`f${4 + i}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}" style="transition-delay: {i * 150}ms">
+						<div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 font-heading text-xl font-bold text-accent">{n}</div>
+						<h3 class="font-heading text-lg font-bold text-text-primary">{t(`help.how.${n}.title`)}</h3>
+						<p class="mt-2 text-[14px] leading-relaxed text-text-secondary">{t(`help.how.${n}.desc`)}</p>
+					</div>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<!-- FINAL CTA -->
+	<section bind:this={sections[7]} id="f7" class="px-6 py-24 transition-all duration-700 {v('f7') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}">
+		<div class="mx-auto max-w-2xl rounded-2xl bg-text-primary px-8 py-16 text-center text-surface shadow-xl">
+			<h2 class="font-heading text-3xl font-bold">{t('help.cta.title')}</h2>
+			<p class="mt-3 text-[15px] opacity-70">{t('help.cta.desc')}</p>
+			<a href="/new" class="mt-8 inline-block rounded-xl bg-accent px-8 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-accent-hover hover:shadow-lg active:scale-[0.98]">
+				{t('help.hero.cta')}
+			</a>
+		</div>
+	</section>
+
+	<footer class="border-t border-border px-6 py-8 text-center text-[12px] text-text-muted">
+		{t('header.brand')} · {t('help.footer')}
+	</footer>
 </div>
