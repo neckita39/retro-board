@@ -63,6 +63,7 @@
 	"space.create": "Создать пространство",
 	"space.create.name": "Название пространства",
 	"space.create.password": "Пароль",
+	"space.create.password.toggle": "Установить пароль",
 	"space.create.button": "Создать",
 	"space.join": "Есть ссылка на пространство?",
 	"space.join.placeholder": "Вставьте ссылку или код пространства",

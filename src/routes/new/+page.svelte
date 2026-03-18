@@ -3,9 +3,12 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
+	let { data } = $props();
+
 	boardStore.board = null;
 
-	let mode = $state<'board' | 'space'>('board');
+	let mode = $state<'board' | 'space'>(data.type === 'space' ? 'space' : 'board');
+	let passwordEnabled = $state(false);
 
 	let joinOpen = $state(false);
 	let joinValue = $state('');
@@ -141,15 +144,30 @@
 						placeholder={t('space.create.name')}
 						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
 					/>
-					<input
-						type="password"
-						name="password"
-						required
-						minlength="1"
-						maxlength="100"
-						placeholder={t('space.create.password')}
-						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
-					/>
+
+					<!-- Password toggle -->
+					<label class="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-surface-hover">
+						<span class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors {passwordEnabled ? 'bg-accent' : 'bg-border-strong'}">
+							<span class="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform {passwordEnabled ? 'translate-x-4' : ''}"></span>
+						</span>
+						<span class="text-sm text-text-secondary">{t('space.create.password.toggle')}</span>
+						<input type="checkbox" bind:checked={passwordEnabled} class="sr-only" />
+					</label>
+
+					{#if passwordEnabled}
+						<div style="animation: fadeUp 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;">
+							<input
+								type="password"
+								name="password"
+								required
+								minlength="1"
+								maxlength="100"
+								placeholder={t('space.create.password')}
+								class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+							/>
+						</div>
+					{/if}
+
 					<button
 						type="submit"
 						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"

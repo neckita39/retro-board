@@ -7,7 +7,7 @@ export const spaces = pgTable('spaces', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	slug: text('slug').notNull().unique(),
 	name: text('name').notNull(),
-	passwordHash: text('password_hash').notNull(),
+	passwordHash: text('password_hash'),
 	creatorToken: text('creator_token').notNull().default(''),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });

@@ -32,8 +32,9 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		isCreator = true;
 	}
 
+	const hasPassword = !!space.passwordHash;
 	const accessCookie = cookies.get(`retro_space_${params.slug}`);
-	if (!accessCookie && !isCreator) {
+	if (hasPassword && !accessCookie && !isCreator) {
 		return {
 			space: { slug: space.slug, name: space.name },
 			authenticated: false,

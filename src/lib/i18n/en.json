@@ -63,6 +63,7 @@
 	"space.create": "Create Space",
 	"space.create.name": "Space name",
 	"space.create.password": "Password",
+	"space.create.password.toggle": "Set a password",
 	"space.create.button": "Create",
 	"space.join": "Have a space link?",
 	"space.join.placeholder": "Paste a link or space code",
