@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import Header from '$lib/components/Header.svelte';
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
@@ -11,6 +12,22 @@
 	boardStore.board = null;
 
 	let deleteConfirming = $state(false);
+	let passwordOpen = $state(false);
+	let passwordShaking = $state(false);
+	let passwordSuccess = $state('');
+
+	$effect(() => {
+		if (form?.passwordAction) {
+			if (form.passwordSuccess) {
+				passwordOpen = false;
+				passwordSuccess = form.passwordAction === 'disable' ? 'disabled' : 'enabled';
+				setTimeout(() => (passwordSuccess = ''), 2500);
+			} else if (form.passwordError === 'wrong_password') {
+				passwordShaking = true;
+				setTimeout(() => (passwordShaking = false), 600);
+			}
+		}
+	});
 
 	async function deleteSpace() {
 		deleteConfirming = false;
@@ -37,7 +54,14 @@
 			<div class="mx-auto max-w-[1100px]">
 				<!-- Space header -->
 				<div class="flex flex-wrap items-center justify-between gap-3 pb-4 pt-6">
-					<h1 class="font-heading text-2xl font-bold text-text-primary">{data.space.name}</h1>
+					<div class="flex items-center gap-2">
+						<h1 class="font-heading text-2xl font-bold text-text-primary">{data.space.name}</h1>
+						{#if passwordSuccess}
+							<span class="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+								{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
+							</span>
+						{/if}
+					</div>
 					{#if data.isCreator}
 						<div class="flex items-center gap-2">
 							{#if deleteConfirming}
@@ -49,8 +73,25 @@
 									{t('card.cancel')}
 								</button>
 							{:else}
+								<!-- Password toggle -->
 								<button
-									onclick={() => (deleteConfirming = true)}
+									onclick={() => { passwordOpen = !passwordOpen; deleteConfirming = false; }}
+									class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition-colors hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/20"
+									title={t(data.hasPassword ? 'space.password.disable' : 'space.password.enable')}
+								>
+									{#if data.hasPassword}
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+										</svg>
+									{:else}
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />
+										</svg>
+									{/if}
+								</button>
+								<!-- Delete button -->
+								<button
+									onclick={() => { deleteConfirming = true; passwordOpen = false; }}
 									class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
 									title={t('space.delete')}
 								>
@@ -63,6 +104,64 @@
 						</div>
 					{/if}
 				</div>
+
+				<!-- Password management panel -->
+				{#if passwordOpen && data.isCreator}
+					<div class="mb-4 rounded-xl border border-border bg-surface-secondary p-4">
+						{#if data.hasPassword}
+							<form method="POST" action="?/disablePassword" use:enhance={() => {
+								return async ({ result, update }) => {
+									if (result.type === 'failure') {
+										passwordShaking = true;
+										setTimeout(() => (passwordShaking = false), 600);
+									}
+									await update();
+								};
+							}}>
+								<p class="mb-2 text-sm text-text-secondary">{t('space.password.disable.desc')}</p>
+								<div class="flex gap-2">
+									<input
+										type="password"
+										name="password"
+										required
+										maxlength="100"
+										placeholder={t('space.password.placeholder')}
+										class="h-9 flex-1 rounded-lg border bg-surface px-3 text-sm text-text-primary outline-none transition-colors focus:border-accent {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-red-400' : 'border-border'} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
+									/>
+									<button type="submit" class="h-9 rounded-lg bg-red-500 px-3 text-sm font-medium text-white hover:bg-red-600">
+										{t('space.password.disable')}
+									</button>
+									<button type="button" onclick={() => (passwordOpen = false)} class="h-9 rounded-lg border border-border px-3 text-sm text-text-secondary hover:bg-surface-hover">
+										{t('card.cancel')}
+									</button>
+								</div>
+								{#if form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password'}
+									<p class="mt-1 text-xs text-red-500">{t('space.password.error')}</p>
+								{/if}
+							</form>
+						{:else}
+							<form method="POST" action="?/enablePassword" use:enhance>
+								<p class="mb-2 text-sm text-text-secondary">{t('space.password.enable')}</p>
+								<div class="flex gap-2">
+									<input
+										type="password"
+										name="password"
+										required
+										maxlength="100"
+										placeholder={t('space.password.enable.placeholder')}
+										class="h-9 flex-1 rounded-lg border border-border bg-surface px-3 text-sm text-text-primary outline-none transition-colors focus:border-accent"
+									/>
+									<button type="submit" class="h-9 rounded-lg bg-accent px-3 text-sm font-medium text-white hover:bg-accent-hover">
+										{t('space.password.enable')}
+									</button>
+									<button type="button" onclick={() => (passwordOpen = false)} class="h-9 rounded-lg border border-border px-3 text-sm text-text-secondary hover:bg-surface-hover">
+										{t('card.cancel')}
+									</button>
+								</div>
+							</form>
+						{/if}
+					</div>
+				{/if}
 
 				<SpaceBoardGrid boards={data.boards} spaceSlug={data.space.slug} />
 			</div>

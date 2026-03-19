@@ -3,7 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { spaces, boards, cards } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { verifyPassword } from '$lib/server/password.js';
+import { hashPassword, verifyPassword } from '$lib/server/password.js';
 import { metric } from '$lib/server/statsd.js';
 import type { PageServerLoad, Actions } from './$types.js';
 
@@ -39,6 +39,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			space: { slug: space.slug, name: space.name },
 			authenticated: false,
 			isCreator: false,
+			hasPassword: true,
 			boards: [],
 			showAdminBanner: false,
 			adminLink: null
@@ -70,6 +71,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		},
 		authenticated: true,
 		isCreator,
+		hasPassword,
 		showAdminBanner,
 		adminLink,
 		boards: spaceBoards.map(b => ({
@@ -101,6 +103,41 @@ export const actions: Actions = {
 		});
 
 		throw redirect(303, `/spaces/${params.slug}`);
+	},
+
+	disablePassword: async ({ request, params, cookies }) => {
+		const token = cookies.get(`retro_space_creator_${params.slug}`) ?? '';
+		const space = await db.query.spaces.findFirst({
+			where: eq(spaces.slug, params.slug)
+		});
+		if (!space) throw error(404);
+		if (!space.creatorToken || token !== space.creatorToken) throw error(403, 'Forbidden');
+		if (!space.passwordHash) return fail(400, { passwordAction: 'disable', passwordError: 'no_password' });
+
+		const formData = await request.formData();
+		const password = formData.get('password') as string;
+		const valid = await verifyPassword(password || '', space.passwordHash);
+		if (!valid) return fail(400, { passwordAction: 'disable', passwordError: 'wrong_password' });
+
+		await db.update(spaces).set({ passwordHash: null }).where(eq(spaces.id, space.id));
+		return { passwordAction: 'disable', passwordSuccess: true };
+	},
+
+	enablePassword: async ({ request, params, cookies }) => {
+		const token = cookies.get(`retro_space_creator_${params.slug}`) ?? '';
+		const space = await db.query.spaces.findFirst({
+			where: eq(spaces.slug, params.slug)
+		});
+		if (!space) throw error(404);
+		if (!space.creatorToken || token !== space.creatorToken) throw error(403, 'Forbidden');
+
+		const formData = await request.formData();
+		const password = (formData.get('password') as string)?.trim();
+		if (!password) return fail(400, { passwordAction: 'enable', passwordError: 'empty_password' });
+
+		const passwordHash = await hashPassword(password);
+		await db.update(spaces).set({ passwordHash }).where(eq(spaces.id, space.id));
+		return { passwordAction: 'enable', passwordSuccess: true };
 	},
 
 	createBoard: async ({ request, params, cookies }) => {
