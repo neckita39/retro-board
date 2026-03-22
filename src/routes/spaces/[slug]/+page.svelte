@@ -116,8 +116,9 @@
 				</div>
 
 				<!-- Password management panel -->
-				{#if passwordOpen && data.isCreator}
-					<div class="panel-enter mb-4 rounded-xl border border-border bg-surface-hover p-4">
+				{#if data.isCreator}
+					<div class="collapsible {passwordOpen ? 'open' : ''}">
+					<div class="mb-4 rounded-xl border border-border bg-surface-hover p-4">
 						{#if data.hasPassword}
 							<form method="POST" action="?/disablePassword" use:enhance={() => {
 								return async ({ result, update }) => {
@@ -170,6 +171,7 @@
 								</div>
 							</form>
 						{/if}
+					</div>
 					</div>
 				{/if}
 

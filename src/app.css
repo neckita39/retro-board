@@ -148,6 +148,22 @@ button, a, [role="button"], input[type="submit"] {
 	to { opacity: 1; transform: scale(1); }
 }
 
+/* Collapsible panel — smooth height via grid */
+.collapsible {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	transition: grid-template-rows 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+	            opacity 0.2s ease;
+}
+.collapsible.open {
+	grid-template-rows: 1fr;
+	opacity: 1;
+}
+.collapsible > * {
+	overflow: hidden;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {

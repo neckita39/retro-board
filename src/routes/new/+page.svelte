@@ -149,19 +149,20 @@
 					<!-- Password toggle -->
 					<ToggleSwitch bind:checked={passwordEnabled} label={t('space.create.password.toggle')} />
 
-					{#if passwordEnabled}
-						<div style="animation: fadeUp 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;">
+					<div class="collapsible {passwordEnabled ? 'open' : ''}">
+						<div>
 							<input
 								type="password"
 								name="password"
-								required
+								required={passwordEnabled}
 								minlength="1"
 								maxlength="100"
 								placeholder={t('space.create.password')}
 								class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+								tabindex={passwordEnabled ? 0 : -1}
 							/>
 						</div>
-					{/if}
+					</div>
 
 					<button
 						type="submit"
