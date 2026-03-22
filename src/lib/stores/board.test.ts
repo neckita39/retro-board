@@ -19,6 +19,9 @@ function makeCard(overrides: Partial<Card> = {}): Card {
 		columnType: 'went_well',
 		content: 'test card',
 		authorName: null,
+		imageId: null,
+		imageWidth: null,
+		imageHeight: null,
 		createdAt: '2025-01-01T00:00:00Z',
 		...overrides
 	};
@@ -41,6 +44,9 @@ function makeComment(overrides: Partial<Comment> = {}): Comment {
 		cardId: 'c1',
 		content: 'test comment',
 		authorName: null,
+		imageId: null,
+		imageWidth: null,
+		imageHeight: null,
 		createdAt: '2025-01-01T00:00:00Z',
 		...overrides
 	};

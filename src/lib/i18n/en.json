@@ -134,5 +134,12 @@
 	"help.cta.title": "Ready to reflect?",
 	"help.cta.desc": "Start your first retrospective in seconds. Free, anonymous, no signup.",
 	"help.footer": "Open source retrospective tool",
-	"help.link": "How it works →"
+	"help.link": "How it works →",
+
+	"image.attach": "Attach image",
+	"image.remove": "Remove image",
+	"image.uploading": "Uploading...",
+	"image.error": "Upload failed",
+	"image.invalid": "Only images allowed",
+	"lightbox.close": "Close"
 }

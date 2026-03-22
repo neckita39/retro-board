@@ -4,6 +4,7 @@
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
 	import SpaceBoardGrid from '$lib/components/SpaceBoardGrid.svelte';
+	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -57,7 +58,7 @@
 					<div class="flex items-center gap-2">
 						<h1 class="font-heading text-2xl font-bold text-text-primary">{data.space.name}</h1>
 						{#if passwordSuccess}
-							<span class="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+							<span class="badge-pop rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
 								{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
 							</span>
 						{/if}
@@ -74,21 +75,30 @@
 								</button>
 							{:else}
 								<!-- Password toggle -->
-								<button
-									onclick={() => { passwordOpen = !passwordOpen; deleteConfirming = false; }}
-									class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition-colors hover:border-amber-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-900/20"
-									title={t(data.hasPassword ? 'space.password.disable' : 'space.password.enable')}
-								>
-									{#if data.hasPassword}
-										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-										</svg>
-									{:else}
-										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />
-										</svg>
-									{/if}
-								</button>
+								<div class="flex items-center gap-2">
+									<label class="relative inline-flex cursor-pointer items-center" title={t(data.hasPassword ? 'space.password.disable' : 'space.password.enable')}>
+										<input
+											type="checkbox"
+											checked={passwordOpen}
+											onchange={() => { passwordOpen = !passwordOpen; deleteConfirming = false; }}
+											class="sr-only"
+										/>
+										<span class="inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 {passwordOpen ? 'bg-accent' : 'bg-border-strong'}">
+											<span class="top-0.5 left-0.5 mt-0.5 ml-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] {passwordOpen ? 'translate-x-4' : ''}"></span>
+										</span>
+									</label>
+									<span class="text-xs text-text-muted">
+										{#if data.hasPassword}
+											<svg class="inline h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+											</svg>
+										{:else}
+											<svg class="inline h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />
+											</svg>
+										{/if}
+									</span>
+								</div>
 								<!-- Delete button -->
 								<button
 									onclick={() => { deleteConfirming = true; passwordOpen = false; }}
@@ -107,7 +117,7 @@
 
 				<!-- Password management panel -->
 				{#if passwordOpen && data.isCreator}
-					<div class="mb-4 rounded-xl border border-border bg-surface-secondary p-4">
+					<div class="panel-enter mb-4 rounded-xl border border-border bg-surface-hover p-4">
 						{#if data.hasPassword}
 							<form method="POST" action="?/disablePassword" use:enhance={() => {
 								return async ({ result, update }) => {

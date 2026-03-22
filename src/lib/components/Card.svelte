@@ -2,6 +2,7 @@
 	import VoteButtons from './VoteButtons.svelte';
 	import CommentList from './CommentList.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
 	import type { Card } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -52,7 +53,11 @@
 				rows="2"
 			></textarea>
 		{:else}
-			<p class="flex-1 text-[13px] leading-relaxed text-text-primary whitespace-pre-wrap break-words">{card.content}</p>
+			{#if card.content}
+				<p class="flex-1 text-[13px] leading-relaxed text-text-primary whitespace-pre-wrap break-words">{card.content}</p>
+			{:else}
+				<div class="flex-1"></div>
+			{/if}
 			<div class="flex shrink-0 gap-0.5">
 				<button
 					onclick={startEdit}
@@ -77,6 +82,20 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if card.imageId}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<img
+			src="/api/image/{card.imageId}"
+			alt=""
+			width={card.imageWidth || undefined}
+			height={card.imageHeight || undefined}
+			style={card.imageWidth && card.imageHeight ? `aspect-ratio: ${card.imageWidth}/${card.imageHeight}` : ''}
+			class="mt-2 max-h-48 w-full cursor-zoom-in rounded-lg object-cover transition-transform hover:scale-[1.02]"
+			onclick={() => lightboxStore.open(card.imageId!)}
+		/>
+	{/if}
 
 	{#if card.authorName}
 		<p class="mt-1 text-[11px] text-text-muted">— {card.authorName}</p>

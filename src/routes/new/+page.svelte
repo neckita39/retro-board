@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
+	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -146,13 +147,7 @@
 					/>
 
 					<!-- Password toggle -->
-					<label class="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-surface-hover">
-						<span class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors {passwordEnabled ? 'bg-accent' : 'bg-border-strong'}">
-							<span class="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform {passwordEnabled ? 'translate-x-4' : ''}"></span>
-						</span>
-						<span class="text-sm text-text-secondary">{t('space.create.password.toggle')}</span>
-						<input type="checkbox" bind:checked={passwordEnabled} class="sr-only" />
-					</label>
+					<ToggleSwitch bind:checked={passwordEnabled} label={t('space.create.password.toggle')} />
 
 					{#if passwordEnabled}
 						<div style="animation: fadeUp 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;">

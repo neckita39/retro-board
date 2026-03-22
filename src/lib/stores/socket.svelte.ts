@@ -59,12 +59,12 @@ class SocketStore {
 		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '' });
 	}
 
-	createCard(boardId: string, column: string, content: string, authorName?: string) {
-		this.socket?.emit('card:create', { boardId, column, content, authorName });
+	createCard(boardId: string, column: string, content: string, authorName?: string, imageId?: string) {
+		this.socket?.emit('card:create', { boardId, column, content, authorName, imageId });
 	}
 
-	updateCard(cardId: string, content: string) {
-		this.socket?.emit('card:update', { cardId, content });
+	updateCard(cardId: string, content: string, imageId?: string | null) {
+		this.socket?.emit('card:update', { cardId, content, imageId });
 	}
 
 	deleteCard(cardId: string) {
@@ -83,8 +83,8 @@ class SocketStore {
 		this.socket?.emit('vote:toggle', { cardId, type, sessionId });
 	}
 
-	createComment(cardId: string, content: string, authorName?: string) {
-		this.socket?.emit('comment:create', { cardId, content, authorName });
+	createComment(cardId: string, content: string, authorName?: string, imageId?: string) {
+		this.socket?.emit('comment:create', { cardId, content, authorName, imageId });
 	}
 
 	disconnect() {

@@ -3,6 +3,7 @@
 	import { themeStore } from '$lib/stores/theme.svelte.js';
 	import { browser } from '$app/environment';
 	import { onNavigate } from '$app/navigation';
+	import Lightbox from '$lib/components/Lightbox.svelte';
 
 	let { children } = $props();
 
@@ -44,3 +45,5 @@
 </svelte:head>
 
 {@render children()}
+
+<Lightbox />

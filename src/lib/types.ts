@@ -14,6 +14,9 @@ export interface Card {
 	columnType: ColumnType;
 	content: string;
 	authorName: string | null;
+	imageId: string | null;
+	imageWidth: number | null;
+	imageHeight: number | null;
 	createdAt: string;
 }
 
@@ -30,6 +33,9 @@ export interface Comment {
 	cardId: string;
 	content: string;
 	authorName: string | null;
+	imageId: string | null;
+	imageWidth: number | null;
+	imageHeight: number | null;
 	createdAt: string;
 }
 

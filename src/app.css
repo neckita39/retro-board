@@ -120,6 +120,34 @@ button, a, [role="button"], input[type="submit"] {
 	80% { transform: translateX(1px); }
 }
 
+/* Panel expand — password panel, settings */
+@keyframes panelExpand {
+	from { opacity: 0; transform: translateY(-8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+.panel-enter {
+	animation: panelExpand 0.3s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+/* Badge pop — success badges */
+@keyframes badgePop {
+	from { opacity: 0; transform: scale(0.8); }
+	to   { opacity: 1; transform: scale(1); }
+}
+.badge-pop {
+	animation: badgePop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Lightbox — backdrop fade + image zoom */
+@keyframes lightboxFadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+@keyframes lightboxZoomIn {
+	from { opacity: 0; transform: scale(0.9); }
+	to { opacity: 1; transform: scale(1); }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {

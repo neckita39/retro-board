@@ -1,4 +1,10 @@
-import { pgTable, uuid, text, timestamp, pgEnum, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, pgEnum, unique, integer, customType } from 'drizzle-orm/pg-core';
+
+const bytea = customType<{ data: Buffer }>({
+	dataType() {
+		return 'bytea';
+	}
+});
 
 export const columnTypeEnum = pgEnum('column_type', ['went_well', 'didnt_go_well', 'improve']);
 export const voteTypeEnum = pgEnum('vote_type', ['like', 'dislike']);
@@ -21,6 +27,15 @@ export const boards = pgTable('boards', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const images = pgTable('images', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	data: bytea('data').notNull(),
+	mimeType: text('mime_type').notNull(),
+	width: integer('width').notNull().default(0),
+	height: integer('height').notNull().default(0),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const cards = pgTable('cards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	boardId: uuid('board_id')
@@ -29,6 +44,7 @@ export const cards = pgTable('cards', {
 	columnType: columnTypeEnum('column_type').notNull(),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
+	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -53,5 +69,6 @@ export const comments = pgTable('comments', {
 		.references(() => cards.id, { onDelete: 'cascade' }),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
+	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });

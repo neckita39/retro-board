@@ -6,15 +6,23 @@ import pg from 'pg';
 import dgram from 'dgram';
 import pino from 'pino';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql, isNull, lt, isNotNull } from 'drizzle-orm';
 import {
 	pgTable,
 	uuid,
 	text,
 	timestamp,
 	pgEnum,
-	unique
+	unique,
+	integer,
+	customType
 } from 'drizzle-orm/pg-core';
+
+const bytea = customType({
+	dataType() {
+		return 'bytea';
+	}
+});
 
 // --- Logger ---
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
@@ -51,12 +59,22 @@ const boards = pgTable('boards', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+const images = pgTable('images', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	data: bytea('data').notNull(),
+	mimeType: text('mime_type').notNull(),
+	width: integer('width').notNull().default(0),
+	height: integer('height').notNull().default(0),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 const cards = pgTable('cards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	boardId: uuid('board_id').notNull().references(() => boards.id, { onDelete: 'cascade' }),
 	columnType: columnTypeEnum('column_type').notNull(),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
+	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -77,10 +95,11 @@ const comments = pgTable('comments', {
 	cardId: uuid('card_id').notNull().references(() => cards.id, { onDelete: 'cascade' }),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
+	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-const schema = { spaces, boards, cards, votes, comments };
+const schema = { spaces, boards, cards, votes, comments, images };
 
 // --- DB ---
 const pool = new pg.Pool({
@@ -126,12 +145,28 @@ function decrypt(data) {
 	}
 }
 
-function decryptCard(card) {
-	return { ...card, content: decrypt(card.content), authorName: decrypt(card.authorName) };
+function decryptCard(card, imageMeta) {
+	const result = { ...card, content: decrypt(card.content), authorName: decrypt(card.authorName) };
+	if (imageMeta) {
+		result.imageWidth = imageMeta.width;
+		result.imageHeight = imageMeta.height;
+	} else {
+		result.imageWidth = null;
+		result.imageHeight = null;
+	}
+	return result;
 }
 
-function decryptComment(comment) {
-	return { ...comment, content: decrypt(comment.content), authorName: decrypt(comment.authorName) };
+function decryptComment(comment, imageMeta) {
+	const result = { ...comment, content: decrypt(comment.content), authorName: decrypt(comment.authorName) };
+	if (imageMeta) {
+		result.imageWidth = imageMeta.width;
+		result.imageHeight = imageMeta.height;
+	} else {
+		result.imageWidth = null;
+		result.imageHeight = null;
+	}
+	return result;
 }
 
 // --- In-memory metrics counters ---
@@ -278,11 +313,25 @@ io.on('connection', (socket) => {
 				]);
 			}
 
+			// Batch lookup image metadata for cards and comments
+			const allImageIds = [
+				...boardCards.map(c => c.imageId).filter(Boolean),
+				...boardComments.map(c => c.imageId).filter(Boolean)
+			];
+			let imageMetaMap = {};
+			if (allImageIds.length > 0) {
+				const imageMetas = await db
+					.select({ id: images.id, width: images.width, height: images.height })
+					.from(images)
+					.where(inArray(images.id, allImageIds));
+				for (const m of imageMetas) imageMetaMap[m.id] = m;
+			}
+
 			socket.emit('board:state', {
 				board,
-				cards: boardCards.map(decryptCard),
+				cards: boardCards.map(c => decryptCard(c, c.imageId ? imageMetaMap[c.imageId] : null)),
 				votes: boardVotes,
-				comments: boardComments.map(decryptComment)
+				comments: boardComments.map(c => decryptComment(c, c.imageId ? imageMetaMap[c.imageId] : null))
 			});
 
 			const timer = roomTimers.get(slug);
@@ -294,35 +343,69 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('card:create', async ({ boardId, column, content, authorName }) => {
-		if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) return;
+	socket.on('card:create', async ({ boardId, column, content, authorName, imageId: imgId }) => {
+		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
+		const hasImage = imgId && typeof imgId === 'string';
+		if (!hasContent && !hasImage) return;
+		if (hasContent && content.length > 2000) return;
 		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
+		// Validate imageId exists
+		let imageMeta = null;
+		if (hasImage) {
+			const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, imgId)).limit(1);
+			if (!img) return;
+			imageMeta = img;
+		}
 		try {
 			const [card] = await db
 				.insert(cards)
 				.values({
 					boardId,
 					columnType: column,
-					content: encrypt(content),
-					authorName: encrypt(authorName) || null
+					content: encrypt(content || ''),
+					authorName: encrypt(authorName) || null,
+					imageId: hasImage ? imgId : null
 				})
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('card:created', { card: decryptCard(card) });
+			if (currentRoom) io.to(currentRoom).emit('card:created', { card: decryptCard(card, imageMeta) });
 			metric('retro.card.created', 1);
 		} catch (err) {
 			logger.error({ err, event: 'card:create' }, 'Failed to create card');
 		}
 	});
 
-	socket.on('card:update', async ({ cardId, content }) => {
-		if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) return;
+	socket.on('card:update', async ({ cardId, content, imageId: imgId }) => {
+		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
+		const hasImage = imgId && typeof imgId === 'string';
+		if (!hasContent && imgId === undefined) return; // must update something
+		if (hasContent && content.length > 2000) return;
+
+		let imageMeta = null;
+		const updates = {};
+		if (content !== undefined) updates.content = encrypt(content || '');
+		if (imgId !== undefined) {
+			if (hasImage) {
+				const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, imgId)).limit(1);
+				if (!img) return;
+				imageMeta = img;
+				updates.imageId = imgId;
+			} else {
+				updates.imageId = null;
+			}
+		}
+
 		try {
 			const [card] = await db
 				.update(cards)
-				.set({ content: encrypt(content) })
+				.set(updates)
 				.where(eq(cards.id, cardId))
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('card:updated', { card: decryptCard(card) });
+			// Fetch image meta if card has imageId but we didn't update it
+			if (card.imageId && !imageMeta) {
+				const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, card.imageId)).limit(1);
+				imageMeta = img || null;
+			}
+			if (currentRoom) io.to(currentRoom).emit('card:updated', { card: decryptCard(card, imageMeta) });
 		} catch (err) {
 			logger.error({ err, event: 'card:update', cardId }, 'Failed to update card');
 		}
@@ -367,19 +450,29 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('comment:create', async ({ cardId, content, authorName }) => {
-		if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 1000) return;
+	socket.on('comment:create', async ({ cardId, content, authorName, imageId: imgId }) => {
+		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
+		const hasImage = imgId && typeof imgId === 'string';
+		if (!hasContent && !hasImage) return;
+		if (hasContent && content.length > 1000) return;
 		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
+		let imageMeta = null;
+		if (hasImage) {
+			const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, imgId)).limit(1);
+			if (!img) return;
+			imageMeta = img;
+		}
 		try {
 			const [comment] = await db
 				.insert(comments)
 				.values({
 					cardId,
-					content: encrypt(content),
-					authorName: encrypt(authorName) || null
+					content: encrypt(content || ''),
+					authorName: encrypt(authorName) || null,
+					imageId: hasImage ? imgId : null
 				})
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('comment:created', { comment: decryptComment(comment) });
+			if (currentRoom) io.to(currentRoom).emit('comment:created', { comment: decryptComment(comment, imageMeta) });
 		} catch (err) {
 			logger.error({ err, event: 'comment:create', cardId }, 'Failed to create comment');
 		}
@@ -418,6 +511,30 @@ io.on('connection', (socket) => {
 		}
 	});
 });
+
+// --- Orphan image cleanup (every hour, images older than 24h not referenced by any card/comment) ---
+setInterval(async () => {
+	try {
+		const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+		// Find images not referenced by any card or comment
+		const orphans = await db
+			.select({ id: images.id })
+			.from(images)
+			.where(lt(images.createdAt, cutoff))
+			.leftJoin(cards, eq(cards.imageId, images.id))
+			.leftJoin(comments, eq(comments.imageId, images.id))
+			.having(sql`count(${cards.id}) = 0 AND count(${comments.id}) = 0`)
+			.groupBy(images.id);
+
+		if (orphans.length > 0) {
+			const ids = orphans.map(o => o.id);
+			await db.delete(images).where(inArray(images.id, ids));
+			logger.info({ count: ids.length }, 'Cleaned up orphan images');
+		}
+	} catch (err) {
+		logger.error({ err }, 'Orphan image cleanup failed');
+	}
+}, 60 * 60 * 1000);
 
 const port = parseInt(process.env.PORT || '3000');
 httpServer.listen(port, () => {

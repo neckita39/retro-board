@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
 	import CommentForm from './CommentForm.svelte';
 	import type { Comment } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
@@ -31,7 +32,19 @@
 						<span class="font-medium text-text-secondary">{comment.authorName}</span>
 						<span class="text-text-muted mx-1">&middot;</span>
 					{/if}
-					<span class="text-text-primary">{comment.content}</span>
+					{#if comment.content}
+						<span class="text-text-primary">{comment.content}</span>
+					{/if}
+					{#if comment.imageId}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+						<img
+							src="/api/image/{comment.imageId}"
+							alt=""
+							class="mt-1 max-h-32 cursor-zoom-in rounded border border-border object-cover transition-transform hover:scale-[1.02]"
+							onclick={() => lightboxStore.open(comment.imageId!)}
+						/>
+					{/if}
 				</div>
 			{/each}
 			<CommentForm {cardId} />
