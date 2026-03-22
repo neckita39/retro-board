@@ -189,6 +189,11 @@
 	</section>
 
 	<footer class="border-t border-border px-6 py-8 text-center text-[12px] text-text-muted">
+		<div class="mb-2 flex items-center justify-center gap-4">
+			<a href="/changelog" class="text-text-muted transition-colors hover:text-text-secondary">{t('changelog.title')}</a>
+			<span class="text-border">·</span>
+			<a href="/feedback" class="text-text-muted transition-colors hover:text-text-secondary">{t('feedback.link')}</a>
+		</div>
 		{t('header.brand')} · {t('help.footer')}
 	</footer>
 </div>
