@@ -42,6 +42,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
+            set -e
             cd ${{ secrets.PROJECT_PATH }}
             git pull origin main
             docker compose -f docker-compose.prod.yml build app
