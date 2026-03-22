@@ -51,7 +51,7 @@
 					<div class="mt-8 flex justify-center gap-3">
 						<a href="/" class="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-hover">{t('changelog.back')}</a>
 						<button onclick={() => (status = 'idle')} class="rounded-xl bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover">
-							{t('feedback.send')}
+							{t('feedback.another')}
 						</button>
 					</div>
 				</div>

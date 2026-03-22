@@ -12,53 +12,51 @@
 			version: '1.4.0',
 			date: '2026-03-22',
 			changes: [
-				{ tag: 'feature', text: { en: 'Image attachments — attach photos to cards and comments', ru: 'Вложения — прикрепляйте фото к карточкам и комментариям' } },
-				{ tag: 'feature', text: { en: 'Lightbox — click any image to view fullscreen with smooth animation', ru: 'Лайтбокс — клик по фото открывает полноэкранный просмотр' } },
-				{ tag: 'feature', text: { en: 'Feedback form — send us your thoughts directly from the app', ru: 'Форма обратной связи — пишите нам прямо из приложения' } },
-				{ tag: 'improvement', text: { en: 'Password toggle with smooth animations on space admin page', ru: 'Плавный переключатель пароля на странице пространства' } },
-				{ tag: 'improvement', text: { en: 'Reusable ToggleSwitch component with spring overshoot', ru: 'Переиспользуемый тумблер с пружинной анимацией' } },
-				{ tag: 'fix', text: { en: 'Fixed undefined CSS variable on password panel', ru: 'Исправлена неопределённая CSS-переменная на панели пароля' } },
+				{ tag: 'feature', text: { en: 'Attach images to cards and comments', ru: 'Прикрепляйте фото к карточкам и комментариям' } },
+				{ tag: 'feature', text: { en: 'Tap any image to view it fullscreen', ru: 'Нажмите на фото для полноэкранного просмотра' } },
+				{ tag: 'feature', text: { en: 'Send us feedback right from the app', ru: 'Отправляйте нам отзывы прямо из приложения' } },
+				{ tag: 'feature', text: { en: 'Changelog page — see what\'s new', ru: 'Страница обновлений — смотрите что нового' } },
+				{ tag: 'improvement', text: { en: 'Smoother password toggle animation in spaces', ru: 'Плавная анимация переключения пароля в пространствах' } },
 			]
 		},
 		{
 			version: '1.3.0',
 			date: '2026-03-19',
 			changes: [
-				{ tag: 'feature', text: { en: 'Space admin panel — enable/disable password with verification', ru: 'Панель администратора — включение/отключение пароля с проверкой' } },
-				{ tag: 'feature', text: { en: 'Optional password for spaces', ru: 'Необязательный пароль для пространств' } },
-				{ tag: 'improvement', text: { en: 'Type parameter for /new route — deep link to space creation', ru: 'Параметр type для /new — прямая ссылка на создание пространства' } },
+				{ tag: 'feature', text: { en: 'Manage space password — turn it on or off anytime', ru: 'Управляйте паролем пространства — включайте и отключайте в любой момент' } },
+				{ tag: 'improvement', text: { en: 'Password is now optional when creating a space', ru: 'Пароль теперь необязателен при создании пространства' } },
 			]
 		},
 		{
 			version: '1.2.0',
 			date: '2026-03-18',
 			changes: [
-				{ tag: 'feature', text: { en: 'Landing page with animated feature showcase', ru: 'Лендинг с анимированным обзором возможностей' } },
-				{ tag: 'improvement', text: { en: 'Moved create form to /new route', ru: 'Форма создания перенесена на /new' } },
+				{ tag: 'feature', text: { en: 'New homepage — see how everything works at a glance', ru: 'Новая главная страница — узнайте как всё работает' } },
+				{ tag: 'improvement', text: { en: 'Separate page for creating boards and spaces', ru: 'Отдельная страница для создания досок и пространств' } },
 			]
 		},
 		{
 			version: '1.1.0',
 			date: '2026-03-17',
 			changes: [
-				{ tag: 'feature', text: { en: 'Complete UI redesign — new card style, spacing, typography', ru: 'Полный редизайн — новые карточки, отступы, типографика' } },
-				{ tag: 'feature', text: { en: 'Onboarding flow for new users', ru: 'Онбординг для новых пользователей' } },
-				{ tag: 'feature', text: { en: 'Name prompt — set your display name', ru: 'Запрос имени — укажите отображаемое имя' } },
-				{ tag: 'feature', text: { en: 'Timer stepper with visual progress bar', ru: 'Таймер-степпер с визуальным прогресс-баром' } },
-				{ tag: 'fix', text: { en: 'Password error display — red border + inline text', ru: 'Отображение ошибки пароля — красная рамка + текст' } },
+				{ tag: 'feature', text: { en: 'Fresh new look — redesigned cards, layout and colors', ru: 'Свежий дизайн — обновлённые карточки, раскладка и цвета' } },
+				{ tag: 'feature', text: { en: 'Quick start guide for new users', ru: 'Быстрый старт для новых пользователей' } },
+				{ tag: 'feature', text: { en: 'Set your name so teammates know who wrote what', ru: 'Укажите имя, чтобы коллеги видели кто что написал' } },
+				{ tag: 'feature', text: { en: 'Discussion timer with visual countdown', ru: 'Таймер обсуждения с визуальным отсчётом' } },
+				{ tag: 'fix', text: { en: 'Better error messages when entering wrong password', ru: 'Понятные сообщения при неверном пароле' } },
 			]
 		},
 		{
 			version: '1.0.0',
 			date: '2026-03-15',
 			changes: [
-				{ tag: 'feature', text: { en: 'Real-time retrospective boards with Socket.IO', ru: 'Ретро-доски в реальном времени на Socket.IO' } },
+				{ tag: 'feature', text: { en: 'Create retro boards and collaborate in real-time', ru: 'Создавайте ретро-доски и работайте вместе в реальном времени' } },
 				{ tag: 'feature', text: { en: 'Three columns: Went Well, Didn\'t Go Well, To Improve', ru: 'Три колонки: Что хорошо, Что не так, Что улучшить' } },
-				{ tag: 'feature', text: { en: 'Voting and comments on cards', ru: 'Голосование и комментарии к карточкам' } },
-				{ tag: 'feature', text: { en: 'Spaces — group boards together', ru: 'Пространства — объединяйте доски' } },
-				{ tag: 'feature', text: { en: 'Dark mode with smooth transitions', ru: 'Тёмная тема с плавными переходами' } },
-				{ tag: 'feature', text: { en: 'Export to JSON and Markdown', ru: 'Экспорт в JSON и Markdown' } },
-				{ tag: 'feature', text: { en: 'i18n — English and Russian', ru: 'i18n — английский и русский' } },
+				{ tag: 'feature', text: { en: 'Vote and comment on cards', ru: 'Голосуйте и комментируйте карточки' } },
+				{ tag: 'feature', text: { en: 'Group boards into spaces for your team', ru: 'Объединяйте доски в пространства для команды' } },
+				{ tag: 'feature', text: { en: 'Dark mode', ru: 'Тёмная тема' } },
+				{ tag: 'feature', text: { en: 'Export your retro to JSON or Markdown', ru: 'Экспортируйте ретро в JSON или Markdown' } },
+				{ tag: 'feature', text: { en: 'Available in English and Russian', ru: 'Доступно на английском и русском' } },
 			]
 		}
 	];

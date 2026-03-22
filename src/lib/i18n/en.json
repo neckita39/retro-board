@@ -152,6 +152,7 @@
 	"feedback.send": "Send",
 	"feedback.sending": "Sending...",
 	"feedback.success": "Thanks for your feedback!",
+	"feedback.another": "Send another",
 	"feedback.error": "Something went wrong. Try again.",
 	"feedback.link": "Feedback",
 

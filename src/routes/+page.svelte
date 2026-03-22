@@ -33,9 +33,9 @@
 	<header class="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-md px-6 py-3">
 		<div class="mx-auto flex max-w-5xl items-center justify-between">
 			<a href="/" class="font-heading text-[15px] font-bold text-text-primary">{t('header.brand')}</a>
-			<div class="flex items-center gap-4">
-				<a href="/changelog" class="text-[13px] text-text-muted transition-colors hover:text-text-primary">{t('changelog.title')}</a>
-				<a href="/feedback" class="text-[13px] text-text-muted transition-colors hover:text-text-primary">{t('feedback.link')}</a>
+			<div class="flex items-center gap-3">
+				<a href="/changelog" class="rounded-lg border border-accent/40 px-3 py-1.5 text-[13px] font-medium text-accent transition-colors hover:bg-accent/10">{t('changelog.title')}</a>
+				<a href="/feedback" class="rounded-lg border border-accent/40 px-3 py-1.5 text-[13px] font-medium text-accent transition-colors hover:bg-accent/10">{t('feedback.link')}</a>
 				<a href="/new" class="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-accent-hover">
 					{t('home.create')}
 				</a>
