@@ -7,6 +7,7 @@ services:
       DATABASE_URL: postgresql://retro:retro@db:5432/retro
       PORT: "3000"
       ORIGIN: http://localhost:3777
+      BODY_SIZE_LIMIT: "20971520"
     depends_on:
       db:
         condition: service_healthy

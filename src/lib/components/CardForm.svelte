@@ -121,7 +121,10 @@
 			</div>
 		{/if}
 		{#if uploadError}
-			<p class="text-xs text-red-500">{uploadError}</p>
+			<div class="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 dark:bg-red-900/20">
+				<svg class="h-3.5 w-3.5 flex-shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+				<span class="text-xs text-red-600 dark:text-red-400">{uploadError}</span>
+			</div>
 		{/if}
 
 		<input bind:this={fileInputRef} type="file" accept="image/*" onchange={handleFileSelect} class="hidden" />

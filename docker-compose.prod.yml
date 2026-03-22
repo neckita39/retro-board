@@ -8,6 +8,7 @@ services:
       PORT: "3000"
       ORIGIN: ${ORIGIN:-http://localhost}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      BODY_SIZE_LIMIT: "20971520"
       STATSD_HOST: netdata
       STATSD_PORT: "8125"
     depends_on:
