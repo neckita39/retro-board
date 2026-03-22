@@ -39,7 +39,7 @@
 <div class="flex min-h-screen flex-col">
 	<Header />
 
-	<main class="flex flex-1 items-center justify-center p-4">
+	<main class="flex flex-1 items-start justify-center p-4 pt-[12vh]">
 		<div class="w-full max-w-md space-y-6 text-center">
 			<div class="flex justify-center">
 				<img src="/logo.png" alt="Retrospectrix" width="64" height="64" class="dark:invert" />
