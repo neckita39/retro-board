@@ -9,7 +9,8 @@ services:
       ORIGIN: ${ORIGIN:-http://localhost}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       BODY_SIZE_LIMIT: "20971520"
-      FEEDBACK_EMAIL: ${FEEDBACK_EMAIL:-}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN:-}
+      TG_CHAT_ID: ${TG_CHAT_ID:-}
       STATSD_HOST: netdata
       STATSD_PORT: "8125"
     depends_on:

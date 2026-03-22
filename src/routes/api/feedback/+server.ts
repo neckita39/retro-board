@@ -1,7 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-const FEEDBACK_EMAIL = process.env.FEEDBACK_EMAIL || '';
+const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
+const TG_CHAT_ID = process.env.TG_CHAT_ID || '';
 
 // Rate limit: 3 per IP per 10 minutes
 const feedbackCounts = new Map<string, { count: number; resetAt: number }>();
@@ -34,23 +35,21 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const senderName = name?.trim() || 'Anonymous';
 	const text = message.trim();
-	const ip = getClientAddress();
 	const timestamp = new Date().toISOString();
 
-	// Send via SMTP-free approach: log + optional webhook
-	// For now: log to stdout (picked up by Docker logs) and store in DB could be added later
-	console.log(`[FEEDBACK] from="${senderName}" ip=${ip} time=${timestamp}\n${text}`);
+	console.log(`[FEEDBACK] from="${senderName}" time=${timestamp}\n${text}`);
 
-	// If email is configured, send via a simple HTTPS webhook (e.g. Formspree, Mailgun, etc.)
-	// For now we use a lightweight approach: POST to a mail API
-	if (FEEDBACK_EMAIL) {
+	if (TG_BOT_TOKEN && TG_CHAT_ID) {
 		try {
-			// Use ntfy.sh as a free push notification (no email setup needed)
-			const topic = FEEDBACK_EMAIL.replace(/[^a-zA-Z0-9]/g, '_');
-			await fetch(`https://ntfy.sh/${topic}`, {
+			const tgText = `💬 *Feedback*\n\nОт: ${senderName}\n\n${text}`;
+			await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
 				method: 'POST',
-				headers: { 'Title': `Feedback from ${senderName}`, 'Tags': 'speech_balloon' },
-				body: text
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					chat_id: TG_CHAT_ID,
+					text: tgText,
+					parse_mode: 'Markdown'
+				})
 			});
 		} catch {
 			// Non-critical — feedback is already logged
