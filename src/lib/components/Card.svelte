@@ -92,7 +92,7 @@
 			width={card.imageWidth || undefined}
 			height={card.imageHeight || undefined}
 			style={card.imageWidth && card.imageHeight ? `aspect-ratio: ${card.imageWidth}/${card.imageHeight}` : ''}
-			class="mt-2 max-h-48 w-full cursor-zoom-in rounded-lg object-cover transition-transform hover:scale-[1.02]"
+			class="mt-2 max-h-48 w-full cursor-zoom-in rounded-lg object-contain transition-transform hover:scale-[1.02]"
 			onclick={() => lightboxStore.open(card.imageId!)}
 		/>
 	{/if}

@@ -41,7 +41,7 @@
 						<img
 							src="/api/image/{comment.imageId}"
 							alt=""
-							class="mt-1 max-h-32 cursor-zoom-in rounded border border-border object-cover transition-transform hover:scale-[1.02]"
+							class="mt-1 max-h-32 cursor-zoom-in rounded border border-border object-contain transition-transform hover:scale-[1.02]"
 							onclick={() => lightboxStore.open(comment.imageId!)}
 						/>
 					{/if}

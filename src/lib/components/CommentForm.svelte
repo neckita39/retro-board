@@ -71,9 +71,14 @@
 
 {#if imagePreview}
 	<div class="relative mb-1 inline-block">
-		<img src={imagePreview} alt="" class="max-h-16 rounded border border-border object-cover {uploading ? 'opacity-50' : ''}" />
+		<img src={imagePreview} alt="" class="max-h-16 rounded border border-border object-contain {uploading ? 'opacity-40' : ''}" />
 		{#if uploading}
-			<span class="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-text-secondary">{t('image.uploading')}</span>
+			<div class="absolute inset-0 flex items-center justify-center">
+				<svg class="h-4 w-4 animate-spin text-accent" viewBox="0 0 24 24" fill="none">
+					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25" />
+					<path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+				</svg>
+			</div>
 		{/if}
 		<button
 			type="button"
