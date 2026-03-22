@@ -6,7 +6,25 @@ import { validateMimeType, compressImage } from '$lib/server/image.js';
 
 const MAX_RAW_SIZE = 20 * 1024 * 1024; // 20MB
 
-export const POST: RequestHandler = async ({ request }) => {
+// Simple rate limit: max 10 uploads per IP per minute
+const uploadCounts = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+	const now = Date.now();
+	const entry = uploadCounts.get(ip);
+	if (!entry || now > entry.resetAt) {
+		uploadCounts.set(ip, { count: 1, resetAt: now + 60_000 });
+		return true;
+	}
+	if (entry.count >= 10) return false;
+	entry.count++;
+	return true;
+}
+
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+	if (!checkRateLimit(getClientAddress())) {
+		throw error(429, 'Too many uploads, try again later');
+	}
 	const formData = await request.formData();
 	const file = formData.get('image');
 
