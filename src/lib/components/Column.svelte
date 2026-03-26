@@ -17,9 +17,15 @@
 		didnt_go_well: 'bg-bad',
 		improve: 'bg-improve'
 	};
+
+	const columnBg: Record<ColumnType, string> = {
+		went_well: 'bg-well-bg/50',
+		didnt_go_well: 'bg-bad-bg/50',
+		improve: 'bg-improve-bg/50'
+	};
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2 rounded-2xl p-2.5 {columnBg[column]} transition-colors">
 	<!-- Column header — dot indicator style -->
 	<div class="flex items-center gap-2 rounded-[10px] border border-border bg-surface-hover px-3 py-2.5 transition-colors">
 		<div class="h-2 w-2 rounded-full {dotColor[column]}"></div>

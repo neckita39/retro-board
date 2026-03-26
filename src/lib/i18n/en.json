@@ -99,14 +99,7 @@
 	"name.skip": "Skip",
 	"name.greeting": "Hi, {name}!",
 
-	"onboarding.share.title": "Share this board with your team",
-	"onboarding.share.desc": "Click the link icon to copy the board URL. Anyone with the link can participate.",
-	"onboarding.cards.title": "Add cards to each column",
-	"onboarding.cards.desc": "Share what went well, what didn't, and what to improve.",
-	"onboarding.vote.title": "Vote and discuss",
-	"onboarding.vote.desc": "Upvote important items. The summary ranks cards by votes.",
-	"onboarding.next": "Next",
-	"onboarding.skip": "Skip",
+	"onboarding.tip": "Share the board link, add cards to columns, and vote on what matters.",
 	"onboarding.done": "Got it",
 
 	"help.badge": "Open source · No signup",

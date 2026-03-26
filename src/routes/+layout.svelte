@@ -4,6 +4,8 @@
 	import { browser } from '$app/environment';
 	import { onNavigate } from '$app/navigation';
 	import Lightbox from '$lib/components/Lightbox.svelte';
+	import FeedbackPanel from '$lib/components/FeedbackPanel.svelte';
+	import FeedbackFab from '$lib/components/FeedbackFab.svelte';
 
 	let { children } = $props();
 
@@ -47,3 +49,5 @@
 {@render children()}
 
 <Lightbox />
+<FeedbackPanel />
+<FeedbackFab />

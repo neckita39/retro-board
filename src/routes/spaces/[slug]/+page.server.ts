@@ -52,10 +52,12 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			slug: boards.slug,
 			title: boards.title,
 			createdAt: boards.createdAt,
-			cardCount: sql<number>`(SELECT count(*) FROM cards WHERE cards.board_id = ${boards.id})`
+			cardCount: sql<number>`cast(count(${cards.id}) as integer)`
 		})
 		.from(boards)
+		.leftJoin(cards, eq(cards.boardId, boards.id))
 		.where(eq(boards.spaceId, space.id))
+		.groupBy(boards.id, boards.slug, boards.title, boards.createdAt)
 		.orderBy(boards.createdAt);
 
 	const adminLink = isCreator

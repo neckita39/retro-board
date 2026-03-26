@@ -45,7 +45,7 @@
 	<Header spaceName={data.space.name} spaceSlug={data.space.slug} />
 
 	{#if data.showAdminBanner && data.adminLink}
-		<AdminBanner adminLink={data.adminLink} titleKey="space.admin.title" descKey="space.admin.desc" copyKey="space.admin.copy" />
+		<AdminBanner adminLink={data.adminLink} titleKey="space.admin.title" copyKey="space.admin.copy" />
 	{/if}
 
 	{#if !data.authenticated}
