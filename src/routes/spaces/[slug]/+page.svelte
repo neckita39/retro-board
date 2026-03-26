@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { afterNavigate, invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import Header from '$lib/components/Header.svelte';
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
@@ -13,12 +14,17 @@
 
 	boardStore.board = null;
 
-	// Reload boards when navigating back (browser back button)
-	afterNavigate(({ type }) => {
-		if (type === 'popstate') {
-			invalidateAll();
-		}
+	// Reload boards on any navigation to this page (back button, link, etc.)
+	afterNavigate(({ from }) => {
+		if (from) invalidateAll();
 	});
+
+	// Handle browser bfcache restoration (back button after redirect)
+	if (browser) {
+		window.addEventListener('pageshow', (e) => {
+			if (e.persisted) invalidateAll();
+		});
+	}
 
 	let deleteConfirming = $state(false);
 	let passwordOpen = $state(false);

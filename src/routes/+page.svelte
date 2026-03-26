@@ -56,7 +56,7 @@
 
 			<!-- CTA -->
 			<div class="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-				<a href="/new" class="group relative overflow-hidden rounded-2xl bg-accent px-8 py-4 text-[15px] font-bold text-white shadow-lg shadow-accent/25 transition-all duration-300 hover:shadow-xl hover:shadow-accent/35 active:scale-[0.97]">
+				<a href="/new" class="group relative overflow-hidden rounded-xl bg-accent px-6 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/25 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/35 active:scale-[0.97]">
 					<span class="relative z-10">{t('help.hero.cta')}</span>
 					<div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full"></div>
 				</a>
@@ -190,7 +190,7 @@
 			<div class="absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-improve/20 blur-[80px]"></div>
 			<h2 class="relative font-heading text-3xl font-bold lg:text-4xl">{t('help.cta.title')}</h2>
 			<p class="relative mt-3 text-[15px] opacity-60">{t('help.cta.desc')}</p>
-			<a href="/new" class="group relative mt-8 inline-block overflow-hidden rounded-2xl bg-accent px-8 py-4 text-[15px] font-bold text-white transition-all hover:shadow-lg hover:shadow-accent/30 active:scale-[0.97]">
+			<a href="/new" class="group relative mt-8 inline-block overflow-hidden rounded-xl bg-accent px-6 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/30 active:scale-[0.97]">
 				<span class="relative z-10">{t('help.hero.cta')}</span>
 				<div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full"></div>
 			</a>
