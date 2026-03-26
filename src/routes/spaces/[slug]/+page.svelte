@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { afterNavigate, invalidateAll } from '$app/navigation';
 	import Header from '$lib/components/Header.svelte';
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
@@ -11,6 +12,13 @@
 	let { data, form } = $props();
 
 	boardStore.board = null;
+
+	// Reload boards when navigating back (browser back button)
+	afterNavigate(({ type }) => {
+		if (type === 'popstate') {
+			invalidateAll();
+		}
+	});
 
 	let deleteConfirming = $state(false);
 	let passwordOpen = $state(false);

@@ -45,9 +45,9 @@
 	"board.delete": "Delete Board",
 	"board.delete.confirm": "Delete board?",
 
-	"admin.banner.title": "You created this board",
+	"admin.banner.title": "Board created — share it!",
 	"admin.banner.desc": "Save the link below — it's the only way to manage the timer and delete the board from another device or browser.",
-	"admin.banner.copy": "Copy link",
+	"admin.banner.copy": "Copy share link",
 	"admin.banner.saved": "Saved? Then you can close this.",
 	"admin.banner.close": "Close",
 

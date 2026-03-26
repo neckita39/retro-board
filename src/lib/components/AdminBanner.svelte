@@ -23,7 +23,8 @@
 	});
 
 	async function copy() {
-		await navigator.clipboard.writeText(adminLink);
+		// Copy the public URL (admin param already stripped from URL)
+		await navigator.clipboard.writeText(window.location.href);
 		copied = true;
 		setTimeout(() => (copied = false), 2000);
 	}
