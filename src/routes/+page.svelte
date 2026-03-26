@@ -30,7 +30,7 @@
 	<Header showCreate />
 
 	<!-- HERO -->
-	<section class="relative flex min-h-[85vh] flex-col items-center justify-center px-6 text-center">
+	<section class="relative flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
 		<!-- Ambient glow -->
 		<div class="glow-orb -top-32 right-[10%] h-[500px] w-[500px] bg-accent/15 blur-[120px]"></div>
 		<div class="glow-orb top-[30%] -left-[5%] h-[400px] w-[400px] bg-improve/10 blur-[100px]" style="animation-delay: -4s;"></div>
@@ -81,7 +81,7 @@
 					<p class="mt-4 text-[15px] leading-relaxed text-text-secondary">{t('help.spaces.desc')}</p>
 				</div>
 				<div class="reveal-child rounded-2xl border border-border bg-surface-card p-6 shadow-sm transition-all duration-500 hover:shadow-lg">
-					<div class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-text-muted">BOARDS</div>
+					<div class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-text-muted">{t('space.boards.title')}</div>
 					<div class="grid grid-cols-2 gap-3">
 						{#each ['Sprint 42', 'Sprint 41', 'Sprint 40', 'Sprint 39'] as name, i}
 							<div class="rounded-xl border border-border bg-surface-hover p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md" style="animation-delay: {i * 80}ms;">
@@ -91,7 +91,7 @@
 									<div class="h-1 w-5 rounded-full bg-improve/40"></div>
 								</div>
 								<div class="text-[13px] font-semibold text-text-primary">{name}</div>
-								<div class="text-[11px] text-text-muted">7 cards</div>
+								<div class="text-[11px] text-text-muted">{t('column.cards', { n: 7 })}</div>
 							</div>
 						{/each}
 					</div>

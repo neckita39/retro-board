@@ -26,6 +26,10 @@
 	--color-improve-border: #bfdbfe;
 }
 
+html {
+	scroll-behavior: smooth;
+}
+
 :root {
 	font-family:
 		'Nunito Sans',
