@@ -6,7 +6,7 @@
 	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
-	let { showOnline = false, adminLink = null, spaceName = null, spaceSlug = null }: { showOnline?: boolean; adminLink?: string | null; spaceName?: string | null; spaceSlug?: string | null } = $props();
+	let { showOnline = false, showCreate = false, adminLink = null, spaceName = null, spaceSlug = null }: { showOnline?: boolean; showCreate?: boolean; adminLink?: string | null; spaceName?: string | null; spaceSlug?: string | null } = $props();
 
 	import { browser } from '$app/environment';
 
@@ -52,11 +52,13 @@
 		menuOpen = false;
 		setTimeout(() => (copied = false), 2000);
 	}
+
+	let hasContextActions = $derived(showOnline || !!boardStore.board);
 </script>
 
 <svelte:window onclick={() => menuOpen && (menuOpen = false)} />
 
-<header class="border-b border-border bg-surface-card px-4 py-2.5 transition-colors sm:px-6">
+<header class="sticky top-0 z-50 border-b border-border bg-surface-card/80 px-4 py-2.5 backdrop-blur-xl transition-colors sm:px-6">
 	<div class="mx-auto flex max-w-7xl items-center justify-between">
 		<!-- Left: brand + breadcrumb -->
 		<div class="flex min-w-0 items-center gap-2">
@@ -76,17 +78,19 @@
 
 		<!-- Right: actions -->
 		<div class="flex items-center gap-1.5">
+			<!-- Context actions (board-specific) -->
 			{#if showOnline}
 				<UserCount />
 			{/if}
 
 			{#if boardStore.board}
-				<!-- Single overflow menu for all board actions -->
+				<!-- Board overflow menu -->
 				<div class="relative">
 					<button
 						onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
 						class="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary {copied ? 'text-accent' : ''}"
 						aria-label="Menu"
+						title="Menu"
 					>
 						{#if copied}
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -101,7 +105,6 @@
 							onclick={(e) => e.stopPropagation()}
 							class="absolute right-0 top-full z-50 mt-1.5 w-48 rounded-xl border border-border bg-surface-card py-1 shadow-lg card-enter"
 						>
-							<!-- Copy -->
 							<button
 								onclick={() => copyText(`${window.location.origin}/${boardStore.board?.slug ?? ''}`)}
 								class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-hover"
@@ -125,9 +128,7 @@
 									{t('copy.admin')}
 								</button>
 							{/if}
-							<!-- Divider -->
 							<hr class="my-1 border-border" />
-							<!-- Export -->
 							<button
 								onclick={() => handleExport('json')}
 								class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-hover"
@@ -142,7 +143,6 @@
 								<span class="flex h-4 w-4 items-center justify-center text-[10px] font-bold text-text-muted">MD</span>
 								{t('export.markdown')}
 							</button>
-							<!-- Delete (creator only) -->
 							{#if boardStore.isCreator}
 								<hr class="my-1 border-border" />
 								{#if deleteConfirming}
@@ -185,17 +185,25 @@
 							onclick={() => (nameEditing = true)}
 							class="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold transition-colors
 								{userName ? 'bg-accent text-white' : 'border border-border text-text-muted hover:bg-surface-hover'}"
-							title={userName || 'Set name'}
+							title={userName || t('name.placeholder')}
+							aria-label={userName || t('name.placeholder')}
 						>
-							{userName ? userName[0].toUpperCase() : '?'}
+							{#if userName}
+								{userName[0].toUpperCase()}
+							{:else}
+								<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+							{/if}
 						</button>
 					{/if}
 				</div>
 			{/if}
-			<div class="mx-0.5 h-4 w-px bg-border"></div>
-			<a href="/" class="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary" title="Help" aria-label="Help">
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-			</a>
+
+			<!-- Divider between context and global actions -->
+			{#if hasContextActions}
+				<div class="mx-0.5 h-4 w-px bg-border"></div>
+			{/if}
+
+			<!-- Global actions (always present) -->
 			<button onclick={() => feedbackStore.show()} class="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary" title={t('feedback.link')} aria-label={t('feedback.link')}>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
 					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -203,6 +211,13 @@
 			</button>
 			<LocaleToggle />
 			<ThemeToggle />
+
+			<!-- Create CTA (landing/changelog pages) -->
+			{#if showCreate}
+				<a href="/new" class="ml-1 rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-accent/20 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/30 active:scale-[0.97]">
+					{t('home.create')}
+				</a>
+			{/if}
 		</div>
 	</div>
 </header>

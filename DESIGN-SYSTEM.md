@@ -189,6 +189,72 @@ Overrides in `.dark` class. Key differences:
 - Mockup/placeholder text on landing page must also be localized
 - Dates: use relative format or ISO (not locale-dependent formatting)
 
+## UX & Navigation
+
+### Page Transitions
+- All page changes use View Transitions API (`onNavigate` in layout)
+- Old page: `fadeOut 0.2s`, new page: `fadeIn 0.3s`
+- On back/forward: data revalidated via `invalidateAll()` on `popstate`
+
+### Navigation Flow
+```
+Landing (/)
+  ├─→ /new → Create Board → /[slug] (board)
+  ├─→ /new → Create Space → /spaces/[slug] (space)
+  ├─→ /changelog
+  └─→ /feedback (standalone, or panel overlay from any page)
+
+Board (/[slug])
+  ├─ Header brand → /
+  ├─ Breadcrumb space link → /spaces/[slug]
+  └─ Browser back → previous page (data refreshed)
+
+Space (/spaces/[slug])
+  ├─ Header brand → /
+  ├─ Board tile click → /[slug]
+  └─ Browser back → / (or previous)
+```
+
+### Navigation Principles
+1. **Brand always goes home** — clicking "Retrospectrix" → `/`
+2. **Breadcrumbs show context** — `/` → Space → Board
+3. **Back button works** — data refreshed on popstate, scroll restored
+4. **No dead ends** — every page has a clear path back
+5. **Feedback accessible everywhere** — header icon + FAB on all pages
+6. **No page reload on actions** — toasts/panels instead of navigation
+
+### Interaction States
+Every interactive element must have:
+- **Default** → visible, clear affordance
+- **Hover** → `bg-surface-hover` or opacity change, `transition-colors 0.2s`
+- **Active/Press** → `scale-[0.97]` or `active:scale-95`
+- **Focus** → browser default focus ring (do not remove)
+- **Disabled** → `opacity-50`, `cursor-default`
+
+### Scroll Behavior
+- Landing page: IntersectionObserver reveals sections (blur+scale entrance)
+- Board page: no scroll animations (content is interactive, not promotional)
+- Lists/grids: stagger entrance with 50ms per item
+- Smooth scroll to anchor links (`scroll-behavior: smooth` on html)
+
+### Feedback Patterns
+| User Action | Feedback |
+|-------------|----------|
+| Create board/space | Redirect + toast "Created — share it!" |
+| Copy link | Button text → "Copied!" for 2s |
+| Vote on card | Bounce animation + instant count update |
+| Submit feedback | Panel shows checkmark + "Thanks!" |
+| Delete (destructive) | Confirmation dialog first |
+| Error | Red text near the field, shake animation |
+| Loading | Spinner on button, button disabled |
+
+### Mobile UX
+- Header collapses to essentials (brand, menu, feedback)
+- Columns stack vertically (single column layout)
+- FAB: icon-only (no text label)
+- Touch targets: min 44x44px
+- No hover-dependent interactions
+
 ## Anti-patterns (DO NOT)
 
 - Icon-only navigation without labels

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import Header from '$lib/components/Header.svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
 
@@ -26,19 +27,7 @@
 </svelte:head>
 
 <div class="min-h-screen overflow-hidden bg-surface">
-	<!-- HEADER -->
-	<header class="sticky top-0 z-50 border-b border-border/60 bg-surface/80 backdrop-blur-xl px-6 py-3 transition-colors">
-		<div class="mx-auto flex max-w-5xl items-center justify-between">
-			<a href="/" class="font-heading text-[15px] font-bold text-text-primary">{t('header.brand')}</a>
-			<div class="flex items-center gap-2">
-				<a href="/changelog" class="rounded-lg px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary">{t('changelog.title')}</a>
-				<button onclick={() => feedbackStore.show()} class="rounded-lg px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary">{t('feedback.link')}</button>
-				<a href="/new" class="rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-accent/20 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/30 active:scale-[0.97]">
-					{t('home.create')}
-				</a>
-			</div>
-		</div>
-	</header>
+	<Header showCreate />
 
 	<!-- HERO -->
 	<section class="relative flex min-h-[85vh] flex-col items-center justify-center px-6 text-center">
