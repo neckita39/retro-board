@@ -95,7 +95,7 @@
 			onkeydown={handleKeydown}
 			placeholder={t('card.placeholder')}
 			maxlength="2000"
-			class="w-full resize-none rounded-lg border border-border bg-surface-card p-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
+			class="textarea input-md w-full"
 			rows="3"
 		></textarea>
 
@@ -121,7 +121,7 @@
 			</div>
 		{/if}
 		{#if uploadError}
-			<div class="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 dark:bg-red-900/20">
+			<div class="error-box error-box-sm">
 				<svg class="h-3.5 w-3.5 flex-shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 				<span class="text-xs text-red-600 dark:text-red-400">{uploadError}</span>
 			</div>
@@ -144,14 +144,14 @@
 				<button
 					type="button"
 					onclick={() => { expanded = false; content = ''; removeImage(); }}
-					class="rounded-lg px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
+					class="btn btn-ghost btn-sm"
 				>
 					{t('card.cancel')}
 				</button>
 				<button
 					type="submit"
 					disabled={!content.trim() && !imageId}
-					class="rounded-lg bg-text-primary px-3 py-1.5 text-xs font-medium text-surface transition-opacity disabled:opacity-30"
+					class="btn btn-dark btn-sm"
 				>
 					{t('card.add')}
 				</button>

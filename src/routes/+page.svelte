@@ -38,7 +38,7 @@
 
 		<div class="hero-stagger relative mx-auto max-w-3xl">
 			<!-- Badge -->
-			<div class="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-surface-card/80 px-4 py-1.5 text-[12px] font-semibold text-text-secondary shadow-sm backdrop-blur-sm">
+			<div class="badge badge-outline mb-8 gap-2 px-4 py-1.5 text-[12px] shadow-sm backdrop-blur-sm">
 				<svg class="h-3.5 w-3.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
 				{t('help.badge')}
 			</div>
@@ -56,7 +56,7 @@
 
 			<!-- CTA -->
 			<div class="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-				<a href="/new" class="group relative overflow-hidden rounded-xl bg-accent px-6 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/25 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/35 active:scale-[0.97]">
+				<a href="/new" class="btn btn-primary btn-lg shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/35 group relative overflow-hidden">
 					<span class="relative z-10">{t('help.hero.cta')}</span>
 					<div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full"></div>
 				</a>
@@ -73,14 +73,14 @@
 			<!-- Spaces -->
 			<div bind:this={sections[0]} class="reveal-section grid items-center gap-12 py-20 md:grid-cols-2 lg:gap-20">
 				<div class="reveal-child">
-					<div class="mb-3 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold text-accent">
+					<div class="badge badge-accent mb-3 gap-2 text-[12px]">
 						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
 						{t('help.spaces.tag')}
 					</div>
 					<h2 class="font-heading text-3xl font-bold leading-tight text-text-primary lg:text-4xl">{t('help.spaces.title')}</h2>
 					<p class="mt-4 text-[15px] leading-relaxed text-text-secondary">{t('help.spaces.desc')}</p>
 				</div>
-				<div class="reveal-child rounded-2xl border border-border bg-surface-card p-6 shadow-sm transition-all duration-500 hover:shadow-lg">
+				<div class="reveal-child card card-lg card-interactive shadow-sm hover:shadow-lg">
 					<div class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-text-muted">{t('space.boards.title')}</div>
 					<div class="grid grid-cols-2 gap-3">
 						{#each ['Sprint 42', 'Sprint 41', 'Sprint 40', 'Sprint 39'] as name, i}
@@ -100,7 +100,7 @@
 
 			<!-- Boards -->
 			<div bind:this={sections[1]} class="reveal-section grid items-center gap-12 py-20 md:grid-cols-2 lg:gap-20">
-				<div class="order-2 md:order-1 reveal-child rounded-2xl border border-border bg-surface-card p-6 shadow-sm transition-all duration-500 hover:shadow-lg">
+				<div class="order-2 md:order-1 reveal-child card card-lg card-interactive shadow-sm hover:shadow-lg">
 					<div class="flex gap-3">
 						{#each [
 							{ dot: 'bg-well', bg: 'bg-well-bg/40', title: t('column.went_well'), n: 3 },
@@ -123,7 +123,7 @@
 					</div>
 				</div>
 				<div class="order-1 md:order-2 reveal-child">
-					<div class="mb-3 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold text-accent">
+					<div class="badge badge-accent mb-3 gap-2 text-[12px]">
 						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
 						{t('help.boards.tag')}
 					</div>
@@ -135,14 +135,14 @@
 			<!-- Timer -->
 			<div bind:this={sections[2]} class="reveal-section grid items-center gap-12 py-20 md:grid-cols-2 lg:gap-20">
 				<div class="reveal-child">
-					<div class="mb-3 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-[12px] font-semibold text-accent">
+					<div class="badge badge-accent mb-3 gap-2 text-[12px]">
 						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 						{t('help.timer.tag')}
 					</div>
 					<h2 class="font-heading text-3xl font-bold leading-tight text-text-primary lg:text-4xl">{t('help.timer.title')}</h2>
 					<p class="mt-4 text-[15px] leading-relaxed text-text-secondary">{t('help.timer.desc')}</p>
 				</div>
-				<div class="reveal-child flex items-center justify-center rounded-2xl border border-border bg-surface-card p-8 shadow-sm transition-all duration-500 hover:shadow-lg">
+				<div class="reveal-child card card-interactive shadow-sm hover:shadow-lg flex items-center justify-center p-8">
 					<div class="flex flex-col items-center gap-4">
 						<div class="flex items-center overflow-hidden rounded-xl border border-border">
 							<div class="flex h-10 w-9 items-center justify-center text-text-muted transition-colors hover:bg-surface-hover">−</div>
@@ -190,7 +190,7 @@
 			<div class="absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-improve/20 blur-[80px]"></div>
 			<h2 class="relative font-heading text-3xl font-bold lg:text-4xl">{t('help.cta.title')}</h2>
 			<p class="relative mt-3 text-[15px] opacity-60">{t('help.cta.desc')}</p>
-			<a href="/new" class="group relative mt-8 inline-block overflow-hidden rounded-xl bg-accent px-6 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/30 active:scale-[0.97]">
+			<a href="/new" class="btn btn-primary btn-lg shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/35 group relative mt-8 inline-block overflow-hidden">
 				<span class="relative z-10">{t('help.hero.cta')}</span>
 				<div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full"></div>
 			</a>

@@ -5,7 +5,7 @@
 
 <button
 	onclick={() => themeStore.toggle()}
-	class="flex h-9 w-9 items-center justify-center rounded-lg border border-border transition-colors hover:bg-surface-hover"
+	class="btn-icon btn-icon-lg btn-icon-bordered"
 	aria-label={t('tooltip.theme')}
 	title={t('tooltip.theme')}
 >

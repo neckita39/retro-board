@@ -95,7 +95,7 @@
 	<!-- Hero -->
 	<section class="px-6 pt-20 pb-12 text-center">
 		<div class="mx-auto max-w-3xl" style="animation: fadeUp 0.8s cubic-bezier(0.25,1,0.5,1) both;">
-			<div class="mb-4 inline-flex items-center gap-2 rounded-full border border-border px-4 py-1.5 text-[12px] font-medium text-text-secondary">
+			<div class="badge badge-outline mb-4 gap-2 px-4 py-1.5 text-[12px]">
 				<svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
 				v{releases[0].version}
 			</div>
@@ -122,10 +122,10 @@
 
 					<!-- Content card -->
 					<div class="ml-12 md:ml-0 md:w-[calc(50%-2rem)] {ri % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}">
-						<div class="rounded-2xl border border-border bg-surface-card p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-border-strong">
+						<div class="card card-md card-interactive shadow-sm">
 							<!-- Version + date -->
 							<div class="mb-3 flex items-center gap-3">
-								<span class="rounded-lg bg-accent px-2.5 py-1 text-[13px] font-bold text-white">v{release.version}</span>
+								<span class="badge-version">v{release.version}</span>
 								<span class="text-[13px] text-text-muted">{release.date}</span>
 							</div>
 
@@ -133,7 +133,7 @@
 							<ul class="space-y-2.5">
 								{#each release.changes as change}
 									<li class="flex items-start gap-2.5">
-										<span class="mt-0.5 flex-shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide {tagColors[change.tag]}">
+										<span class="badge-sm mt-0.5 flex-shrink-0 {tagColors[change.tag]}">
 											{t(`changelog.tag.${change.tag}`)}
 										</span>
 										<span class="text-[13px] leading-relaxed text-text-primary">{txt(change)}</span>

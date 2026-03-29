@@ -6,7 +6,7 @@
 
 <button
 	onclick={() => localeStore.cycle()}
-	class="flex h-9 items-center justify-center rounded-lg border border-border px-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover"
+	class="btn-icon btn-icon-lg btn-icon-bordered px-2"
 	aria-label={t('tooltip.locale')}
 	title={t('tooltip.locale')}
 >

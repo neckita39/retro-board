@@ -120,10 +120,8 @@ Overrides in `.dark` class. Key differences:
   - Escape key closes
 
 ### Cards (Board)
-- Background: `bg-surface-card`
-- Border: `1px solid border`
-- Radius: `rounded-[10px]`
-- Hover: slight lift + shadow
+- Use `.card-board` class (bg-surface-card, border, rounded-[14px], shadow-sm)
+- Add `.card-interactive` for hover lift + shadow
 - Animation: `cardEnter 0.55s spring, stagger 0.05s`
 
 ### Columns
@@ -254,6 +252,79 @@ Every interactive element must have:
 - FAB: icon-only (no text label)
 - Touch targets: min 44x44px
 - No hover-dependent interactions
+
+## Utility Classes
+
+Reusable CSS classes defined in `src/app.css` (`@layer components`). Composable — combine base + size + variant. Override any property with inline Tailwind.
+
+### Buttons
+
+| Class | Purpose |
+|-------|---------|
+| `.btn` | Base: flex, font-semibold, transition, disabled states |
+| `.btn-sm` | Small: rounded-lg, px-3, py-1.5, text-xs |
+| `.btn-md` | Medium: rounded-xl, px-4, py-2.5, text-sm |
+| `.btn-lg` | Large: rounded-xl, px-6, py-3, text-[15px] |
+| `.btn-primary` | Accent bg, white text, hover/active states |
+| `.btn-dark` | Dark bg (text-primary), surface text |
+| `.btn-danger` | Red-500 bg, white text |
+| `.btn-secondary` | Border, text-primary, hover bg |
+| `.btn-ghost` | No bg/border, text-secondary, hover bg |
+
+**Icon buttons:**
+
+| Class | Purpose |
+|-------|---------|
+| `.btn-icon` | Base: flex center, rounded-lg, muted text, hover states |
+| `.btn-icon-sm` | 28px (h-7 w-7) |
+| `.btn-icon-md` | 32px (h-8 w-8) |
+| `.btn-icon-lg` | 36px (h-9 w-9) |
+| `.btn-icon-bordered` | Adds border |
+
+**Example:** `<button class="btn btn-primary btn-md w-full">Submit</button>`
+
+### Inputs
+
+| Class | Purpose |
+|-------|---------|
+| `.input` | Base: full-width, rounded-xl, border, focus states |
+| `.input-sm` | Small: rounded-lg, text-xs, tight padding |
+| `.input-md` | Medium: px-4, py-2.5 |
+| `.input-lg` | Large: px-4, py-3 |
+| `.textarea` | Same as input + resize-none |
+
+**Example:** `<input class="input input-lg" placeholder="Title" />`
+
+### Cards
+
+| Class | Purpose |
+|-------|---------|
+| `.card` | Base: rounded-2xl, border, bg-surface-card |
+| `.card-interactive` | Adds hover lift + border-strong + shadow |
+| `.card-sm` | Padding p-4 |
+| `.card-md` | Padding p-5 |
+| `.card-lg` | Padding p-6 |
+| `.card-board` | Board card: rounded-[14px], tighter padding, shadow-sm |
+| `.dropdown` | Menu container: rounded-xl, shadow-lg |
+| `.dropdown-item` | Menu item: flex, text-[13px], hover bg |
+
+### Badges
+
+| Class | Purpose |
+|-------|---------|
+| `.badge` | Base: rounded-full, px-3, py-1, text-xs, font-semibold |
+| `.badge-sm` | Small tag: rounded-md, text-[10px], uppercase |
+| `.badge-outline` | Border + muted bg + secondary text |
+| `.badge-accent` | Tinted accent bg + accent text |
+| `.badge-success` | Green bg + green text (with dark mode) |
+| `.badge-version` | Accent bg, white text, rounded-lg |
+
+### Errors
+
+| Class | Purpose |
+|-------|---------|
+| `.error-box` | Red bg, red text, rounded-lg (with dark mode) |
+| `.error-box-sm` | Smaller padding + text-xs |
 
 ## Anti-patterns (DO NOT)
 

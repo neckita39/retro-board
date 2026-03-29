@@ -32,7 +32,7 @@
 				{@const showHeader = card.columnType !== (i > 0 ? summaryCards[i - 1].columnType : '')}
 				{#if showHeader}
 					<div class="mt-2 first:mt-0">
-						<span class="inline-block rounded-md px-2 py-0.5 text-xs font-semibold {tagColors[card.columnType]}">
+						<span class="badge-sm {tagColors[card.columnType]}">
 							{t(`column.${card.columnType}`)}
 						</span>
 					</div>

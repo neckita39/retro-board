@@ -33,7 +33,7 @@
 			<span class="min-w-0 flex-1 text-[13px] text-text-secondary">{t('onboarding.tip')}</span>
 			<button
 				onclick={dismiss}
-				class="shrink-0 rounded-lg bg-text-primary px-3 py-1 text-[12px] font-semibold text-surface transition-opacity hover:opacity-85 active:scale-95"
+				class="btn btn-dark btn-sm shrink-0"
 			>
 				{t('onboarding.done')}
 			</button>

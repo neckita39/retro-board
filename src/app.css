@@ -62,6 +62,116 @@ html {
 	--color-improve-border: #1e3a5f;
 }
 
+/* ============================================================
+   DESIGN SYSTEM — reusable utility classes
+   Composable: .btn + .btn-primary + .btn-md
+   Override-friendly: sits in @layer components (below utilities)
+   ============================================================ */
+@layer components {
+
+	/* ---------- BUTTONS ---------- */
+
+	.btn {
+		@apply inline-flex items-center justify-center font-semibold
+		       transition-colors disabled:opacity-50 disabled:pointer-events-none;
+	}
+
+	/* Sizes */
+	.btn-sm  { @apply rounded-lg px-3 py-1.5 text-xs; }
+	.btn-md  { @apply rounded-xl px-4 py-2.5 text-sm; }
+	.btn-lg  { @apply rounded-xl px-6 py-3 text-[15px]; }
+
+	/* Variants */
+	.btn-primary   { @apply bg-accent text-white hover:bg-accent-hover active:scale-[0.97]; }
+	.btn-dark      { @apply bg-text-primary text-surface hover:opacity-85 active:scale-[0.97]; }
+	.btn-danger    { @apply bg-red-500 text-white hover:bg-red-600 active:scale-[0.97]; }
+	.btn-secondary { @apply border border-border text-text-primary hover:bg-surface-hover active:scale-[0.97]; }
+	.btn-ghost     { @apply text-text-secondary hover:bg-surface-hover active:scale-[0.97]; }
+
+	/* Icon buttons */
+	.btn-icon {
+		@apply flex items-center justify-center rounded-lg
+		       text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary;
+	}
+	.btn-icon-sm      { @apply h-7 w-7; }
+	.btn-icon-md      { @apply h-8 w-8; }
+	.btn-icon-lg      { @apply h-9 w-9; }
+	.btn-icon-bordered { @apply border border-border; }
+
+
+	/* ---------- INPUTS ---------- */
+
+	.input {
+		@apply w-full rounded-xl border border-border bg-surface
+		       text-sm text-text-primary placeholder:text-text-muted
+		       transition-colors focus:border-border-strong focus:outline-none;
+	}
+	.input-sm { @apply rounded-lg px-2.5 py-1.5 text-xs; }
+	.input-md { @apply px-4 py-2.5; }
+	.input-lg { @apply px-4 py-3; }
+
+	.textarea {
+		@apply w-full resize-none rounded-xl border border-border bg-surface
+		       text-sm text-text-primary placeholder:text-text-muted
+		       transition-colors focus:border-border-strong focus:outline-none;
+	}
+
+
+	/* ---------- CARDS ---------- */
+
+	.card {
+		@apply rounded-2xl border border-border bg-surface-card;
+	}
+	.card-interactive {
+		@apply transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]
+		       hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md;
+	}
+	.card-sm { @apply p-4; }
+	.card-md { @apply p-5; }
+	.card-lg { @apply p-6; }
+
+	.card-board {
+		@apply rounded-[14px] border border-border bg-surface-card
+		       px-3.5 py-3 shadow-sm;
+	}
+
+	.dropdown {
+		@apply rounded-xl border border-border bg-surface-card py-1 shadow-lg;
+	}
+	.dropdown-item {
+		@apply flex w-full items-center gap-2.5 px-3 py-2
+		       text-left text-[13px] text-text-primary
+		       transition-colors hover:bg-surface-hover;
+	}
+
+
+	/* ---------- BADGES ---------- */
+
+	.badge {
+		@apply inline-flex items-center gap-1.5 rounded-full
+		       px-3 py-1 text-xs font-semibold;
+	}
+	.badge-sm {
+		@apply rounded-md px-1.5 py-0.5 text-[10px] font-semibold
+		       uppercase tracking-wide;
+	}
+	.badge-outline  { @apply border border-border bg-surface-card/80 text-text-secondary; }
+	.badge-accent   { @apply bg-accent/10 text-accent; }
+	.badge-success  { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
+	.badge-version  { @apply rounded-lg bg-accent px-2.5 py-1 text-[13px] font-bold text-white; }
+
+
+	/* ---------- ERRORS ---------- */
+
+	.error-box {
+		@apply flex items-center gap-1.5 rounded-lg
+		       bg-red-50 px-3 py-2
+		       text-sm text-red-600
+		       dark:bg-red-900/20 dark:text-red-400;
+	}
+	.error-box-sm { @apply px-2.5 py-1.5 text-xs; }
+}
+
 body {
 	background-color: var(--color-surface);
 	color: var(--color-text-primary);

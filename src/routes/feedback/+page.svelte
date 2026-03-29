@@ -44,14 +44,14 @@
 					<h1 class="font-heading text-2xl font-bold text-text-primary">{t('feedback.success')}</h1>
 					<div class="mt-8 flex justify-center gap-3">
 						<a href="/" class="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-hover">{t('changelog.back')}</a>
-						<button onclick={() => (status = 'idle')} class="rounded-xl bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover">
+						<button onclick={() => (status = 'idle')} class="btn btn-primary btn-md">
 							{t('feedback.another')}
 						</button>
 					</div>
 				</div>
 			{:else}
 				<div class="mb-8 text-center">
-					<div class="mb-4 inline-flex items-center gap-2 rounded-full border border-border px-4 py-1.5 text-[12px] font-medium text-text-secondary">
+					<div class="badge badge-outline shadow-sm backdrop-blur-sm">
 						<svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 						{t('feedback.link')}
 					</div>
@@ -68,7 +68,7 @@
 							bind:value={name}
 							maxlength="100"
 							placeholder={t('feedback.name.placeholder')}
-							class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+							class="input input-lg"
 						/>
 					</div>
 
@@ -81,12 +81,12 @@
 							maxlength="2000"
 							rows="5"
 							placeholder={t('feedback.message.placeholder')}
-							class="w-full resize-none rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+							class="textarea input-lg"
 						></textarea>
 					</div>
 
 					{#if status === 'error'}
-						<div class="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
+						<div class="error-box">
 							<svg class="h-4 w-4 flex-shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 							<span class="text-sm text-red-600 dark:text-red-400">{t('feedback.error')}</span>
 						</div>
@@ -95,7 +95,7 @@
 					<button
 						type="submit"
 						disabled={!message.trim() || status === 'sending'}
-						class="w-full rounded-xl bg-accent px-4 py-3.5 font-semibold text-white transition-all hover:bg-accent-hover disabled:opacity-50 active:scale-[0.98]"
+						class="btn btn-primary btn-md w-full"
 					>
 						{#if status === 'sending'}
 							<span class="inline-flex items-center gap-2">

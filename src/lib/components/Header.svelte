@@ -3,7 +3,6 @@
 	import LocaleToggle from './LocaleToggle.svelte';
 	import UserCount from './UserCount.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
-	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { showOnline = false, showCreate = false, adminLink = null, spaceName = null, spaceSlug = null }: { showOnline?: boolean; showCreate?: boolean; adminLink?: string | null; spaceName?: string | null; spaceSlug?: string | null } = $props();
@@ -88,7 +87,7 @@
 				<div class="relative">
 					<button
 						onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
-						class="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary {copied ? 'text-accent' : ''}"
+						class="btn-icon btn-icon-md btn-icon-bordered {copied ? 'text-accent' : ''}"
 						aria-label="Menu"
 						title="Menu"
 					>
@@ -103,18 +102,18 @@
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
 							onclick={(e) => e.stopPropagation()}
-							class="absolute right-0 top-full z-50 mt-1.5 w-48 rounded-xl border border-border bg-surface-card py-1 shadow-lg card-enter"
+							class="dropdown absolute right-0 top-full z-50 mt-1.5 w-48 card-enter"
 						>
 							<button
 								onclick={() => copyText(`${window.location.origin}/${boardStore.board?.slug ?? ''}`)}
-								class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-hover"
+								class="dropdown-item"
 							>
 								<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
 								{t('copy.link')}
 							</button>
 							<button
 								onclick={() => copyText(boardStore.board?.slug ?? '')}
-								class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-hover"
+								class="dropdown-item"
 							>
 								<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
 								{t('copy.code')}
@@ -122,7 +121,7 @@
 							{#if adminLink}
 								<button
 									onclick={() => copyText(adminLink!)}
-									class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-hover"
+									class="dropdown-item text-text-secondary"
 								>
 									<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 									{t('copy.admin')}
@@ -131,14 +130,14 @@
 							<hr class="my-1 border-border" />
 							<button
 								onclick={() => handleExport('json')}
-								class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-hover"
+								class="dropdown-item"
 							>
 								<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 								{t('export.json')}
 							</button>
 							<button
 								onclick={() => handleExport('md')}
-								class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-hover"
+								class="dropdown-item"
 							>
 								<span class="flex h-4 w-4 items-center justify-center text-[10px] font-bold text-text-muted">MD</span>
 								{t('export.markdown')}
@@ -148,8 +147,8 @@
 								{#if deleteConfirming}
 									<div class="flex items-center gap-1.5 px-3 py-2">
 										<span class="text-[12px] text-text-secondary">{t('board.delete.confirm')}</span>
-										<button onclick={deleteBoard} class="rounded-md bg-red-500 px-2 py-1 text-[11px] font-medium text-white hover:bg-red-600">{t('board.delete')}</button>
-										<button onclick={() => (deleteConfirming = false)} class="rounded-md border border-border px-2 py-1 text-[11px] text-text-secondary hover:bg-surface-hover">{t('card.cancel')}</button>
+										<button onclick={deleteBoard} class="btn btn-danger btn-sm">{t('board.delete')}</button>
+										<button onclick={() => (deleteConfirming = false)} class="btn btn-secondary btn-sm">{t('card.cancel')}</button>
 									</div>
 								{:else}
 									<button
@@ -204,17 +203,12 @@
 			{/if}
 
 			<!-- Global actions (always present) -->
-			<button onclick={() => feedbackStore.show()} class="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary" title={t('feedback.link')} aria-label={t('feedback.link')}>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-				</svg>
-			</button>
 			<LocaleToggle />
 			<ThemeToggle />
 
 			<!-- Create CTA (landing/changelog pages) -->
 			{#if showCreate}
-				<a href="/new" class="ml-1 rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-accent/20 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/30 active:scale-[0.97]">
+				<a href="/new" class="btn btn-primary btn-md ml-1 shadow-sm shadow-accent/20 transition-all hover:shadow-md hover:shadow-accent/30">
 					{t('home.create')}
 				</a>
 			{/if}

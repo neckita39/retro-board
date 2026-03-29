@@ -112,7 +112,7 @@
 		{#if boardStore.isCreator}
 			<button
 				onclick={stop}
-				class="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-text-muted transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+				class="btn-icon btn-icon-sm btn-icon-bordered hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
 				aria-label={t('timer.stop')}
 				title={t('timer.stop')}
 			>

@@ -18,7 +18,7 @@
 </script>
 
 <div class="flex flex-1 items-center justify-center p-6">
-	<div class="card-enter w-full max-w-sm rounded-2xl border border-border bg-surface-card p-8 text-center shadow-lg">
+	<div class="card-enter card p-8 shadow-lg w-full max-w-sm text-center">
 		<div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border transition-colors
 			{formError ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950' : 'border-border bg-surface-hover'}">
 			<svg class="h-5 w-5 transition-colors {formError ? 'text-red-500' : 'text-text-muted'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -36,8 +36,8 @@
 				required
 				maxlength="100"
 				placeholder={t('space.password.placeholder')}
-				class="w-full rounded-lg border px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-all focus:outline-none focus:ring-2
-					{formError ? 'border-red-400 focus:ring-red-200 dark:border-red-700 dark:focus:ring-red-900/30' : 'border-border bg-surface focus:border-text-primary focus:ring-border'}
+				class="input input-lg
+					{formError ? 'border-red-400 focus:ring-2 focus:ring-red-200 dark:border-red-700 dark:focus:ring-red-900/30' : ''}
 					{shaking ? 'animate-[shake_0.5s_ease]' : ''}"
 			/>
 			{#if formError}
@@ -47,7 +47,7 @@
 			{/if}
 			<button
 				type="submit"
-				class="w-full rounded-lg bg-text-primary px-4 py-3 text-sm font-semibold text-surface transition-opacity hover:opacity-85 active:scale-[0.98]"
+				class="btn btn-dark btn-md w-full"
 			>
 				{t('space.password.button')}
 			</button>

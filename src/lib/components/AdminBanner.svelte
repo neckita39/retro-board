@@ -53,7 +53,7 @@
 		</button>
 		<button
 			onclick={() => (visible = false)}
-			class="shrink-0 rounded-lg p-1 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
+			class="btn-icon btn-icon-sm shrink-0"
 			aria-label={t('admin.banner.close')}
 		>
 			<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">

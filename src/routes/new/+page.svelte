@@ -83,11 +83,11 @@
 						name="title"
 						maxlength="100"
 						placeholder={t('home.placeholder')}
-						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+						class="input input-lg"
 					/>
 					<button
 						type="submit"
-						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
+						class="btn btn-primary btn-md w-full"
 					>
 						{t('home.create')}
 					</button>
@@ -108,11 +108,11 @@
 								bind:value={joinValue}
 								placeholder={t('home.join.placeholder')}
 								onkeydown={(e) => e.key === 'Enter' && goToBoard()}
-								class="flex-1 rounded-xl border border-border bg-surface-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+								class="input input-md flex-1"
 							/>
 							<button
 								onclick={goToBoard}
-								class="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
+								class="btn btn-secondary btn-md"
 							>
 								{t('home.join.button')}
 							</button>
@@ -143,7 +143,7 @@
 						required
 						maxlength="100"
 						placeholder={t('space.create.name')}
-						class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+						class="input input-lg"
 					/>
 
 					<!-- Password toggle -->
@@ -158,7 +158,7 @@
 								minlength="1"
 								maxlength="100"
 								placeholder={t('space.create.password')}
-								class="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+								class="input input-lg"
 								tabindex={passwordEnabled ? 0 : -1}
 							/>
 						</div>
@@ -166,7 +166,7 @@
 
 					<button
 						type="submit"
-						class="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
+						class="btn btn-primary btn-md w-full"
 					>
 						{t('space.create.button')}
 					</button>
@@ -187,11 +187,11 @@
 								bind:value={spaceJoinValue}
 								placeholder={t('space.join.placeholder')}
 								onkeydown={(e) => e.key === 'Enter' && goToSpace()}
-								class="flex-1 rounded-xl border border-border bg-surface-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border"
+								class="input input-md flex-1"
 							/>
 							<button
 								onclick={goToSpace}
-								class="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover"
+								class="btn btn-secondary btn-md"
 							>
 								{t('space.join.button')}
 							</button>

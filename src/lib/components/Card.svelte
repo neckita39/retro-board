@@ -41,7 +41,7 @@
 	}
 </script>
 
-<div class="overflow-hidden rounded-[14px] border border-border bg-surface-card px-3.5 py-3 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-0.5 hover:scale-[1.005] hover:border-border-strong hover:shadow-md">
+<div class="card-board card-interactive overflow-hidden hover:scale-[1.005]">
 	<div class="flex items-start justify-between gap-2">
 		{#if editing}
 			<textarea

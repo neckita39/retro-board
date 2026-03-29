@@ -13,6 +13,15 @@
 	let creating = $state(false);
 	let search = $state('');
 
+	// Reset form when boards change (e.g., navigated back after creating a board)
+	let prevBoardCount = boards.length;
+	$effect(() => {
+		if (boards.length !== prevBoardCount) {
+			creating = false;
+			prevBoardCount = boards.length;
+		}
+	});
+
 	let filtered = $derived(
 		search.trim()
 			? boards.filter(b => b.title.toLowerCase().includes(search.trim().toLowerCase()))
@@ -36,17 +45,9 @@
 					type="text"
 					bind:value={search}
 					placeholder={t('space.boards.search')}
-					class="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-xs text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
+					class="input input-sm pl-8 pr-3"
 				/>
 			</div>
-		{#if !creating}
-			<button
-				onclick={() => (creating = true)}
-				class="rounded-lg bg-accent px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-accent-hover active:scale-[0.97]"
-			>
-				+ {t('space.boards.create')}
-			</button>
-		{/if}
 	</div>
 
 	<!-- Create board inline form -->
@@ -54,7 +55,7 @@
 		<form
 			method="POST"
 			action="/spaces/{spaceSlug}?/createBoard"
-			class="card-enter mb-4 rounded-xl border border-border bg-surface-card p-4"
+			class="card-enter card card-sm mb-4"
 		>
 			<div class="flex gap-3">
 				<input
@@ -62,18 +63,18 @@
 					name="title"
 					maxlength="100"
 					placeholder={t('space.boards.create.placeholder')}
-					class="flex-1 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-text-primary focus:outline-none focus:ring-2 focus:ring-border"
+					class="input input-md flex-1"
 				/>
 				<button
 					type="submit"
-					class="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover active:scale-[0.97]"
+					class="btn btn-primary btn-md"
 				>
 					{t('home.create')}
 				</button>
 				<button
 					type="button"
 					onclick={() => (creating = false)}
-					class="rounded-lg border border-border px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-hover"
+					class="btn btn-secondary btn-md"
 				>
 					{t('card.cancel')}
 				</button>
@@ -86,7 +87,7 @@
 		{#each filtered as board, i}
 			<a
 				href="/{board.slug}"
-				class="tile-enter group block overflow-hidden rounded-[14px] border border-border bg-surface-card transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1.5 hover:scale-[1.01] hover:border-border-strong hover:shadow-lg active:scale-[0.98]"
+				class="tile-enter group block card-board card-interactive overflow-hidden hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-lg active:scale-[0.98]"
 				style="animation-delay: {i * 70}ms"
 			>
 				<!-- Mini preview -->

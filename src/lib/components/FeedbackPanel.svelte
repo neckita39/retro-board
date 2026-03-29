@@ -53,7 +53,7 @@
 			<h2 class="text-lg font-bold text-text-primary">{t('feedback.title')}</h2>
 			<button
 				onclick={close}
-				class="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
+				class="btn-icon btn-icon-md"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 			</button>
@@ -69,7 +69,7 @@
 					<p class="text-lg font-bold text-text-primary">{t('feedback.success')}</p>
 					<button
 						onclick={() => (status = 'idle')}
-						class="mt-6 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+						class="btn btn-primary btn-md mt-6"
 					>
 						{t('feedback.another')}
 					</button>
@@ -86,7 +86,7 @@
 							bind:value={name}
 							maxlength="100"
 							placeholder={t('feedback.name.placeholder')}
-							class="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
+							class="input input-md w-full"
 						/>
 					</div>
 
@@ -99,12 +99,12 @@
 							maxlength="2000"
 							rows="5"
 							placeholder={t('feedback.message.placeholder')}
-							class="w-full resize-none rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-strong focus:outline-none"
+							class="textarea input-md w-full"
 						></textarea>
 					</div>
 
 					{#if status === 'error'}
-						<div class="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
+						<div class="error-box">
 							<svg class="h-4 w-4 shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 							<span class="text-sm text-red-600 dark:text-red-400">{t('feedback.error')}</span>
 						</div>
@@ -113,7 +113,7 @@
 					<button
 						type="submit"
 						disabled={!message.trim() || status === 'sending'}
-						class="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-accent-hover disabled:opacity-50 active:scale-[0.98]"
+						class="btn btn-primary btn-md w-full"
 					>
 						{#if status === 'sending'}
 							<span class="inline-flex items-center gap-2">

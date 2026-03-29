@@ -65,11 +65,11 @@
 						maxlength="30"
 						placeholder={t('name.placeholder')}
 						onkeydown={(e) => e.key === 'Enter' && save()}
-						class="w-44 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-text-primary focus:outline-none focus:ring-2 focus:ring-border"
+						class="input input-md w-44"
 					/>
 					<button
 						onclick={save}
-						class="rounded-lg bg-text-primary px-3.5 py-2 text-xs font-semibold text-surface transition-opacity hover:opacity-85 active:scale-[0.95]"
+						class="btn btn-dark btn-sm"
 					>
 						{t('name.save')}
 					</button>

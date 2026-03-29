@@ -72,7 +72,7 @@
 					<div class="flex items-center gap-2">
 						<h1 class="font-heading text-2xl font-bold text-text-primary">{data.space.name}</h1>
 						{#if passwordSuccess}
-							<span class="badge-pop rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+							<span class="badge badge-success badge-pop">
 								{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
 							</span>
 						{/if}
@@ -81,10 +81,10 @@
 						<div class="flex items-center gap-2">
 							{#if deleteConfirming}
 								<span class="text-xs text-text-secondary">{t('space.delete.confirm')}</span>
-								<button onclick={deleteSpace} class="rounded-lg bg-red-500 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-600">
+								<button onclick={deleteSpace} class="btn btn-danger btn-sm">
 									{t('space.delete')}
 								</button>
-								<button onclick={() => (deleteConfirming = false)} class="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:bg-surface-hover">
+								<button onclick={() => (deleteConfirming = false)} class="btn btn-secondary btn-sm">
 									{t('card.cancel')}
 								</button>
 							{:else}
@@ -116,7 +116,7 @@
 								<!-- Delete button -->
 								<button
 									onclick={() => { deleteConfirming = true; passwordOpen = false; }}
-									class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-muted transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+									class="btn-icon btn-icon-lg btn-icon-bordered hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
 									title={t('space.delete')}
 								>
 									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -151,12 +151,12 @@
 										required
 										maxlength="100"
 										placeholder={t('space.password.placeholder')}
-										class="h-9 flex-1 rounded-lg border bg-surface px-3 text-sm text-text-primary outline-none transition-colors focus:border-accent {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-red-400' : 'border-border'} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
+										class="input input-md h-9 flex-1 {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-red-400' : ''} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
 									/>
-									<button type="submit" class="h-9 rounded-lg bg-red-500 px-3 text-sm font-medium text-white hover:bg-red-600">
+									<button type="submit" class="btn btn-danger btn-md h-9">
 										{t('space.password.disable')}
 									</button>
-									<button type="button" onclick={() => (passwordOpen = false)} class="h-9 rounded-lg border border-border px-3 text-sm text-text-secondary hover:bg-surface-hover">
+									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-9">
 										{t('card.cancel')}
 									</button>
 								</div>
@@ -174,12 +174,12 @@
 										required
 										maxlength="100"
 										placeholder={t('space.password.enable.placeholder')}
-										class="h-9 flex-1 rounded-lg border border-border bg-surface px-3 text-sm text-text-primary outline-none transition-colors focus:border-accent"
+										class="input input-md h-9 flex-1"
 									/>
-									<button type="submit" class="h-9 rounded-lg bg-accent px-3 text-sm font-medium text-white hover:bg-accent-hover">
+									<button type="submit" class="btn btn-primary btn-md h-9">
 										{t('space.password.enable')}
 									</button>
-									<button type="button" onclick={() => (passwordOpen = false)} class="h-9 rounded-lg border border-border px-3 text-sm text-text-secondary hover:bg-surface-hover">
+									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-9">
 										{t('card.cancel')}
 									</button>
 								</div>
