@@ -10,6 +10,16 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.5.0',
+			date: '2026-03-29',
+			changes: [
+				{ tag: 'improvement', text: { en: 'Polished interface — buttons, inputs and cards now look consistent everywhere', ru: 'Отполированный интерфейс — кнопки, поля ввода и карточки теперь выглядят одинаково везде' } },
+				{ tag: 'improvement', text: { en: 'Cleaner navigation — same header on every page', ru: 'Единая навигация — одинаковый хедер на каждой странице' } },
+				{ tag: 'improvement', text: { en: 'Less clutter — removed duplicate buttons and controls', ru: 'Меньше визуального шума — убраны дублирующиеся кнопки и элементы' } },
+				{ tag: 'fix', text: { en: 'Boards in spaces now load correctly when navigating back', ru: 'Доски в пространствах теперь корректно загружаются при возврате назад' } },
+			]
+		},
+		{
 			version: '1.4.0',
 			date: '2026-03-22',
 			changes: [
