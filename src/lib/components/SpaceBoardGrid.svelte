@@ -84,6 +84,19 @@
 
 	<!-- Tile grid -->
 	<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+		<!-- Add tile (first, so always visible without scroll) -->
+		{#if !creating && !search.trim()}
+			<button
+				onclick={() => (creating = true)}
+				class="tile-enter flex min-h-[120px] flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed border-border transition-all duration-300 hover:-translate-y-0.5 hover:border-text-primary hover:bg-surface-hover"
+			>
+				<div class="mb-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-hover text-text-muted transition-all duration-300 group-hover:scale-110">
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+				</div>
+				<span class="text-xs font-medium text-text-muted">{t('space.boards.create')}</span>
+			</button>
+		{/if}
+
 		{#each filtered as board, i}
 			<a
 				href="/{board.slug}"
@@ -118,20 +131,6 @@
 				</div>
 			</a>
 		{/each}
-
-		<!-- Add tile -->
-		{#if !creating && !search.trim()}
-			<button
-				onclick={() => (creating = true)}
-				class="tile-enter flex min-h-[120px] flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed border-border transition-all duration-300 hover:-translate-y-0.5 hover:border-text-primary hover:bg-surface-hover"
-				style="animation-delay: {boards.length * 60}ms"
-			>
-				<div class="mb-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-hover text-text-muted transition-all duration-300 group-hover:scale-110">
-					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-				</div>
-				<span class="text-xs font-medium text-text-muted">{t('space.boards.create')}</span>
-			</button>
-		{/if}
 	</div>
 
 	<!-- Empty / no results -->

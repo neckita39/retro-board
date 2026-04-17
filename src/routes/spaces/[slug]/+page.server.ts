@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { spaces, boards, cards } from '$lib/server/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword, verifyPassword } from '$lib/server/password.js';
 import { metric } from '$lib/server/statsd.js';
@@ -58,7 +58,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		.leftJoin(cards, eq(cards.boardId, boards.id))
 		.where(eq(boards.spaceId, space.id))
 		.groupBy(boards.id, boards.slug, boards.title, boards.createdAt)
-		.orderBy(boards.createdAt);
+		.orderBy(desc(boards.createdAt));
 
 	const adminLink = isCreator
 		? `${url.origin}/spaces/${params.slug}?admin=${space.creatorToken}`
