@@ -1,15 +1,10 @@
 <script lang="ts">
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import CommentList from './CommentList.svelte';
 	import type { ColumnType } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let summaryCards = $derived(boardStore.getSummaryCards());
-
-	const accentColors: Record<ColumnType, string> = {
-		went_well: 'border-l-well',
-		didnt_go_well: 'border-l-bad',
-		improve: 'border-l-improve'
-	};
 
 	const tagColors: Record<ColumnType, string> = {
 		went_well: 'bg-well-bg text-well',
@@ -37,11 +32,21 @@
 						</span>
 					</div>
 				{/if}
-				<div class="flex items-center gap-2.5 rounded-[10px] border border-border bg-surface-card py-2 px-2.5 transition-all duration-300 hover:translate-x-0.5 hover:border-border-strong">
-					<span class="shrink-0 min-w-6 text-center text-[11px] font-semibold tabular-nums text-text-muted">
-						{boardStore.getCardLikes(card.id)} &uarr;
-					</span>
-					<p class="flex-1 text-[13px] text-text-primary">{card.content}</p>
+				<div class="rounded-[10px] border border-border bg-surface-card py-2 px-2.5 transition-colors hover:border-border-strong">
+					<div class="flex items-center gap-2.5">
+						<span class="shrink-0 min-w-6 text-center text-[11px] font-semibold tabular-nums text-text-muted">
+							{boardStore.getCardLikes(card.id)} &uarr;
+						</span>
+						{#if card.content}
+							<p class="flex-1 text-[13px] text-text-primary">{card.content}</p>
+						{:else}
+							<p class="flex-1 text-[13px] italic text-text-muted">{t('summary.photo')}</p>
+						{/if}
+						{#if card.imageId}
+							<svg class="h-3.5 w-3.5 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+						{/if}
+					</div>
+					<CommentList cardId={card.id} />
 				</div>
 			{/each}
 		</div>
