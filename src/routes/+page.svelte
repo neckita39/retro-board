@@ -201,6 +201,8 @@
 		<div class="mb-2 flex items-center justify-center gap-4">
 			<a href="/changelog" class="transition-colors hover:text-text-secondary">{t('changelog.title')}</a>
 			<span class="text-border">·</span>
+			<a href="/api" class="transition-colors hover:text-text-secondary">API</a>
+			<span class="text-border">·</span>
 			<button onclick={() => feedbackStore.show()} class="transition-colors hover:text-text-secondary">{t('feedback.link')}</button>
 		</div>
 		{t('header.brand')} · {t('help.footer')}

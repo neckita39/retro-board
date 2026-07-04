@@ -142,6 +142,14 @@
 								<span class="flex h-4 w-4 items-center justify-center text-[10px] font-bold text-text-muted">MD</span>
 								{t('export.markdown')}
 							</button>
+							<a
+								href="/api"
+								onclick={() => (menuOpen = false)}
+								class="dropdown-item"
+							>
+								<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+								{t('export.api')}
+							</a>
 							{#if boardStore.isCreator}
 								<hr class="my-1 border-border" />
 								{#if deleteConfirming}

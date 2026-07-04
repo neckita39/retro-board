@@ -47,6 +47,24 @@
 	"apiExport.likes": "{n} лайк|{n} лайка|{n} лайков",
 	"apiExport.dislikes": "{n} дизлайк|{n} дизлайка|{n} дизлайков",
 
+	"export.api": "API для агентов",
+
+	"apiDocs.title": "API",
+	"apiDocs.subtitle": "Доступ к доскам на чтение для скриптов и AI-агентов",
+	"apiDocs.intro": "Каждая доска адресуется своим кодом — тем же, что в ссылке, которой вы делитесь с командой. Без API-ключей и регистрации: код доски и есть ключ доступа.",
+	"apiDocs.security.title": "Ссылка = доступ",
+	"apiDocs.security.desc": "Любой, кто знает код доски, может прочитать её через API — так же, как саму страницу доски. Делитесь ссылками осознанно.",
+	"apiDocs.endpoints.title": "Эндпоинты",
+	"apiDocs.md.desc": "Доска в Markdown. Дайте этот URL AI-агенту, чтобы превратить ретро в список задач.",
+	"apiDocs.json.desc": "Доска в JSON: колонки, карточки, голоса, комментарии, ссылки на картинки и даты.",
+	"apiDocs.params.title": "Параметры",
+	"apiDocs.params.lang": "язык заголовков разделов в Markdown: en (по умолчанию) или ru",
+	"apiDocs.example.title": "Пример",
+	"apiDocs.limits.title": "Лимиты и ошибки",
+	"apiDocs.limits.rate": "30 запросов в минуту с одного IP — при превышении 429",
+	"apiDocs.limits.notfound": "Неизвестный код доски — 404",
+	"apiDocs.back": "← Назад",
+
 	"board.delete": "Удалить доску",
 	"board.delete.confirm": "Удалить доску?",
 

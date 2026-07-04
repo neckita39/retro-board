@@ -47,6 +47,24 @@
 	"apiExport.likes": "{n} like|{n} likes",
 	"apiExport.dislikes": "{n} dislike|{n} dislikes",
 
+	"export.api": "API for agents",
+
+	"apiDocs.title": "API",
+	"apiDocs.subtitle": "Read-only access to boards for scripts and AI agents",
+	"apiDocs.intro": "Every board is addressable by its board code — the same code that is in the link you share with your team. No API keys, no signup: the board code is the access key.",
+	"apiDocs.security.title": "Link = access",
+	"apiDocs.security.desc": "Anyone who knows a board code can read the board through the API — exactly like the board page itself. Share links deliberately.",
+	"apiDocs.endpoints.title": "Endpoints",
+	"apiDocs.md.desc": "Board as Markdown. Give this URL to an AI agent to turn your retro into a list of action items.",
+	"apiDocs.json.desc": "Board as JSON: columns, cards, votes, comments, image links and timestamps.",
+	"apiDocs.params.title": "Parameters",
+	"apiDocs.params.lang": "language of section headings in Markdown: en (default) or ru",
+	"apiDocs.example.title": "Example",
+	"apiDocs.limits.title": "Limits and errors",
+	"apiDocs.limits.rate": "30 requests per minute per IP — 429 when exceeded",
+	"apiDocs.limits.notfound": "Unknown board code — 404",
+	"apiDocs.back": "← Back",
+
 	"board.delete": "Delete Board",
 	"board.delete.confirm": "Delete board?",
 
