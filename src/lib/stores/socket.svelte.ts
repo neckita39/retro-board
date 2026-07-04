@@ -8,6 +8,10 @@ class SocketStore {
 	timerEnd = $state<number | null>(null);
 	timerDuration = $state<number | null>(null);
 
+	private currentSlug: string | null = null;
+	private currentCreatorToken = '';
+	private everConnected = false;
+
 	connect() {
 		if (this.socket) return;
 
@@ -15,6 +19,15 @@ class SocketStore {
 
 		this.socket.on('connect', () => {
 			this.connected = true;
+			// Re-join the room after a reconnect (deploy, network blip) — the first
+			// join is emitted by joinBoard() and buffered by socket.io, so skip it here.
+			if (this.everConnected && this.currentSlug) {
+				this.socket?.emit('board:join', {
+					slug: this.currentSlug,
+					creatorToken: this.currentCreatorToken
+				});
+			}
+			this.everConnected = true;
 		});
 
 		this.socket.on('disconnect', () => {
@@ -56,6 +69,8 @@ class SocketStore {
 	}
 
 	joinBoard(slug: string, creatorToken?: string | null) {
+		this.currentSlug = slug;
+		this.currentCreatorToken = creatorToken ?? '';
 		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '' });
 	}
 
@@ -91,6 +106,9 @@ class SocketStore {
 		this.socket?.disconnect();
 		this.socket = null;
 		this.connected = false;
+		this.currentSlug = null;
+		this.currentCreatorToken = '';
+		this.everConnected = false;
 	}
 }
 
