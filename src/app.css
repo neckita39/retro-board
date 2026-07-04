@@ -170,6 +170,14 @@ html {
 		       dark:bg-red-900/20 dark:text-red-400;
 	}
 	.error-box-sm { @apply px-2.5 py-1.5 text-xs; }
+
+	/* ---------- HOVER REVEAL ---------- */
+	/* Always visible on touch devices; hidden-until-hover only where hover exists */
+	@media (hover: hover) {
+		.hover-reveal { opacity: 0; }
+		.group:hover .hover-reveal,
+		.hover-reveal:focus-visible { opacity: 1; }
+	}
 }
 
 body {

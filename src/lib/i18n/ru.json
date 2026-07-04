@@ -17,6 +17,8 @@
 
 	"card.edit": "Редактировать",
 	"card.delete": "Удалить",
+	"card.move": "Переместить в",
+	"card.delete.confirm": "Нажмите ещё раз — удалить",
 	"card.placeholder": "О чём думаете?",
 	"card.cancel": "Отмена",
 	"card.add": "Добавить",

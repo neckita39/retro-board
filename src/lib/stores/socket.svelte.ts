@@ -82,6 +82,10 @@ class SocketStore {
 		this.socket?.emit('card:update', { cardId, content, imageId });
 	}
 
+	moveCard(cardId: string, columnType: string) {
+		this.socket?.emit('card:update', { cardId, columnType });
+	}
+
 	deleteCard(cardId: string) {
 		this.socket?.emit('card:delete', { cardId });
 	}

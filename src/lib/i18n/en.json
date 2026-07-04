@@ -17,6 +17,8 @@
 
 	"card.edit": "Edit",
 	"card.delete": "Delete",
+	"card.move": "Move to",
+	"card.delete.confirm": "Tap again to delete",
 	"card.placeholder": "What's on your mind?",
 	"card.cancel": "Cancel",
 	"card.add": "Add",

@@ -421,15 +421,19 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('card:update', async ({ cardId, content, imageId: imgId }) => {
+	socket.on('card:update', async ({ cardId, content, imageId: imgId, columnType }) => {
 		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
 		const hasImage = imgId && typeof imgId === 'string';
-		if (!hasContent && imgId === undefined) return; // must update something
+		const validColumns = ['went_well', 'didnt_go_well', 'improve'];
+		const hasColumn = columnType !== undefined;
+		if (hasColumn && !validColumns.includes(columnType)) return;
+		if (!hasContent && imgId === undefined && !hasColumn) return; // must update something
 		if (hasContent && content.length > 2000) return;
 
 		let imageMeta = null;
 		const updates = {};
 		if (content !== undefined) updates.content = encrypt(content || '');
+		if (hasColumn) updates.columnType = columnType;
 		if (imgId !== undefined) {
 			if (hasImage) {
 				const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, imgId)).limit(1);

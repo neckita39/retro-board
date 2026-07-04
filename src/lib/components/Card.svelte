@@ -3,13 +3,25 @@
 	import CommentList from './CommentList.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
-	import type { Card } from '$lib/types.js';
+	import type { Card, ColumnType } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { card }: { card: Card } = $props();
 
 	let editing = $state(false);
 	let editContent = $state('');
+	let moveOpen = $state(false);
+	let deleteConfirming = $state(false);
+	let confirmTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	const ALL_COLUMNS: ColumnType[] = ['went_well', 'didnt_go_well', 'improve'];
+	let otherColumns = $derived(ALL_COLUMNS.filter((c) => c !== card.columnType));
+
+	const tagColors: Record<ColumnType, string> = {
+		went_well: 'bg-well-bg text-well',
+		didnt_go_well: 'bg-bad-bg text-bad',
+		improve: 'bg-improve-bg text-improve'
+	};
 
 	function startEdit() {
 		editContent = card.content;
@@ -36,8 +48,21 @@
 		if (e.key === 'Escape') cancelEdit();
 	}
 
-	function deleteCard() {
-		socketStore.deleteCard(card.id);
+	function moveTo(col: ColumnType) {
+		socketStore.moveCard(card.id, col);
+		moveOpen = false;
+	}
+
+	function requestDelete() {
+		if (deleteConfirming) {
+			if (confirmTimeout) clearTimeout(confirmTimeout);
+			confirmTimeout = null;
+			deleteConfirming = false;
+			socketStore.deleteCard(card.id);
+		} else {
+			deleteConfirming = true;
+			confirmTimeout = setTimeout(() => (deleteConfirming = false), 3000);
+		}
 	}
 </script>
 
@@ -60,9 +85,24 @@
 			{/if}
 			<div class="flex shrink-0 gap-0.5">
 				<button
+					onclick={() => (moveOpen = !moveOpen)}
+					class="hover-reveal rounded p-1 text-text-muted transition-all hover:bg-surface-hover hover:text-text-secondary {moveOpen ? 'bg-surface-hover text-text-secondary opacity-100' : ''}"
+					aria-label={t('card.move')}
+					aria-expanded={moveOpen}
+					title={t('card.move')}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="17 11 21 7 17 3"/>
+						<line x1="21" y1="7" x2="9" y2="7"/>
+						<polyline points="7 21 3 17 7 13"/>
+						<line x1="15" y1="17" x2="3" y2="17"/>
+					</svg>
+				</button>
+				<button
 					onclick={startEdit}
-					class="rounded p-1 text-text-muted opacity-0 transition-all hover:bg-surface-hover hover:text-text-secondary group-hover:opacity-100"
+					class="hover-reveal rounded p-1 text-text-muted transition-all hover:bg-surface-hover hover:text-text-secondary"
 					aria-label={t('card.edit')}
+					title={t('card.edit')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -70,9 +110,12 @@
 					</svg>
 				</button>
 				<button
-					onclick={deleteCard}
-					class="rounded p-1 text-text-muted opacity-0 transition-all hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 group-hover:opacity-100"
-					aria-label={t('card.delete')}
+					onclick={requestDelete}
+					class="hover-reveal rounded p-1 transition-all {deleteConfirming
+						? 'bg-red-500 text-white opacity-100 hover:bg-red-600'
+						: 'text-text-muted hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30'}"
+					aria-label={deleteConfirming ? t('card.delete.confirm') : t('card.delete')}
+					title={deleteConfirming ? t('card.delete.confirm') : t('card.delete')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<line x1="18" y1="6" x2="6" y2="18"/>
@@ -82,6 +125,17 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if moveOpen}
+		<div class="mt-2 flex flex-wrap items-center gap-1.5" style="animation: fadeUp 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;">
+			<span class="text-[11px] text-text-muted">{t('card.move')}:</span>
+			{#each otherColumns as col (col)}
+				<button onclick={() => moveTo(col)} class="badge-sm {tagColors[col]} transition-transform hover:scale-105">
+					{t(`column.${col}`)}
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if card.imageId}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
