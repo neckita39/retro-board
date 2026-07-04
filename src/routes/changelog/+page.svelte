@@ -10,6 +10,23 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.6.0',
+			date: '2026-07-04',
+			changes: [
+				{ tag: 'feature', text: { en: 'API for agents — fetch any board as Markdown or JSON by URL, docs at /api', ru: 'API для агентов — получайте доску в Markdown или JSON по ссылке, дока на /api' } },
+				{ tag: 'feature', text: { en: 'Comments are now available in the Summary list', ru: 'Комментарии теперь доступны в итоговом списке' } },
+				{ tag: 'feature', text: { en: 'Move cards between columns', ru: 'Переносите карточки между колонками' } },
+				{ tag: 'feature', text: { en: 'Sort any column by votes with one tap', ru: 'Сортируйте колонку по голосам в один клик' } },
+				{ tag: 'improvement', text: { en: 'Cards with comments now show a bright badge', ru: 'У карточек с комментариями теперь яркий индикатор' } },
+				{ tag: 'improvement', text: { en: 'Exports now include dislikes, images and dates', ru: 'В экспорт добавлены дизлайки, картинки и даты' } },
+				{ tag: 'improvement', text: { en: 'Card buttons are always visible on phones and tablets', ru: 'Кнопки карточек всегда видны на телефонах и планшетах' } },
+				{ tag: 'improvement', text: { en: 'Deleting a card now asks for confirmation', ru: 'Удаление карточки теперь требует подтверждения' } },
+				{ tag: 'improvement', text: { en: 'Timer pulses when time is up and tidies itself away', ru: 'Таймер мигает по истечении времени и сам скрывается' } },
+				{ tag: 'fix', text: { en: 'Board reconnects automatically after a connection loss', ru: 'Доска автоматически переподключается после обрыва связи' } },
+				{ tag: 'fix', text: { en: 'Boards are better protected from uninvited changes', ru: 'Доски лучше защищены от нежелательных изменений' } }
+			]
+		},
+		{
 			version: '1.5.0',
 			date: '2026-03-29',
 			changes: [
