@@ -42,6 +42,11 @@
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
 
+	"apiExport.exported": "Exported",
+	"apiExport.noCards": "No cards",
+	"apiExport.likes": "{n} like|{n} likes",
+	"apiExport.dislikes": "{n} dislike|{n} dislikes",
+
 	"board.delete": "Delete Board",
 	"board.delete.confirm": "Delete board?",
 

@@ -21,8 +21,7 @@ const PLURAL_RULES: Record<Locale, (n: number) => number> = {
 	}
 };
 
-export function t(key: string, params?: Record<string, string | number>): string {
-	const locale = localeStore.locale;
+export function translate(locale: Locale, key: string, params?: Record<string, string | number>): string {
 	const dict = LOCALES[locale]?.dict ?? LOCALES.en.dict;
 	let value = (dict as Record<string, string>)[key] ?? (LOCALES.en.dict as Record<string, string>)[key] ?? key;
 	if (params && 'n' in params && value.includes('|')) {
@@ -37,4 +36,8 @@ export function t(key: string, params?: Record<string, string | number>): string
 		}
 	}
 	return value;
+}
+
+export function t(key: string, params?: Record<string, string | number>): string {
+	return translate(localeStore.locale, key, params);
 }

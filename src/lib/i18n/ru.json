@@ -42,6 +42,11 @@
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
 
+	"apiExport.exported": "Экспортировано",
+	"apiExport.noCards": "Нет карточек",
+	"apiExport.likes": "{n} лайк|{n} лайка|{n} лайков",
+	"apiExport.dislikes": "{n} дизлайк|{n} дизлайка|{n} дизлайков",
+
 	"board.delete": "Удалить доску",
 	"board.delete.confirm": "Удалить доску?",
 
