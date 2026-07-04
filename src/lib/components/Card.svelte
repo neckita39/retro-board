@@ -61,7 +61,10 @@
 			socketStore.deleteCard(card.id);
 		} else {
 			deleteConfirming = true;
-			confirmTimeout = setTimeout(() => (deleteConfirming = false), 3000);
+			confirmTimeout = setTimeout(() => {
+				deleteConfirming = false;
+				confirmTimeout = null;
+			}, 3000);
 		}
 	}
 </script>
