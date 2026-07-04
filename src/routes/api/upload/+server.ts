@@ -3,26 +3,15 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db/index.js';
 import { images } from '$lib/server/db/schema.js';
 import { validateMimeType, compressImage } from '$lib/server/image.js';
+import { createRateLimiter } from '$lib/server/ratelimit.js';
 
 const MAX_RAW_SIZE = 20 * 1024 * 1024; // 20MB
 
-// Simple rate limit: max 10 uploads per IP per minute
-const uploadCounts = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-	const now = Date.now();
-	const entry = uploadCounts.get(ip);
-	if (!entry || now > entry.resetAt) {
-		uploadCounts.set(ip, { count: 1, resetAt: now + 60_000 });
-		return true;
-	}
-	if (entry.count >= 10) return false;
-	entry.count++;
-	return true;
-}
+// Rate limit: max 10 uploads per IP per minute
+const uploadLimiter = createRateLimiter({ max: 10, windowMs: 60_000 });
 
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-	if (!checkRateLimit(getClientAddress())) {
+	if (!uploadLimiter.check(getClientAddress())) {
 		throw error(429, 'Too many uploads, try again later');
 	}
 	const formData = await request.formData();

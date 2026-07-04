@@ -1,26 +1,15 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { createRateLimiter } from '$lib/server/ratelimit.js';
 
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
 const TG_CHAT_ID = process.env.TG_CHAT_ID || '';
 
 // Rate limit: 3 per IP per 10 minutes
-const feedbackCounts = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-	const now = Date.now();
-	const entry = feedbackCounts.get(ip);
-	if (!entry || now > entry.resetAt) {
-		feedbackCounts.set(ip, { count: 1, resetAt: now + 600_000 });
-		return true;
-	}
-	if (entry.count >= 3) return false;
-	entry.count++;
-	return true;
-}
+const feedbackLimiter = createRateLimiter({ max: 3, windowMs: 600_000 });
 
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-	if (!checkRateLimit(getClientAddress())) {
+	if (!feedbackLimiter.check(getClientAddress())) {
 		throw error(429, 'Too many requests');
 	}
 
