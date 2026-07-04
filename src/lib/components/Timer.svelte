@@ -10,6 +10,7 @@
 	let totalSeconds = $state(0);
 	let expired = $state(false);
 	let timer: ReturnType<typeof setInterval> | null = null;
+	let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function tick() {
 		if (!socketStore.timerEnd) {
@@ -19,16 +20,22 @@
 		}
 		const left = Math.max(0, Math.ceil((socketStore.timerEnd - Date.now()) / 1000));
 		remaining = left;
-		if (left === 0) {
+		if (left === 0 && !expired) {
 			expired = true;
 			if (timer) clearInterval(timer);
 			timer = null;
+			// Pulse for 5 seconds, then hide the bar automatically
+			dismissTimer = setTimeout(() => socketStore.clearTimerLocal(), 5000);
 		}
 	}
 
 	$effect(() => {
 		if (socketStore.timerEnd) {
 			expired = false;
+			if (dismissTimer) {
+				clearTimeout(dismissTimer);
+				dismissTimer = null;
+			}
 			tick();
 			if (timer) clearInterval(timer);
 			timer = setInterval(tick, 250);
@@ -37,10 +44,16 @@
 			expired = false;
 			if (timer) clearInterval(timer);
 			timer = null;
+			if (dismissTimer) {
+				clearTimeout(dismissTimer);
+				dismissTimer = null;
+			}
 		}
 		return () => {
 			if (timer) clearInterval(timer);
 			timer = null;
+			if (dismissTimer) clearTimeout(dismissTimer);
+			dismissTimer = null;
 		};
 	});
 
@@ -100,7 +113,7 @@
 {#if remaining !== null}
 	<!-- Running / Expired — Minimal Bar -->
 	<div class="flex items-center gap-2.5 rounded-xl border border-border bg-surface-card px-4 py-2">
-		<span class="text-lg font-bold tabular-nums tracking-tight {expired ? 'text-red-500' : timeColor}">
+		<span class="text-lg font-bold tabular-nums tracking-tight {expired ? 'text-red-500 timer-pulse' : timeColor}">
 			{formatTime(expired ? 0 : remaining)}
 		</span>
 		<div class="h-[3px] w-20 overflow-hidden rounded-full bg-border">

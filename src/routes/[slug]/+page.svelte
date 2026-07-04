@@ -39,9 +39,11 @@
 	<Onboarding />
 	<NamePrompt />
 	<Board />
-	<footer class="sticky bottom-0 border-t border-border bg-surface px-4 py-2.5 transition-colors">
-		<div class="mx-auto flex max-w-7xl items-center justify-center">
-			<Timer creatorToken={data.creatorToken} />
-		</div>
-	</footer>
+	{#if socketStore.timerEnd !== null || boardStore.isCreator}
+		<footer class="sticky bottom-0 border-t border-border bg-surface px-4 py-2.5 transition-colors">
+			<div class="mx-auto flex max-w-7xl items-center justify-center">
+				<Timer creatorToken={data.creatorToken} />
+			</div>
+		</footer>
+	{/if}
 </div>

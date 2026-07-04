@@ -227,6 +227,15 @@ button, a, [role="button"], input[type="submit"] {
 	animation: voteBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Timer expiry pulse — draws attention when time is up */
+@keyframes timerPulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.5; transform: scale(1.06); }
+}
+.timer-pulse {
+	animation: timerPulse 0.7s ease-in-out infinite;
+}
+
 /* Fade up — tab panels, name prompt */
 @keyframes fadeUp {
 	from { opacity: 0; transform: translateY(6px); }

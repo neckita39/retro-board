@@ -74,6 +74,11 @@ class SocketStore {
 		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '' });
 	}
 
+	clearTimerLocal() {
+		this.timerEnd = null;
+		this.timerDuration = null;
+	}
+
 	createCard(boardId: string, column: string, content: string, authorName?: string, imageId?: string) {
 		this.socket?.emit('card:create', { boardId, column, content, authorName, imageId });
 	}
