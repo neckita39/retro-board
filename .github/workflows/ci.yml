@@ -29,8 +29,46 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: retro
+          POSTGRES_PASSWORD: retro
+          POSTGRES_DB: retro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U retro"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --force
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx playwright test
+        env:
+          DATABASE_URL: postgresql://retro:retro@localhost:5432/retro
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy:
-    needs: test
+    needs: [test, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
