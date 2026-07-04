@@ -17,10 +17,7 @@
 	let bouncing = $state<'like' | 'dislike' | null>(null);
 
 	function vote(type: 'like' | 'dislike') {
-		const opposite = type === 'like' ? hasDisliked : hasLiked;
-		if (opposite) {
-			socketStore.toggleVote(cardId, type === 'like' ? 'dislike' : 'like', sessionId);
-		}
+		// Server removes the opposite vote itself and broadcasts the full vote list
 		socketStore.toggleVote(cardId, type, sessionId);
 		bouncing = type;
 		setTimeout(() => (bouncing = null), 300);
