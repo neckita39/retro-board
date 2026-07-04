@@ -5,8 +5,8 @@ test('create a board and add a card', async ({ page }) => {
 	const slug = await createBoard(page, 'My E2E Retro');
 	expect(slug).toMatch(/^[A-Za-z0-9_-]{21}$/);
 
-	// Название доски в хедере
-	await expect(page.getByText('My E2E Retro')).toBeVisible();
+	// Название доски в хедере (десктопные крошки + мобильный заголовок)
+	await expect(page.getByText('My E2E Retro').first()).toBeVisible();
 
 	// Три колонки на месте
 	await expect(page.getByRole('heading', { name: 'Went Well' })).toBeVisible();
@@ -17,5 +17,5 @@ test('create a board and add a card', async ({ page }) => {
 	await addCard(page, 'Went Well', 'the pipeline is green');
 	const card = page.locator('.card-board', { hasText: 'the pipeline is green' });
 	await expect(card).toBeVisible();
-	await expect(card.getByText('— E2E')).toBeVisible();
+	await expect(card.getByText('E2E', { exact: true })).toBeVisible();
 });

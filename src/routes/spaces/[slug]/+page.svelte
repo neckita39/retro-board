@@ -6,8 +6,9 @@
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
 	import SpaceBoardGrid from '$lib/components/SpaceBoardGrid.svelte';
-	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
+	import NewBoardModal from '$lib/components/NewBoardModal.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { data, form } = $props();
@@ -26,10 +27,24 @@
 		});
 	}
 
+	let creating = $state(false);
 	let deleteConfirming = $state(false);
 	let passwordOpen = $state(false);
 	let passwordShaking = $state(false);
 	let passwordSuccess = $state('');
+
+	// createdAt is only present once the space password has been entered
+	let spaceCreatedAt = $derived('createdAt' in data.space ? data.space.createdAt : null);
+
+	// Prefill the next sprint name: increment the trailing number of the latest board title
+	let latestTitle = $derived(data.boards[0]?.title ?? null);
+	let suggestedTitle = $derived.by(() => {
+		if (!latestTitle) return '';
+		const match = latestTitle.match(/(\d+)(?=\D*$)/);
+		if (!match) return '';
+		const next = String(Number(match[1]) + 1);
+		return latestTitle.slice(0, match.index) + next + latestTitle.slice(match.index! + match[1].length);
+	});
 
 	$effect(() => {
 		if (form?.passwordAction) {
@@ -49,6 +64,18 @@
 		const res = await fetch(`/spaces/${data.space.slug}`, { method: 'DELETE' });
 		if (res.ok) window.location.href = '/';
 	}
+
+	function sinceDate(iso: string): string {
+		const d = new Date(iso);
+		if (localeStore.locale === 'ru') {
+			// Full date puts the month in genitive («4 июля 2026 г.») — strip the day and the «г.»
+			return d
+				.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+				.replace(/^\d+\s/, '')
+				.replace(/\s?г\.$/, '');
+		}
+		return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+	}
 </script>
 
 <svelte:head>
@@ -56,7 +83,12 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-	<Header spaceName={data.space.name} spaceSlug={data.space.slug} />
+	<Header
+		spaceName={data.space.name}
+		spaceSlug={data.space.slug}
+		locked={data.hasPassword}
+		onNewBoard={data.authenticated ? () => (creating = true) : null}
+	/>
 
 	{#if data.showAdminBanner && data.adminLink}
 		<AdminBanner adminLink={data.adminLink} titleKey="space.admin.title" copyKey="space.admin.copy" />
@@ -65,16 +97,23 @@
 	{#if !data.authenticated}
 		<SpacePasswordForm spaceName={data.space.name} error={form?.error === 'wrong_password' ? t('space.password.error') : ''} />
 	{:else}
-		<main class="flex-1 p-5">
-			<div class="mx-auto max-w-[1100px]">
-				<!-- Space header -->
-				<div class="flex flex-wrap items-center justify-between gap-3 pb-4 pt-6">
-					<div class="flex items-center gap-2">
-						<h1 class="font-heading text-2xl font-bold text-text-primary">{data.space.name}</h1>
-						{#if passwordSuccess}
-							<span class="badge badge-success badge-pop">
-								{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
-							</span>
+		<main class="flex-1 px-4 pb-16 sm:px-8 lg:px-14">
+			<div class="mx-auto flex max-w-[1360px] flex-col gap-7 pt-9 sm:pt-11">
+				<!-- Space heading -->
+				<div class="flex flex-wrap items-end justify-between gap-4">
+					<div class="flex min-w-0 flex-col gap-1.5">
+						<div class="flex items-center gap-3">
+							<h1 class="font-heading min-w-0 truncate text-[24px] font-bold tracking-[-0.02em] text-text-primary sm:text-[30px]">{data.space.name}</h1>
+							{#if passwordSuccess}
+								<span class="badge badge-success badge-pop shrink-0">
+									{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
+								</span>
+							{/if}
+						</div>
+						{#if spaceCreatedAt}
+							<p class="text-[15px] text-text-secondary">
+								{t('space.meta.count', { n: data.boards.length })} · {t('space.meta.since', { date: sinceDate(spaceCreatedAt) })}
+							</p>
 						{/if}
 					</div>
 					{#if data.isCreator}
@@ -116,7 +155,7 @@
 								<!-- Delete button -->
 								<button
 									onclick={() => { deleteConfirming = true; passwordOpen = false; }}
-									class="btn-icon btn-icon-lg btn-icon-bordered hover:border-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+									class="btn-icon btn-icon-lg btn-icon-bordered hover:bg-bad-bg hover:text-bad"
 									title={t('space.delete')}
 								>
 									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -132,7 +171,7 @@
 				<!-- Password management panel -->
 				{#if data.isCreator}
 					<div class="collapsible {passwordOpen ? 'open' : ''}">
-					<div class="mb-4 rounded-xl border border-border bg-surface-hover p-4">
+					<div class="rounded-2xl border border-border bg-surface-card p-4">
 						{#if data.hasPassword}
 							<form method="POST" action="?/disablePassword" use:enhance={() => {
 								return async ({ result, update }) => {
@@ -151,17 +190,17 @@
 										required
 										maxlength="100"
 										placeholder={t('space.password.placeholder')}
-										class="input input-md h-9 flex-1 {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-red-400' : ''} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
+										class="input input-md h-10 flex-1 {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-bad' : ''} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
 									/>
-									<button type="submit" class="btn btn-danger btn-md h-9">
+									<button type="submit" class="btn btn-danger btn-md h-10">
 										{t('space.password.disable')}
 									</button>
-									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-9">
+									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-10">
 										{t('card.cancel')}
 									</button>
 								</div>
 								{#if form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password'}
-									<p class="mt-1 text-xs text-red-500">{t('space.password.error')}</p>
+									<p class="mt-1 text-xs text-bad">{t('space.password.error')}</p>
 								{/if}
 							</form>
 						{:else}
@@ -174,12 +213,12 @@
 										required
 										maxlength="100"
 										placeholder={t('space.password.enable.placeholder')}
-										class="input input-md h-9 flex-1"
+										class="input input-md h-10 flex-1"
 									/>
-									<button type="submit" class="btn btn-primary btn-md h-9">
+									<button type="submit" class="btn btn-primary btn-md h-10">
 										{t('space.password.enable')}
 									</button>
-									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-9">
+									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-10">
 										{t('card.cancel')}
 									</button>
 								</div>
@@ -189,8 +228,18 @@
 					</div>
 				{/if}
 
-				<SpaceBoardGrid boards={data.boards} spaceSlug={data.space.slug} />
+				<SpaceBoardGrid boards={data.boards} onNewBoard={() => (creating = true)} />
 			</div>
 		</main>
+	{/if}
+
+	{#if creating}
+		<NewBoardModal
+			spaceSlug={data.space.slug}
+			spaceName={data.space.name}
+			{suggestedTitle}
+			suggestedFrom={suggestedTitle ? latestTitle : null}
+			onClose={() => (creating = false)}
+		/>
 	{/if}
 </div>

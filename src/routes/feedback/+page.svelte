@@ -30,7 +30,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<Header />
+	<Header showNav />
 
 	<main class="flex flex-1 items-center justify-center px-6 py-20">
 		<div class="w-full max-w-lg" style="animation: fadeUp 0.8s cubic-bezier(0.25,1,0.5,1) both;">

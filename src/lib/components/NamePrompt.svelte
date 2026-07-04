@@ -31,7 +31,7 @@
 
 {#if visible}
 	<div class="mx-auto max-w-[1100px] px-5 py-2 card-enter" class:opacity-0={!visible} style="transition: opacity 0.4s, max-height 0.4s; {!visible ? 'max-height: 0; overflow: hidden;' : ''}">
-		<div class="flex items-center gap-3 rounded-lg border border-border bg-surface-hover px-3.5 py-2.5">
+		<div class="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface-card px-3.5 py-2.5">
 			<!-- Avatar -->
 			<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300
 				{saved ? 'bg-text-primary' : 'border border-border bg-surface-hover'}">
@@ -58,14 +58,14 @@
 					{t('name.greeting', { name: savedName })}
 				</div>
 			{:else}
-				<div class="flex shrink-0 items-center gap-2">
+				<div class="flex w-full min-w-0 items-center gap-2 sm:w-auto">
 					<input
 						type="text"
 						bind:value={name}
 						maxlength="30"
 						placeholder={t('name.placeholder')}
 						onkeydown={(e) => e.key === 'Enter' && save()}
-						class="input input-md w-44"
+						class="input input-md min-w-0 flex-1 sm:w-44 sm:flex-none"
 					/>
 					<button
 						onclick={save}

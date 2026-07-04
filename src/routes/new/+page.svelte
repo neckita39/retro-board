@@ -9,6 +9,8 @@
 
 	boardStore.board = null;
 
+	// Only the initial URL decides the preselected tab — later switches are user-driven
+	// svelte-ignore state_referenced_locally
 	let mode = $state<'board' | 'space'>(data.type === 'space' ? 'space' : 'board');
 	let passwordEnabled = $state(false);
 
@@ -37,65 +39,82 @@
 	<title>{t('header.brand')}</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
-	<Header />
+{#snippet checkBadge()}
+	<div class="absolute right-4 top-4 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-accent">
+		<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+	</div>
+{/snippet}
 
-	<main class="flex flex-1 items-start justify-center p-4 pt-[12vh]">
-		<div class="w-full max-w-md space-y-6 text-center">
-			<div class="flex justify-center">
-				<img src="/logo.png" alt="Retrospectrix" width="64" height="64" class="dark:invert" />
+<div class="flex min-h-screen flex-col">
+	<Header showNav />
+
+	<main class="flex flex-1 justify-center px-4 pb-20 pt-10 sm:pt-14">
+		<div class="flex w-full max-w-[720px] flex-col items-center gap-7">
+			<div class="flex flex-col items-center gap-2.5 text-center">
+				<h1 class="font-heading text-[26px] font-bold tracking-[-0.02em] text-text-primary sm:text-[32px]">
+					{t('new.title')}
+				</h1>
+				<p class="text-base text-text-secondary">{t('new.subtitle')}</p>
 			</div>
 
-			<!-- Tab switcher -->
-			<div class="flex rounded-xl border border-border bg-surface-card p-1">
+			<!-- Type choice — two large cards instead of a switch -->
+			<div class="grid w-full gap-4 sm:grid-cols-2">
 				<button
 					onclick={() => (mode = 'board')}
-					class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors {mode === 'board'
-						? 'bg-accent text-white'
-						: 'text-text-muted hover:text-text-secondary'}"
+					aria-pressed={mode === 'board'}
+					class="relative flex flex-col gap-3 rounded-[18px] bg-surface-card p-6 text-left transition-all {mode === 'board'
+						? 'outline outline-2 outline-accent shadow-[0_8px_24px_rgba(196,85,43,0.15)]'
+						: 'border border-border hover:border-border-strong'}"
 				>
-					{t('home.create')}
+					{#if mode === 'board'}{@render checkBadge()}{/if}
+					<div class="flex gap-1.5" aria-hidden="true">
+						<div class="h-[34px] w-3.5 rounded bg-well-bg"></div>
+						<div class="h-[34px] w-3.5 rounded bg-bad-bg"></div>
+						<div class="h-[34px] w-3.5 rounded bg-improve-bg"></div>
+					</div>
+					<span class="font-heading text-xl font-bold text-text-primary">{t('new.board.title')}</span>
+					<p class="text-sm leading-relaxed text-text-secondary">{t('new.board.desc')}</p>
 				</button>
 				<button
 					onclick={() => (mode = 'space')}
-					class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors {mode === 'space'
-						? 'bg-accent text-white'
-						: 'text-text-muted hover:text-text-secondary'}"
+					aria-pressed={mode === 'space'}
+					class="relative flex flex-col gap-3 rounded-[18px] bg-surface-card p-6 text-left transition-all {mode === 'space'
+						? 'outline outline-2 outline-accent shadow-[0_8px_24px_rgba(196,85,43,0.15)]'
+						: 'border border-border hover:border-border-strong'}"
 				>
-					{t('space.create')}
+					{#if mode === 'space'}{@render checkBadge()}{/if}
+					<div class="flex gap-1.5" aria-hidden="true">
+						<div class="h-[34px] w-[34px] rounded-lg bg-surface-hover"></div>
+						<div class="h-[34px] w-[34px] rounded-lg bg-surface-hover"></div>
+						<div class="h-[34px] w-[34px] rounded-lg border-[1.5px] border-dashed border-border-strong"></div>
+					</div>
+					<span class="font-heading text-xl font-bold text-text-primary">{t('new.space.title')}</span>
+					<p class="text-sm leading-relaxed text-text-secondary">{t('new.space.desc')}</p>
 				</button>
 			</div>
 
 			{#key mode}
-			<div class="space-y-4" style="animation: fadeUp 0.35s cubic-bezier(0.25, 1, 0.5, 1) both;">
+			<div class="flex w-full flex-col gap-3.5" style="animation: fadeUp 0.35s cubic-bezier(0.25, 1, 0.5, 1) both;">
 			{#if mode === 'board'}
-				<div class="space-y-2">
-					<h1 class="font-heading text-2xl font-bold tracking-tight text-text-primary">
-						{t('home.title')}
-					</h1>
-					<p class="text-text-secondary">
-						{t('home.subtitle')}
-					</p>
-				</div>
-
-				<form method="POST" action="?/createBoard" class="space-y-2.5">
+				<form method="POST" action="?/createBoard" class="flex flex-col gap-3.5">
 					<input type="hidden" name="locale" value={localeStore.locale} />
-					<input
-						type="text"
-						name="title"
-						maxlength="100"
-						placeholder={t('home.placeholder')}
-						class="input input-lg"
-					/>
-					<button
-						type="submit"
-						class="btn btn-primary btn-md w-full"
-					>
-						{t('home.create')}
+					<label class="flex flex-col gap-2">
+						<span class="text-sm font-semibold text-text-primary">{t('new.board.name')}</span>
+						<input
+							type="text"
+							name="title"
+							maxlength="100"
+							placeholder={t('home.placeholder')}
+							class="input input-lg"
+						/>
+					</label>
+					<button type="submit" class="btn btn-primary btn-lg h-[54px] w-full">
+						{t('new.board.submit')}
 					</button>
+					<p class="text-center text-[13px] text-text-muted">{t('new.board.note')}</p>
 				</form>
 
-				<div class="space-y-3">
+				<div class="text-center">
 					{#if !joinOpen}
 						<button
 							onclick={() => (joinOpen = true)}
@@ -112,41 +131,25 @@
 								onkeydown={(e) => e.key === 'Enter' && goToBoard()}
 								class="input input-md flex-1"
 							/>
-							<button
-								onclick={goToBoard}
-								class="btn btn-secondary btn-md"
-							>
+							<button onclick={goToBoard} class="btn btn-secondary btn-md">
 								{t('home.join.button')}
 							</button>
 						</div>
 					{/if}
 				</div>
-
-				<p class="text-xs text-text-muted">
-					{t('home.note')}
-				</p>
-				<a href="/" class="mt-2 inline-block text-[13px] font-medium text-accent transition-colors hover:text-accent-hover">
-					{t('help.link')}
-				</a>
 			{:else}
-				<div class="space-y-2">
-					<h1 class="font-heading text-2xl font-bold tracking-tight text-text-primary">
-						{t('space.title')}
-					</h1>
-					<p class="text-text-secondary">
-						{t('space.subtitle')}
-					</p>
-				</div>
-
-				<form method="POST" action="?/createSpace" class="space-y-2.5">
-					<input
-						type="text"
-						name="name"
-						required
-						maxlength="100"
-						placeholder={t('space.create.name')}
-						class="input input-lg"
-					/>
+				<form method="POST" action="?/createSpace" class="flex flex-col gap-3.5">
+					<label class="flex flex-col gap-2">
+						<span class="text-sm font-semibold text-text-primary">{t('new.space.name')}</span>
+						<input
+							type="text"
+							name="name"
+							required
+							maxlength="100"
+							placeholder={t('space.create.name')}
+							class="input input-lg"
+						/>
+					</label>
 
 					<!-- Password toggle -->
 					<ToggleSwitch bind:checked={passwordEnabled} label={t('space.create.password.toggle')} />
@@ -166,15 +169,13 @@
 						</div>
 					</div>
 
-					<button
-						type="submit"
-						class="btn btn-primary btn-md w-full"
-					>
-						{t('space.create.button')}
+					<button type="submit" class="btn btn-primary btn-lg h-[54px] w-full">
+						{t('new.space.submit')}
 					</button>
+					<p class="text-center text-[13px] text-text-muted">{t('new.space.note')}</p>
 				</form>
 
-				<div class="space-y-3">
+				<div class="text-center">
 					{#if !spaceJoinOpen}
 						<button
 							onclick={() => (spaceJoinOpen = true)}
@@ -191,10 +192,7 @@
 								onkeydown={(e) => e.key === 'Enter' && goToSpace()}
 								class="input input-md flex-1"
 							/>
-							<button
-								onclick={goToSpace}
-								class="btn btn-secondary btn-md"
-							>
+							<button onclick={goToSpace} class="btn btn-secondary btn-md">
 								{t('space.join.button')}
 							</button>
 						</div>

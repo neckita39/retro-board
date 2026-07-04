@@ -7,7 +7,7 @@ import { translate } from './index.js';
 describe('translate', () => {
 	it('uses the explicit locale, not the store', () => {
 		expect(translate('en', 'column.went_well')).toBe('Went Well');
-		expect(translate('ru', 'column.went_well')).toBe('Что прошло хорошо');
+		expect(translate('ru', 'column.went_well')).toBe('Прошло хорошо');
 	});
 
 	it('applies russian plural forms', () => {

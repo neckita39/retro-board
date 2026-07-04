@@ -1,114 +1,121 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 
-	type ChangeTag = 'feature' | 'fix' | 'improvement';
-	interface Change { tag: ChangeTag; text: { en: string; ru: string } }
-	interface Release { version: string; date: string; changes: Change[] }
+	interface Release {
+		version: string;
+		date: string;
+		title: { en: string; ru: string };
+		changes: { en: string; ru: string }[];
+	}
 
 	const releases: Release[] = [
 		{
-			version: '1.6.0',
+			version: '1.7',
 			date: '2026-07-04',
+			title: { en: 'A fresh new look', ru: 'Новый облик' },
 			changes: [
-				{ tag: 'feature', text: { en: 'API for agents — fetch any board as Markdown or JSON by URL, docs at /api', ru: 'API для агентов — получайте доску в Markdown или JSON по ссылке, дока на /api' } },
-				{ tag: 'feature', text: { en: 'Comments are now available in the Summary list', ru: 'Комментарии теперь доступны в итоговом списке' } },
-				{ tag: 'feature', text: { en: 'Move cards between columns', ru: 'Переносите карточки между колонками' } },
-				{ tag: 'feature', text: { en: 'Sort any column by votes with one tap', ru: 'Сортируйте колонку по голосам в один клик' } },
-				{ tag: 'improvement', text: { en: 'Cards with comments now show a bright badge', ru: 'У карточек с комментариями теперь яркий индикатор' } },
-				{ tag: 'improvement', text: { en: 'Exports now include dislikes, images and dates', ru: 'В экспорт добавлены дизлайки, картинки и даты' } },
-				{ tag: 'improvement', text: { en: 'Card buttons are always visible on phones and tablets', ru: 'Кнопки карточек всегда видны на телефонах и планшетах' } },
-				{ tag: 'improvement', text: { en: 'Deleting a card now asks for confirmation', ru: 'Удаление карточки теперь требует подтверждения' } },
-				{ tag: 'improvement', text: { en: 'Timer pulses when time is up and tidies itself away', ru: 'Таймер мигает по истечении времени и сам скрывается' } },
-				{ tag: 'fix', text: { en: 'Board reconnects automatically after a connection loss', ru: 'Доска автоматически переподключается после обрыва связи' } },
-				{ tag: 'fix', text: { en: 'Boards are better protected from uninvited changes', ru: 'Доски лучше защищены от нежелательных изменений' } }
+				{ en: 'Complete redesign — warm colors, new typography, more air', ru: 'Полный редизайн — тёплые цвета, новая типографика, больше воздуха' },
+				{ en: 'Every action is visible — votes and comments are always-on pills, nothing hides behind hover', ru: 'Все действия на виду — голоса и комментарии стали постоянными кнопками, ничего не прячется под курсором' },
+				{ en: 'Share button moved front and center in the header', ru: 'Кнопка «Поделиться» переехала из меню прямо в шапку' },
+				{ en: 'Timer now lives in the header, visible to everyone', ru: 'Таймер теперь живёт в шапке и виден всем' },
+				{ en: 'On phones: column tabs and a message-style composer at the bottom', ru: 'На телефоне: колонки-вкладки и поле ввода снизу, как в мессенджере' }
 			]
 		},
 		{
-			version: '1.5.0',
+			version: '1.6',
+			date: '2026-07-04',
+			title: { en: 'API for agents', ru: 'API для агентов' },
+			changes: [
+				{ en: 'API for agents — fetch any board as Markdown or JSON by URL, docs at /api', ru: 'API для агентов — получайте доску в Markdown или JSON по ссылке, дока на /api' },
+				{ en: 'Comments are now available in the Summary list', ru: 'Комментарии теперь доступны в итоговом списке' },
+				{ en: 'Move cards between columns', ru: 'Переносите карточки между колонками' },
+				{ en: 'Sort any column by votes with one tap', ru: 'Сортируйте колонку по голосам в один клик' },
+				{ en: 'Cards with comments now show a bright badge', ru: 'У карточек с комментариями теперь яркий индикатор' },
+				{ en: 'Exports now include dislikes, images and dates', ru: 'В экспорт добавлены дизлайки, картинки и даты' },
+				{ en: 'Deleting a card now asks for confirmation', ru: 'Удаление карточки теперь требует подтверждения' },
+				{ en: 'Board reconnects automatically after a connection loss', ru: 'Доска автоматически переподключается после обрыва связи' },
+				{ en: 'Boards are better protected from uninvited changes', ru: 'Доски лучше защищены от нежелательных изменений' }
+			]
+		},
+		{
+			version: '1.5',
 			date: '2026-03-29',
+			title: { en: 'A tidier interface', ru: 'Наведение порядка' },
 			changes: [
-				{ tag: 'improvement', text: { en: 'Polished interface — buttons, inputs and cards now look consistent everywhere', ru: 'Отполированный интерфейс — кнопки, поля ввода и карточки теперь выглядят одинаково везде' } },
-				{ tag: 'improvement', text: { en: 'Cleaner navigation — same header on every page', ru: 'Единая навигация — одинаковый хедер на каждой странице' } },
-				{ tag: 'improvement', text: { en: 'Less clutter — removed duplicate buttons and controls', ru: 'Меньше визуального шума — убраны дублирующиеся кнопки и элементы' } },
-				{ tag: 'fix', text: { en: 'Boards in spaces now load correctly when navigating back', ru: 'Доски в пространствах теперь корректно загружаются при возврате назад' } },
+				{ en: 'Polished interface — buttons, inputs and cards now look consistent everywhere', ru: 'Отполированный интерфейс — кнопки, поля ввода и карточки теперь выглядят одинаково везде' },
+				{ en: 'Cleaner navigation — same header on every page', ru: 'Единая навигация — одинаковый хедер на каждой странице' },
+				{ en: 'Less clutter — removed duplicate buttons and controls', ru: 'Меньше визуального шума — убраны дублирующиеся кнопки и элементы' },
+				{ en: 'Boards in spaces now load correctly when navigating back', ru: 'Доски в пространствах теперь корректно загружаются при возврате назад' }
 			]
 		},
 		{
-			version: '1.4.0',
+			version: '1.4',
 			date: '2026-03-22',
+			title: { en: 'Images on cards', ru: 'Картинки в карточках' },
 			changes: [
-				{ tag: 'feature', text: { en: 'Attach images to cards and comments', ru: 'Прикрепляйте фото к карточкам и комментариям' } },
-				{ tag: 'feature', text: { en: 'Tap any image to view it fullscreen', ru: 'Нажмите на фото для полноэкранного просмотра' } },
-				{ tag: 'feature', text: { en: 'Send us feedback right from the app', ru: 'Отправляйте нам отзывы прямо из приложения' } },
-				{ tag: 'feature', text: { en: 'Changelog page — see what\'s new', ru: 'Страница обновлений — смотрите что нового' } },
-				{ tag: 'improvement', text: { en: 'Smoother password toggle animation in spaces', ru: 'Плавная анимация переключения пароля в пространствах' } },
+				{ en: 'Attach images to cards and comments', ru: 'Прикрепляйте фото к карточкам и комментариям' },
+				{ en: 'Tap any image to view it fullscreen', ru: 'Нажмите на фото для полноэкранного просмотра' },
+				{ en: 'Send us feedback right from the app', ru: 'Отправляйте нам отзывы прямо из приложения' },
+				{ en: "Changelog page — see what's new", ru: 'Страница обновлений — смотрите что нового' }
 			]
 		},
 		{
-			version: '1.3.0',
+			version: '1.3',
 			date: '2026-03-19',
+			title: { en: 'Space passwords', ru: 'Пароли пространств' },
 			changes: [
-				{ tag: 'feature', text: { en: 'Manage space password — turn it on or off anytime', ru: 'Управляйте паролем пространства — включайте и отключайте в любой момент' } },
-				{ tag: 'improvement', text: { en: 'Password is now optional when creating a space', ru: 'Пароль теперь необязателен при создании пространства' } },
+				{ en: 'Manage space password — turn it on or off anytime', ru: 'Управляйте паролем пространства — включайте и отключайте в любой момент' },
+				{ en: 'Password is now optional when creating a space', ru: 'Пароль теперь необязателен при создании пространства' }
 			]
 		},
 		{
-			version: '1.2.0',
+			version: '1.2',
 			date: '2026-03-18',
+			title: { en: 'A new homepage', ru: 'Новая главная' },
 			changes: [
-				{ tag: 'feature', text: { en: 'New homepage — see how everything works at a glance', ru: 'Новая главная страница — узнайте как всё работает' } },
-				{ tag: 'improvement', text: { en: 'Separate page for creating boards and spaces', ru: 'Отдельная страница для создания досок и пространств' } },
+				{ en: 'New homepage — see how everything works at a glance', ru: 'Новая главная страница — узнайте как всё работает' },
+				{ en: 'Separate page for creating boards and spaces', ru: 'Отдельная страница для создания досок и пространств' }
 			]
 		},
 		{
-			version: '1.1.0',
+			version: '1.1',
 			date: '2026-03-17',
+			title: { en: 'Names and a timer', ru: 'Имена и таймер' },
 			changes: [
-				{ tag: 'feature', text: { en: 'Fresh new look — redesigned cards, layout and colors', ru: 'Свежий дизайн — обновлённые карточки, раскладка и цвета' } },
-				{ tag: 'feature', text: { en: 'Quick start guide for new users', ru: 'Быстрый старт для новых пользователей' } },
-				{ tag: 'feature', text: { en: 'Set your name so teammates know who wrote what', ru: 'Укажите имя, чтобы коллеги видели кто что написал' } },
-				{ tag: 'feature', text: { en: 'Discussion timer with visual countdown', ru: 'Таймер обсуждения с визуальным отсчётом' } },
-				{ tag: 'fix', text: { en: 'Better error messages when entering wrong password', ru: 'Понятные сообщения при неверном пароле' } },
+				{ en: 'Fresh look — redesigned cards, layout and colors', ru: 'Свежий дизайн — обновлённые карточки, раскладка и цвета' },
+				{ en: 'Quick start guide for new users', ru: 'Быстрый старт для новых пользователей' },
+				{ en: 'Set your name so teammates know who wrote what', ru: 'Укажите имя, чтобы коллеги видели кто что написал' },
+				{ en: 'Discussion timer with visual countdown', ru: 'Таймер обсуждения с визуальным отсчётом' }
 			]
 		},
 		{
-			version: '1.0.0',
+			version: '1.0',
 			date: '2026-03-15',
+			title: { en: 'First release', ru: 'Первый релиз' },
 			changes: [
-				{ tag: 'feature', text: { en: 'Create retro boards and collaborate in real-time', ru: 'Создавайте ретро-доски и работайте вместе в реальном времени' } },
-				{ tag: 'feature', text: { en: 'Three columns: Went Well, Didn\'t Go Well, To Improve', ru: 'Три колонки: Что хорошо, Что не так, Что улучшить' } },
-				{ tag: 'feature', text: { en: 'Vote and comment on cards', ru: 'Голосуйте и комментируйте карточки' } },
-				{ tag: 'feature', text: { en: 'Group boards into spaces for your team', ru: 'Объединяйте доски в пространства для команды' } },
-				{ tag: 'feature', text: { en: 'Dark mode', ru: 'Тёмная тема' } },
-				{ tag: 'feature', text: { en: 'Export your retro to JSON or Markdown', ru: 'Экспортируйте ретро в JSON или Markdown' } },
-				{ tag: 'feature', text: { en: 'Available in English and Russian', ru: 'Доступно на английском и русском' } },
+				{ en: 'Create retro boards and collaborate in real-time', ru: 'Создавайте ретро-доски и работайте вместе в реальном времени' },
+				{ en: "Three columns: Went Well, Didn't Go Well, To Improve", ru: 'Три колонки: Что хорошо, Что не так, Что улучшить' },
+				{ en: 'Vote and comment on cards', ru: 'Голосуйте и комментируйте карточки' },
+				{ en: 'Group boards into spaces for your team', ru: 'Объединяйте доски в пространства для команды' },
+				{ en: 'Dark mode', ru: 'Тёмная тема' },
+				{ en: 'Export your retro to JSON or Markdown', ru: 'Экспортируйте ретро в JSON или Markdown' },
+				{ en: 'Available in English and Russian', ru: 'Доступно на английском и русском' }
 			]
 		}
 	];
 
-	const tagColors: Record<ChangeTag, string> = {
-		feature: 'bg-accent/10 text-accent',
-		fix: 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400',
-		improvement: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
-	};
+	function txt(text: { en: string; ru: string }) {
+		return localeStore.locale === 'ru' ? text.ru : text.en;
+	}
 
-	let items: HTMLElement[] = [];
-	let shown = $state<Record<string, boolean>>({});
-
-	onMount(() => {
-		const observer = new IntersectionObserver(
-			(entries) => entries.forEach((e) => { if (e.isIntersecting) shown[e.target.id] = true; }),
-			{ threshold: 0.1 }
-		);
-		items.forEach((el) => el && observer.observe(el));
-		return () => observer.disconnect();
-	});
-
-	function txt(change: Change) {
-		return localeStore.locale === 'ru' ? change.text.ru : change.text.en;
+	function formatDate(iso: string): string {
+		return new Date(iso).toLocaleDateString(localeStore.locale === 'ru' ? 'ru-RU' : 'en-US', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		});
 	}
 </script>
 
@@ -117,64 +124,37 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<Header showCreate />
+	<Header showNav showCreate />
 
-	<!-- Hero -->
-	<section class="px-6 pt-20 pb-12 text-center">
-		<div class="mx-auto max-w-3xl" style="animation: fadeUp 0.8s cubic-bezier(0.25,1,0.5,1) both;">
-			<div class="badge badge-outline mb-4 gap-2 px-4 py-1.5 text-[12px]">
-				<svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
-				v{releases[0].version}
-			</div>
-			<h1 class="font-heading text-4xl font-bold tracking-tight text-text-primary sm:text-5xl">{t('changelog.title')}</h1>
-			<p class="mt-4 text-lg text-text-secondary">{t('changelog.subtitle')}</p>
+	<main class="mx-auto flex max-w-[760px] flex-col gap-8 px-4 pb-20 pt-12 sm:px-8 sm:pt-14">
+		<div class="flex flex-col gap-2">
+			<h1 class="font-heading text-[26px] font-bold tracking-[-0.02em] text-text-primary sm:text-[32px]">{t('changelog.heading')}</h1>
+			<p class="text-base text-text-secondary">{t('changelog.subtitle')}</p>
 		</div>
-	</section>
 
-	<!-- Timeline -->
-	<section class="px-6 pb-24">
-		<div class="relative mx-auto max-w-3xl">
-			<!-- Vertical line -->
-			<div class="absolute left-[19px] top-0 bottom-0 w-px bg-border md:left-1/2 md:-translate-x-px"></div>
-
-			{#each releases as release, ri}
-				<div
-					bind:this={items[ri]}
-					id="r{ri}"
-					class="relative mb-12 transition-all duration-700 {shown[`r${ri}`] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
-					style="transition-delay: {ri * 100}ms"
-				>
-					<!-- Dot -->
-					<div class="absolute left-3 top-1 h-3.5 w-3.5 rounded-full border-[3px] border-accent bg-surface md:left-1/2 md:-translate-x-1/2"></div>
-
-					<!-- Content card -->
-					<div class="ml-12 md:ml-0 md:w-[calc(50%-2rem)] {ri % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}">
-						<div class="card card-md card-interactive shadow-sm">
-							<!-- Version + date -->
-							<div class="mb-3 flex items-center gap-3">
-								<span class="badge-version">v{release.version}</span>
-								<span class="text-[13px] text-text-muted">{release.date}</span>
-							</div>
-
-							<!-- Changes -->
-							<ul class="space-y-2.5">
-								{#each release.changes as change}
-									<li class="flex items-start gap-2.5">
-										<span class="badge-sm mt-0.5 flex-shrink-0 {tagColors[change.tag]}">
-											{t(`changelog.tag.${change.tag}`)}
-										</span>
-										<span class="text-[13px] leading-relaxed text-text-primary">{txt(change)}</span>
-									</li>
-								{/each}
-							</ul>
+		<!-- Version timeline -->
+		<div class="flex flex-col gap-8">
+			{#each releases as release, i (release.version)}
+				<div class="flex gap-4 sm:gap-5" style="animation: fadeUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) {Math.min(i, 5) * 0.08}s both;">
+					<div class="flex flex-col items-center pt-1">
+						<span class={i === 0 ? 'badge-version' : 'badge-version-outline'}>{release.version}</span>
+						{#if i < releases.length - 1}
+							<div class="mt-2 w-0.5 flex-1 bg-border"></div>
+						{/if}
+					</div>
+					<div class="flex min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-border bg-surface-card p-5 sm:p-6">
+						<div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+							<span class="font-heading text-[17px] font-bold text-text-primary sm:text-[19px]">{txt(release.title)}</span>
+							<span class="text-[13px] text-text-muted">{formatDate(release.date)}</span>
 						</div>
+						<ul class="list-disc space-y-1 pl-[18px] text-[15px] leading-[1.7] text-text-primary/85 marker:text-text-muted">
+							{#each release.changes as change (change.en)}
+								<li>{txt(change)}</li>
+							{/each}
+						</ul>
 					</div>
 				</div>
 			{/each}
 		</div>
-	</section>
-
-	<footer class="border-t border-border px-6 py-8 text-center text-[12px] text-text-muted">
-		{t('header.brand')} · {t('help.footer')}
-	</footer>
+	</main>
 </div>

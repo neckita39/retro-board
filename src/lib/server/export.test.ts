@@ -88,7 +88,7 @@ describe('toMarkdown', () => {
 
 	it('renders russian headings and plurals with lang=ru', () => {
 		const md = toMarkdown(assembleExport(board, cardRows, voteRows, commentRows, ORIGIN), 'ru');
-		expect(md).toContain('## Что прошло хорошо');
+		expect(md).toContain('## Прошло хорошо');
 		expect(md).toContain('[2 лайка, 1 дизлайк]');
 		expect(md).toContain('*Нет карточек*');
 	});

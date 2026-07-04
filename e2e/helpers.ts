@@ -26,12 +26,12 @@ export async function createBoard(page: Page, title: string): Promise<string> {
 
 // Корневой контейнер колонки по её заголовку ("Went Well" | "Didn't Go Well" | "To Improve")
 export function column(page: Page, name: string): Locator {
-	return page.locator('div.rounded-2xl').filter({ has: page.getByRole('heading', { name }) });
+	return page.getByTestId('column').filter({ has: page.getByRole('heading', { name }) });
 }
 
 export async function addCard(page: Page, columnName: string, text: string) {
 	const col = column(page, columnName);
-	await col.getByRole('button', { name: '+ Add a card' }).click();
+	await col.getByRole('button', { name: /Add a card/ }).click();
 	await col.getByPlaceholder("What's on your mind?").fill(text);
 	await col.getByPlaceholder("What's on your mind?").press('Enter');
 	await expect(page.locator('.card-board', { hasText: text }).first()).toBeVisible();

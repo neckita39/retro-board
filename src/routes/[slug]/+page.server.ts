@@ -1,7 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { boards, cards, votes, comments, spaces } from '$lib/server/db/schema.js';
+import { boards, cards, votes, comments, spaces, images } from '$lib/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
+import { decrypt } from '$lib/server/crypto.js';
 import type { PageServerLoad } from './$types.js';
 
 export const load: PageServerLoad = async ({ params, cookies, url }) => {
@@ -26,6 +27,21 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			db.select().from(votes).where(inArray(votes.cardId, cardIds)),
 			db.select().from(comments).where(inArray(comments.cardId, cardIds))
 		]);
+	}
+
+	// Image dimensions for stable layout — same shape the socket board:state delivers
+	const imageIds = [
+		...new Set(
+			[...boardCards, ...boardComments].map((c) => c.imageId).filter((id): id is string => !!id)
+		)
+	];
+	let imageMeta: Record<string, { width: number; height: number }> = {};
+	if (imageIds.length > 0) {
+		const rows = await db
+			.select({ id: images.id, width: images.width, height: images.height })
+			.from(images)
+			.where(inArray(images.id, imageIds));
+		imageMeta = Object.fromEntries(rows.map((r) => [r.id, { width: r.width, height: r.height }]));
 	}
 
 	const adminParam = url.searchParams.get('admin') ?? '';
@@ -74,6 +90,10 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		creatorToken: isCreator ? board.creatorToken : null,
 		cards: boardCards.map((c) => ({
 			...c,
+			content: decrypt(c.content) ?? c.content,
+			authorName: decrypt(c.authorName),
+			imageWidth: c.imageId ? (imageMeta[c.imageId]?.width ?? null) : null,
+			imageHeight: c.imageId ? (imageMeta[c.imageId]?.height ?? null) : null,
 			createdAt: c.createdAt.toISOString()
 		})),
 		votes: boardVotes.map((v) => ({
@@ -82,6 +102,10 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		})),
 		comments: boardComments.map((c) => ({
 			...c,
+			content: decrypt(c.content) ?? c.content,
+			authorName: decrypt(c.authorName),
+			imageWidth: c.imageId ? (imageMeta[c.imageId]?.width ?? null) : null,
+			imageHeight: c.imageId ? (imageMeta[c.imageId]?.height ?? null) : null,
 			createdAt: c.createdAt.toISOString()
 		}))
 	};

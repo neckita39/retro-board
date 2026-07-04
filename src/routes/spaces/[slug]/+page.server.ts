@@ -52,7 +52,11 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			slug: boards.slug,
 			title: boards.title,
 			createdAt: boards.createdAt,
-			cardCount: sql<number>`cast(count(${cards.id}) as integer)`
+			cardCount: sql<number>`cast(count(${cards.id}) as integer)`,
+			// Per-column counts feed the mood bar on board tiles
+			wellCount: sql<number>`cast(count(${cards.id}) filter (where ${cards.columnType} = 'went_well') as integer)`,
+			badCount: sql<number>`cast(count(${cards.id}) filter (where ${cards.columnType} = 'didnt_go_well') as integer)`,
+			improveCount: sql<number>`cast(count(${cards.id}) filter (where ${cards.columnType} = 'improve') as integer)`
 		})
 		.from(boards)
 		.leftJoin(cards, eq(cards.boardId, boards.id))
@@ -79,7 +83,10 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		boards: spaceBoards.map(b => ({
 			...b,
 			createdAt: b.createdAt.toISOString(),
-			cardCount: Number(b.cardCount)
+			cardCount: Number(b.cardCount),
+			wellCount: Number(b.wellCount),
+			badCount: Number(b.badCount),
+			improveCount: Number(b.improveCount)
 		}))
 	};
 };
@@ -95,9 +102,12 @@ export const actions: Actions = {
 
 		if (!space) throw error(404);
 
-		const valid = await verifyPassword(password || '', space.passwordHash);
-		if (!valid) {
-			return fail(400, { error: 'wrong_password' });
+		// Password could have been disabled while the form was open — let them in
+		if (space.passwordHash) {
+			const valid = await verifyPassword(password || '', space.passwordHash);
+			if (!valid) {
+				return fail(400, { error: 'wrong_password' });
+			}
 		}
 
 		cookies.set(`retro_space_${params.slug}`, 'authenticated', {

@@ -4,43 +4,53 @@ Source of truth for UI consistency across all pages.
 
 ## Colors
 
+Warm "paper" palette. Green/red/blue are reserved for column semantics;
+terracotta is the only action accent.
+
 ### Light Mode
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `surface` | `#f9f9f9` | Page background |
-| `surface-card` | `#ffffff` | Cards, panels, header |
-| `surface-hover` | `#f2f2f2` | Hover backgrounds |
-| `text-primary` | `#1a1a1a` | Headings, body text |
-| `text-secondary` | `#5c5c5c` | Descriptions, meta |
-| `text-muted` | `#858585` | Placeholders, disabled |
-| `border` | `#e2e2e2` | Borders, dividers |
-| `border-strong` | `#cfcfcf` | Focus borders |
-| `accent` | `#0d9488` | CTA buttons, links, primary actions |
-| `accent-hover` | `#0f766e` | Accent hover state |
-| `well` | `#22c55e` | Green column dot |
-| `well-bg` | `#f0fdf4` | Green column background |
-| `bad` | `#ef4444` | Red column dot |
-| `bad-bg` | `#fef2f2` | Red column background |
-| `improve` | `#3b82f6` | Blue column dot |
-| `improve-bg` | `#eff6ff` | Blue column background |
+| `surface` | `#F7F6F2` | Page background |
+| `surface-card` | `#FFFFFF` | Cards, panels, header |
+| `surface-hover` | `#ECEBE5` | Hover backgrounds, neutral fills |
+| `text-primary` | `#211E1A` | Ink — headings, body text, dark buttons |
+| `text-secondary` | `#6B6A61` | Descriptions, meta |
+| `text-muted` | `#96958A` | Placeholders, disabled |
+| `border` | `#E5E4DC` | Borders, dividers |
+| `border-strong` | `#D9D8CF` | Emphasized borders, breadcrumb separators |
+| `accent` | `#C4552B` | Terracotta — CTA, links, timer, active nav |
+| `accent-hover` | `#A94620` | Accent hover state |
+| `accent-bg` | `#F7E7DE` | Accent tint — badges, "live now", plus circle |
+| `well` | `#4C8C6A` | Green column: underline, count, mood bar |
+| `well-bg` | `#EDF4EF` | Green tint — active like pill background |
+| `well-strong` | `#3A7355` | Text on green tint |
+| `bad` | `#C05B4D` | Red column + destructive actions |
+| `bad-bg` | `#F5E9E5` | Red tint |
+| `bad-strong` | `#8A3D30` | Text on red tint |
+| `improve` | `#5B72C0` | Blue column |
+| `improve-bg` | `#E9EDF6` | Blue tint |
+| `improve-strong` | `#3A4C87` | Text on blue tint |
 
 ### Dark Mode
-Overrides in `.dark` class. Key differences:
-- `accent` becomes `#2dd4bf` (lighter teal for contrast)
-- Column backgrounds become deep saturated versions
-- Surface uses dark grays (#141414, #1c1c1c)
+Overrides in `.dark` class, derived from the same warm palette:
+- Surfaces are warm dark browns (`#191713`, `#211E1A`, `#2B2721`)
+- `accent` becomes `#D97A50` (lighter terracotta for contrast)
+- Column colors lighten one step; tints become deep muted versions
+- `*-strong` tint-text tokens flip to light shades
 
 ## Typography
 
+Google Fonts: `Unbounded` (400–800) + `Golos Text` (400–700), both with Cyrillic.
+
 | Role | Font | Weight | Size |
 |------|------|--------|------|
-| Body | Nunito Sans | 400 | 14-16px |
-| Labels | Nunito Sans | 500-600 | 12-13px |
-| Headings | Varela Round | 400 (only weight) | 18-48px |
-| Brand/Logo | Varela Round | 700 | 15px |
-| Tabular data | Nunito Sans | 700 | inherit, `tabular-nums` |
-
-**Do NOT change fonts.** User explicitly locked Nunito Sans + Varela Round.
+| Body / UI | Golos Text | 400 | 14-16px, cards 15px/1.5 (16px mobile) |
+| Buttons | Golos Text | 600-700 | 13-16px |
+| Meta (author, dates) | Golos Text | 400 | 13px |
+| Badges / pills | Golos Text | 700 | 11-13px |
+| Headings (`.font-heading`) | Unbounded | 700 | H1 28-32px (ls −0.02em), column titles 21px, tiles 16px |
+| Brand/Logo | Unbounded | 800 | 18px (ls −0.01em) |
+| Tabular data (timer) | Golos Text | 700 | 15px, `tabular-nums` |
 
 ## Spacing
 
@@ -56,48 +66,39 @@ Overrides in `.dark` class. Key differences:
 
 ## Header — Unified Structure
 
-**Every page must use this header layout:**
+White (`surface-card`), `border-b`, solid. One component, two contexts:
 
+**Site pages** (`/`, `/new`, `/changelog`, `/api`, `/feedback`):
 ```
-[Brand + Breadcrumb]          [Context Actions] | [Feedback] [Locale] [Theme]
+[Brand]  [Features · Changelog · API · Feedback]        [EN] [Theme] [CTA "Create Board"]
 ```
+- Nav links 14px/500; active page: 700 + `border-b-2 border-accent`
+- CTA is the accent button; `/new` omits it
 
-### Zones
+**Board** (`/[slug]`):
+```
+[Brand / Space / Board title]     [Timer chip] [Avatars] [Share] [⋯ menu]
+```
+- Timer chip: clock icon + 15px/700 tabular time + 64×4px accent progress bar;
+  creator idle state shows minute stepper + play inside the same chip
+- Participants: own avatar (32px, letter, connection dot) + `+N` overlap stack
+- **Share is a visible ink button** (`btn-dark`) — copies the public link,
+  shows "Copied ✓" for 2s. Never hidden in the overflow menu.
+- `⋯` menu: board code, admin link, exports, API, locale/theme, delete
+- Mobile: board title (Unbounded 19px) + "space · N online" subtitle,
+  compact timer chip, 38px share button
 
-1. **Left: Brand + Breadcrumb**
-   - Brand: `Retrospectrix` (Varela Round, 15px, bold) — always links to `/`
-   - Breadcrumb: `/` separator → page context
-   - Examples: `Retrospectrix / Sprint 42` or `Retrospectrix / Team Alpha / Sprint 42`
-
-2. **Right: Actions (order is fixed)**
-   - Context actions (board-specific): user count, board menu, user avatar
-   - Divider: 1px vertical line, `h-4 bg-border`
-   - Global actions (always present): Feedback icon, Locale toggle, Theme toggle
-
-### Mobile (< 640px)
-- Collapse locale + theme into board menu overflow
-- Keep: brand, breadcrumb (truncated), board menu, feedback icon
-
-### Pages and their context actions:
-| Page | Context Actions | Global Actions |
-|------|----------------|----------------|
-| Landing `/` | — | Feedback, Locale, Theme |
-| Create `/new` | — | Feedback, Locale, Theme |
-| Board `/[slug]` | UserCount, BoardMenu, Avatar | Feedback, Locale, Theme |
-| Space `/spaces/[slug]` | SpaceMenu (if admin) | Feedback, Locale, Theme |
-| Changelog | — | Feedback, Locale, Theme |
-| Feedback `/feedback` | — | Locale, Theme |
-
-### What NOT to put in the header:
-- "Create board" CTA (belongs in page content)
-- "Help" icon (the landing page IS the help — brand link goes to `/`)
-- "?" avatar without name (confusing — looks like help icon)
+**Space** (`/spaces/[slug]`):
+```
+[Brand / Space name  (lock badge)]        [EN] [Theme] [+ New board]
+```
 
 ## Avatar / User Identity
 
-- When user has set a name: show first letter in accent circle (28px)
-- When no name set: show generic user icon (NOT "?")
-- Avatar only appears on board page (where names are relevant)
+- Own avatar in the board header: 32px circle, first letter, `bg-well`,
+  connection status dot (green/red); click to edit name
+- Others online collapse into a `+N` circle
+- When no name set: generic user icon (NOT "?")
 
 ## Components
 
@@ -120,15 +121,19 @@ Overrides in `.dark` class. Key differences:
   - Escape key closes
 
 ### Cards (Board)
-- Use `.card-board` class (bg-surface-card, border, rounded-[14px], shadow-sm)
-- Add `.card-interactive` for hover lift + shadow
+- Use `.card-board` class (bg-surface-card, 1px border, rounded-[14px], p-4 — **no shadow**)
+- Text 15px/1.5 (16px on mobile)
+- Action row is **always visible**: like pill (active = `pill-well` fill,
+  inactive = `pill-outline`), dislike pill, comment pill with count, author right (13px muted)
+- Edit/move/delete icons always visible top-right (no hover-reveal)
 - Animation: `cardEnter 0.55s spring, stagger 0.05s`
 
 ### Columns
-- Background: `bg-{color}-bg/50` (50% opacity column color)
-- Radius: `rounded-2xl`
-- Padding: `p-2.5`
-- Header: dot indicator + title + count
+- No background fill — column header underlined with `border-b-[3px]` in the column color
+- Title: Unbounded 21px + colored count
+- "Add a card…" field always visible at the top of the column
+- Mobile: columns are segment tabs (active tab filled with column color),
+  composer pinned to the bottom of the screen (48px input + 48px accent send)
 
 ## Animation System
 
@@ -261,14 +266,14 @@ Reusable CSS classes defined in `src/app.css` (`@layer components`). Composable 
 
 | Class | Purpose |
 |-------|---------|
-| `.btn` | Base: flex, font-semibold, transition, disabled states |
-| `.btn-sm` | Small: rounded-lg, px-3, py-1.5, text-xs |
-| `.btn-md` | Medium: rounded-xl, px-4, py-2.5, text-sm |
-| `.btn-lg` | Large: rounded-xl, px-6, py-3, text-[15px] |
-| `.btn-primary` | Accent bg, white text, hover/active states |
-| `.btn-dark` | Dark bg (text-primary), surface text |
-| `.btn-danger` | Red-500 bg, white text |
-| `.btn-secondary` | Border, text-primary, hover bg |
+| `.btn` | Base: flex, gap-2, font-semibold, transition, disabled states |
+| `.btn-sm` | Small: rounded-[10px], px-3.5, py-[7px], text-[13px] |
+| `.btn-md` | Medium: rounded-xl (12px), px-[18px], py-2.5, text-sm |
+| `.btn-lg` | Large: rounded-[14px], px-[26px], py-3.5, text-base |
+| `.btn-primary` | Accent (terracotta) bg, white bold text |
+| `.btn-dark` | Ink bg (text-primary), surface text — e.g. Share |
+| `.btn-danger` | `bad` bg, white text |
+| `.btn-secondary` | Border, surface-card bg, text-primary, hover bg |
 | `.btn-ghost` | No bg/border, text-secondary, hover bg |
 
 **Icon buttons:**
@@ -287,13 +292,22 @@ Reusable CSS classes defined in `src/app.css` (`@layer components`). Composable 
 
 | Class | Purpose |
 |-------|---------|
-| `.input` | Base: full-width, rounded-xl, border, focus states |
-| `.input-sm` | Small: rounded-lg, text-xs, tight padding |
+| `.input` | Base: full-width, rounded-[14px], border; focus = 1.5px ink border |
+| `.input-sm` | Small: rounded-[10px], text-[13px], tight padding |
 | `.input-md` | Medium: px-4, py-2.5 |
-| `.input-lg` | Large: px-4, py-3 |
-| `.textarea` | Same as input + resize-none |
+| `.input-lg` | Large: h-[54px], px-[18px], text-base |
+| `.textarea` | Same as input + resize-none, 15px text |
 
 **Example:** `<input class="input input-lg" placeholder="Title" />`
+
+### Pills (votes, comments — always visible)
+
+| Class | Purpose |
+|-------|---------|
+| `.pill` | Base: rounded-full, px-3, py-1.5, text-[13px], font-bold |
+| `.pill-outline` | 1px border, muted text — inactive vote |
+| `.pill-well` | Green tint fill — active like |
+| `.pill-bad` | Red tint fill — active dislike |
 
 ### Cards
 
@@ -315,9 +329,10 @@ Reusable CSS classes defined in `src/app.css` (`@layer components`). Composable 
 | `.badge` | Base: rounded-full, px-3, py-1, text-xs, font-semibold |
 | `.badge-sm` | Small tag: rounded-md, text-[10px], uppercase |
 | `.badge-outline` | Border + muted bg + secondary text |
-| `.badge-accent` | Tinted accent bg + accent text |
-| `.badge-success` | Green bg + green text (with dark mode) |
-| `.badge-version` | Accent bg, white text, rounded-lg |
+| `.badge-accent` | Accent tint bg (`accent-bg`) + accent text |
+| `.badge-success` | Green tint bg + `well-strong` text |
+| `.badge-version` | Ink bg, surface text — latest changelog release |
+| `.badge-version-outline` | Bordered — older changelog releases |
 
 ### Errors
 
@@ -328,9 +343,12 @@ Reusable CSS classes defined in `src/app.css` (`@layer components`). Composable 
 
 ## Anti-patterns (DO NOT)
 
+- **Hover-reveal actions** — every card action (votes, comments, edit, move, delete)
+  is always visible; nothing hides behind hover
+- Hiding primary actions in overflow menus (Share is a visible button)
 - Icon-only navigation without labels
 - Different header layouts on different pages
-- Hiding theme/locale toggle on some pages
+- Shadows on cards — 1px border only (modal is the exception)
 - "?" as user avatar (looks like help icon)
 - Copying admin links in public-facing toasts
 - Stacking multiple banners (use toast instead)
