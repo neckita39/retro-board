@@ -14,6 +14,8 @@
 	"column.didnt_go_well": "Что пошло не так",
 	"column.improve": "Что улучшить",
 	"column.cards": "{n} карточка|{n} карточки|{n} карточек",
+	"column.sort.votes": "Сортировать по голосам",
+	"column.sort.newest": "Сначала новые",
 
 	"card.edit": "Редактировать",
 	"card.delete": "Удалить",

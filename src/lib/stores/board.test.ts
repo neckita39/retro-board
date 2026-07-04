@@ -165,4 +165,30 @@ describe('BoardStore', () => {
 		// went_well first (c3 has more likes than c2), then improve
 		expect(result.map((c) => c.id)).toEqual(['c3', 'c2', 'c1']);
 	});
+
+	it('getColumnCards sorts by votes desc when sortBy=votes', () => {
+		boardStore.setState({
+			board,
+			cards: [
+				makeCard({ id: 'c1', createdAt: '2025-01-02T00:00:00Z' }),
+				makeCard({ id: 'c2', createdAt: '2025-01-01T00:00:00Z' })
+			],
+			votes: [makeVote({ id: 'v1', cardId: 'c2' })],
+			comments: []
+		});
+		expect(boardStore.getColumnCards('went_well', 'votes').map((c) => c.id)).toEqual(['c2', 'c1']);
+	});
+
+	it('getColumnCards falls back to newest-first among equal votes', () => {
+		boardStore.setState({
+			board,
+			cards: [
+				makeCard({ id: 'c1', createdAt: '2025-01-01T00:00:00Z' }),
+				makeCard({ id: 'c2', createdAt: '2025-01-02T00:00:00Z' })
+			],
+			votes: [],
+			comments: []
+		});
+		expect(boardStore.getColumnCards('went_well', 'votes').map((c) => c.id)).toEqual(['c2', 'c1']);
+	});
 });

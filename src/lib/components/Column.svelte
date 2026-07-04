@@ -10,7 +10,9 @@
 
 	let config = $derived(COLUMN_CONFIG[column]);
 
-	let columnCards = $derived(boardStore.getColumnCards(column));
+	let sortBy = $state<'newest' | 'votes'>('newest');
+
+	let columnCards = $derived(boardStore.getColumnCards(column, sortBy));
 
 	const dotColor: Record<ColumnType, string> = {
 		went_well: 'bg-well',
@@ -32,7 +34,16 @@
 		<h2 class="text-[13px] font-semibold text-text-primary">
 			{t(`column.${column}`)}
 		</h2>
-		<span class="ml-auto text-[11px] tabular-nums text-text-muted">{columnCards.length}</span>
+		<button
+			onclick={() => (sortBy = sortBy === 'newest' ? 'votes' : 'newest')}
+			class="btn-icon btn-icon-sm ml-auto {sortBy === 'votes' ? 'text-accent' : ''}"
+			aria-label={sortBy === 'votes' ? t('column.sort.newest') : t('column.sort.votes')}
+			title={sortBy === 'votes' ? t('column.sort.newest') : t('column.sort.votes')}
+			aria-pressed={sortBy === 'votes'}
+		>
+			<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+		</button>
+		<span class="text-[11px] tabular-nums text-text-muted">{columnCards.length}</span>
 	</div>
 
 	<CardForm {column} />

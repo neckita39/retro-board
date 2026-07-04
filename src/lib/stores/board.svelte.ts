@@ -44,10 +44,16 @@ class BoardStore {
 		return this.comments.filter((c) => c.cardId === cardId);
 	}
 
-	getColumnCards(columnType: string) {
-		return this.cards
-			.filter((c) => c.columnType === columnType)
-			.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+	getColumnCards(columnType: string, sortBy: 'newest' | 'votes' = 'newest') {
+		const filtered = this.cards.filter((c) => c.columnType === columnType);
+		if (sortBy === 'votes') {
+			return filtered.sort(
+				(a, b) =>
+					this.getCardLikes(b.id) - this.getCardLikes(a.id) ||
+					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+			);
+		}
+		return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 	}
 
 	getCardLikes(cardId: string): number {
