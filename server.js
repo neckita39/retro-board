@@ -368,7 +368,14 @@ io.on('connection', (socket) => {
 			}
 
 			socket.emit('board:state', {
-				board,
+				// Whitelist board fields — never leak creatorToken to visitors
+				board: {
+					id: board.id,
+					slug: board.slug,
+					title: board.title,
+					spaceId: board.spaceId,
+					createdAt: board.createdAt
+				},
 				cards: boardCards.map(c => decryptCard(c, c.imageId ? imageMetaMap[c.imageId] : null)),
 				votes: boardVotes,
 				comments: boardComments.map(c => decryptComment(c, c.imageId ? imageMetaMap[c.imageId] : null))
