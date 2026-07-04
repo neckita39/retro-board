@@ -29,6 +29,7 @@ Retrospectrix — real-time retrospective board. SvelteKit (Svelte 5 runes) + So
 
 - `npm test` — run unit tests (Vitest, no DB/Docker needed)
 - `npm run test:watch` — run tests in watch mode
+- `npm run test:e2e` — Playwright e2e smoke suite (needs `docker compose up -d db` first; builds the app and runs it on port 4777)
 - `npm run dev` — dev server (needs DB running)
 - `npm run build` — production build
 - `npm run check` — svelte-check type checking
@@ -45,7 +46,9 @@ App available at http://localhost:3777
 
 ## Testing
 
-Tests are in `src/**/*.test.ts`. Run with `npm test`. Tests are pure unit tests — no DB, Docker, or browser required.
+Unit tests are in `src/**/*.test.ts`. Run with `npm test`. They are pure unit tests — no DB, Docker, or browser required.
+
+E2e smoke tests are in `e2e/*.spec.ts` (Playwright, chromium, 1 worker). They run the built app via `node server.js` on port 4777 against a real PostgreSQL (local: compose `db` on host port 5433; CI: postgres service container). Shared helpers in `e2e/helpers.ts` (`createBoard`, `addCard`, `column`, `initStorage`) — every test creates its own board, no DB cleanup needed. In CI the `e2e` job gates the deploy.
 
 When adding new i18n keys, add to BOTH en.json and ru.json — the dictionary integrity test will catch missing keys.
 
