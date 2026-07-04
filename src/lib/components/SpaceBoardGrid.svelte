@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.js';
+	import { localeStore } from '$lib/stores/locale.svelte.js';
 
 	interface SpaceBoard {
 		slug: string;
@@ -57,6 +58,7 @@
 			action="/spaces/{spaceSlug}?/createBoard"
 			class="card-enter card card-sm mb-4"
 		>
+			<input type="hidden" name="locale" value={localeStore.locale} />
 			<div class="flex gap-3">
 				<input
 					type="text"

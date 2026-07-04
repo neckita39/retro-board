@@ -2,6 +2,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { data } = $props();
@@ -78,6 +79,7 @@
 				</div>
 
 				<form method="POST" action="?/createBoard" class="space-y-2.5">
+					<input type="hidden" name="locale" value={localeStore.locale} />
 					<input
 						type="text"
 						name="title"

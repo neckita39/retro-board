@@ -88,8 +88,8 @@
 					<button
 						onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
 						class="btn-icon btn-icon-md btn-icon-bordered {copied ? 'text-accent' : ''}"
-						aria-label="Menu"
-						title="Menu"
+						aria-label={t('header.menu')}
+						title={t('header.menu')}
 					>
 						{#if copied}
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -185,7 +185,7 @@
 								bind:value={userName}
 								onkeydown={(e) => e.key === 'Enter' && saveName()}
 								onblur={saveName}
-								placeholder="Name"
+								placeholder={t('name.placeholder')}
 								class="w-24 rounded-md border border-border bg-surface px-2 py-1 text-[12px] text-text-primary focus:outline-none"
 							/>
 						</div>

@@ -152,7 +152,8 @@ export const actions: Actions = {
 		if (!space) throw error(404);
 
 		const formData = await request.formData();
-		const title = (formData.get('title') as string)?.trim() || 'Ретро';
+		const locale = formData.get('locale') === 'ru' ? 'ru' : 'en';
+		const title = (formData.get('title') as string)?.trim() || (locale === 'ru' ? 'Ретро' : 'Retro');
 
 		const slug = nanoid(21);
 		const creatorToken = nanoid(32);

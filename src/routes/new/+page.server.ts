@@ -14,7 +14,8 @@ export const load: PageServerLoad = async ({ url }) => {
 export const actions: Actions = {
 	createBoard: async ({ request, cookies }) => {
 		const formData = await request.formData();
-		const title = (formData.get('title') as string)?.trim().slice(0, 100) || 'Ретро';
+		const locale = formData.get('locale') === 'ru' ? 'ru' : 'en';
+		const title = (formData.get('title') as string)?.trim().slice(0, 100) || (locale === 'ru' ? 'Ретро' : 'Retro');
 
 		const slug = nanoid(21);
 		const creatorToken = nanoid(32);
