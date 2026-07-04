@@ -25,6 +25,7 @@
 	"comment.placeholder": "Add a comment...",
 	"comment.send": "Send",
 	"comment.count": "{n} comment|{n} comments",
+	"comment.add": "Comment",
 
 	"summary.title": "Summary",
 	"summary.empty": "No cards yet. Add some cards to see the summary.",
