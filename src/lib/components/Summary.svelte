@@ -32,7 +32,7 @@
 						</span>
 					</div>
 				{/if}
-				<div class="rounded-[10px] border border-border bg-surface-card py-2 px-2.5 transition-colors hover:border-border-strong">
+				<div data-testid="summary-card" class="rounded-[10px] border border-border bg-surface-card py-2 px-2.5 transition-colors hover:border-border-strong">
 					<div class="flex items-center gap-2.5">
 						<span class="shrink-0 min-w-6 text-center text-[11px] font-semibold tabular-nums text-text-muted">
 							{boardStore.getCardLikes(card.id)} &uarr;
