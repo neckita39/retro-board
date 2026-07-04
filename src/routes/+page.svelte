@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import { t } from '$lib/i18n/index.js';
-	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 
 	boardStore.board = null;
@@ -119,16 +118,8 @@
 		</section>
 	</main>
 
-	<!-- Footer — a single line duplicating the header nav -->
-	<footer class="border-t border-border bg-surface-card px-5 py-5 sm:px-8 lg:px-14">
-		<div class="mx-auto flex max-w-[1360px] flex-col items-center justify-between gap-3 sm:flex-row">
-			<span class="text-[13px] text-text-muted">{t('home.footer.tagline')}</span>
-			<div class="flex flex-wrap items-center gap-5 text-[13px] text-text-secondary">
-				<a href="https://github.com/neckita39/retro-board" target="_blank" rel="noopener" class="transition-colors hover:text-text-primary">GitHub</a>
-				<a href="/changelog" class="transition-colors hover:text-text-primary">{t('nav.changelog')}</a>
-				<a href="/api" class="transition-colors hover:text-text-primary">{t('nav.api')}</a>
-				<button onclick={() => feedbackStore.show()} class="transition-colors hover:text-text-primary">{t('nav.feedback')}</button>
-			</div>
-		</div>
+	<!-- Footer — tagline only; navigation and GitHub live in the header -->
+	<footer class="border-t border-border bg-surface-card px-5 py-5 text-center sm:px-8 lg:px-14">
+		<span class="text-[13px] text-text-muted">{t('home.footer.tagline')}</span>
 	</footer>
 </div>

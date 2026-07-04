@@ -70,10 +70,12 @@ White (`surface-card`), `border-b`, solid. One component, two contexts:
 
 **Site pages** (`/`, `/new`, `/changelog`, `/api`, `/feedback`):
 ```
-[Brand]  [Features · Changelog · API · Feedback]        [EN] [Theme] [CTA "Create Board"]
+[Brand]  [Features · Changelog · API · Feedback]        [GitHub] [EN] [Theme] [CTA "Create Board"]
 ```
 - Nav links 14px/500; active page: 700 + `border-b-2 border-accent`
+- GitHub is an icon button next to the locale/theme toggles
 - CTA is the accent button; `/new` omits it
+- Landing footer is a tagline line only — no duplicate nav
 
 **Board** (`/[slug]`):
 ```
