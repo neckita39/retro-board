@@ -12,7 +12,20 @@
 </script>
 
 <svelte:head>
-	<title>{t('header.brand')}</title>
+	<title>{t('seo.title')}</title>
+	<meta name="description" content={t('seo.description')} />
+	<link rel="canonical" href="https://retrospectrix.ru/" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://retrospectrix.ru/" />
+	<meta property="og:site_name" content={t('header.brand')} />
+	<meta property="og:title" content={t('seo.title')} />
+	<meta property="og:description" content={t('seo.description')} />
+	<meta property="og:image" content="https://retrospectrix.ru/logo.png" />
+	<!-- Логотип квадратный, поэтому компактная карточка, а не широкая -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={t('seo.title')} />
+	<meta name="twitter:description" content={t('seo.description')} />
+	<meta name="twitter:image" content="https://retrospectrix.ru/logo.png" />
 </svelte:head>
 
 {#snippet mockLike(n: number, active: boolean)}

@@ -1,3 +1,15 @@
-# allow crawling everything by default
+# В поиске нужна только главная. Доски и пространства защищены одной лишь
+# ссылкой — краулеру там делать нечего, поэтому он их даже не забирает.
+# Ассеты открыты намеренно: без CSS и JS поисковик не отрисует главную
+# и решит, что страница сломана.
+
 User-agent: *
-Disallow:
+Allow: /$
+Allow: /_app/
+Allow: /favicon.svg
+Allow: /logo.png
+Allow: /board-bg.png
+Allow: /yandex_f733dfd3901e361e.html
+Disallow: /
+
+Sitemap: https://retrospectrix.ru/sitemap.xml

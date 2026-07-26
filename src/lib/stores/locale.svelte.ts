@@ -8,7 +8,9 @@ function isSupported(val: string): val is SupportedLocale {
 }
 
 class LocaleStore {
-	locale = $state<SupportedLocale>('en');
+	// ru по умолчанию: домен .ru, аудитория русская, и именно эту версию
+	// сервер отдаёт поисковикам. Англоязычные получат свой язык при загрузке.
+	locale = $state<SupportedLocale>('ru');
 
 	constructor() {
 		if (browser) {

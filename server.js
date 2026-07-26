@@ -292,6 +292,14 @@ const httpServer = createServer(async (req, res) => {
 		res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 	}
 
+	// В поиске нужна только главная. Доски и пространства открыты по неугадываемой
+	// ссылке — утёкшая в индекс ретроспектива уже не отзывается. robots.txt просит
+	// туда не ходить, а этот заголовок сработает, даже если краулер пришёл по ссылке.
+	const pathname = (req.url || '/').split('?')[0];
+	if (pathname !== '/') {
+		res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+	}
+
 	// Track requests for metrics
 	metrics.requestCount++;
 
