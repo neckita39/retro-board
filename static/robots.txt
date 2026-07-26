@@ -9,6 +9,7 @@ Allow: /_app/
 Allow: /favicon.svg
 Allow: /logo.png
 Allow: /board-bg.png
+Allow: /sitemap.xml
 Allow: /yandex_f733dfd3901e361e.html
 Allow: /google55ffc062319d38bd.html
 Disallow: /
