@@ -49,7 +49,7 @@ class BoardStore {
 		if (sortBy === 'votes') {
 			return filtered.sort(
 				(a, b) =>
-					this.getCardLikes(b.id) - this.getCardLikes(a.id) ||
+					this.getCardScore(b.id) - this.getCardScore(a.id) ||
 					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
 			);
 		}
@@ -60,13 +60,28 @@ class BoardStore {
 		return this.votes.filter((v) => v.cardId === cardId && v.type === 'like').length;
 	}
 
+	getCardDislikes(cardId: string): number {
+		return this.votes.filter((v) => v.cardId === cardId && v.type === 'dislike').length;
+	}
+
+	/** Вес карточки: дизлайк гасит лайк, иначе возражения ни на что не влияют. */
+	getCardScore(cardId: string): number {
+		let score = 0;
+		for (const v of this.votes) {
+			if (v.cardId !== cardId) continue;
+			if (v.type === 'like') score++;
+			else if (v.type === 'dislike') score--;
+		}
+		return score;
+	}
+
 	getSummaryCards() {
 		const order: string[] = ['went_well', 'didnt_go_well', 'improve'];
 		return [...this.cards]
 			.sort((a, b) => {
 				const colDiff = order.indexOf(a.columnType) - order.indexOf(b.columnType);
 				if (colDiff !== 0) return colDiff;
-				return this.getCardLikes(b.id) - this.getCardLikes(a.id);
+				return this.getCardScore(b.id) - this.getCardScore(a.id);
 			});
 	}
 }

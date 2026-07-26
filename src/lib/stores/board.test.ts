@@ -135,6 +135,40 @@ describe('BoardStore', () => {
 		expect(boardStore.getCardLikes('c1')).toBe(2);
 	});
 
+	it('getCardDislikes counts only dislike votes', () => {
+		boardStore.setVotes('c1', [
+			makeVote({ id: 'v1', cardId: 'c1', type: 'like' }),
+			makeVote({ id: 'v2', cardId: 'c1', type: 'dislike' }),
+			makeVote({ id: 'v3', cardId: 'c1', type: 'dislike' })
+		]);
+		expect(boardStore.getCardDislikes('c1')).toBe(2);
+	});
+
+	it('getCardScore subtracts dislikes from likes', () => {
+		boardStore.setVotes('c1', [
+			makeVote({ id: 'v1', cardId: 'c1', type: 'like' }),
+			makeVote({ id: 'v2', cardId: 'c1', type: 'like' }),
+			makeVote({ id: 'v3', cardId: 'c1', type: 'like' }),
+			makeVote({ id: 'v4', cardId: 'c1', type: 'dislike' })
+		]);
+		expect(boardStore.getCardScore('c1')).toBe(2);
+	});
+
+	it('getCardScore goes negative when dislikes win', () => {
+		boardStore.setVotes('c1', [
+			makeVote({ id: 'v1', cardId: 'c1', type: 'like' }),
+			makeVote({ id: 'v2', cardId: 'c1', type: 'dislike' }),
+			makeVote({ id: 'v3', cardId: 'c1', type: 'dislike' })
+		]);
+		expect(boardStore.getCardScore('c1')).toBe(-1);
+	});
+
+	it('getCardScore ignores votes on other cards', () => {
+		boardStore.setVotes('c1', [makeVote({ id: 'v1', cardId: 'c1', type: 'like' })]);
+		boardStore.setVotes('c2', [makeVote({ id: 'v2', cardId: 'c2', type: 'dislike' })]);
+		expect(boardStore.getCardScore('c1')).toBe(1);
+	});
+
 	it('isCreator defaults to false', () => {
 		expect(boardStore.isCreator).toBe(false);
 	});
@@ -148,6 +182,54 @@ describe('BoardStore', () => {
 		boardStore.isCreator = true;
 		boardStore.setState({ board, cards: [], votes: [], comments: [] });
 		expect(boardStore.isCreator).toBe(true);
+	});
+
+	it('getSummaryCards ranks a heavily disliked card below a quieter one', () => {
+		boardStore.setState({
+			board,
+			cards: [
+				makeCard({ id: 'loud', columnType: 'went_well' }),
+				makeCard({ id: 'quiet', columnType: 'went_well' })
+			],
+			votes: [
+				// 17 лайков и 10 дизлайков => 7
+				...Array.from({ length: 17 }, (_, i) =>
+					makeVote({ id: `l${i}`, cardId: 'loud', type: 'like', sessionId: `s${i}` })
+				),
+				...Array.from({ length: 10 }, (_, i) =>
+					makeVote({ id: `d${i}`, cardId: 'loud', type: 'dislike', sessionId: `d${i}` })
+				),
+				// 9 лайков без возражений => 9
+				...Array.from({ length: 9 }, (_, i) =>
+					makeVote({ id: `q${i}`, cardId: 'quiet', type: 'like', sessionId: `q${i}` })
+				)
+			],
+			comments: []
+		});
+
+		expect(boardStore.getCardScore('loud')).toBe(7);
+		expect(boardStore.getCardScore('quiet')).toBe(9);
+		expect(boardStore.getSummaryCards().map((c) => c.id)).toEqual(['quiet', 'loud']);
+	});
+
+	it('getColumnCards sorted by votes puts a disliked card below an unopposed one', () => {
+		boardStore.setState({
+			board,
+			cards: [
+				makeCard({ id: 'c1', createdAt: '2025-01-02T00:00:00Z' }),
+				makeCard({ id: 'c2', createdAt: '2025-01-01T00:00:00Z' })
+			],
+			votes: [
+				makeVote({ id: 'v1', cardId: 'c1', type: 'like' }),
+				makeVote({ id: 'v2', cardId: 'c1', type: 'like' }),
+				makeVote({ id: 'v3', cardId: 'c1', type: 'dislike' }),
+				makeVote({ id: 'v4', cardId: 'c1', type: 'dislike' }),
+				makeVote({ id: 'v5', cardId: 'c2', type: 'like' })
+			],
+			comments: []
+		});
+		// c1: 2 - 2 = 0, c2: 1 - 0 = 1
+		expect(boardStore.getColumnCards('went_well', 'votes').map((c) => c.id)).toEqual(['c2', 'c1']);
 	});
 
 	it('getSummaryCards sorts by column order then by likes desc', () => {

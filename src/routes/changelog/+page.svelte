@@ -19,6 +19,8 @@
 				{ en: 'Discussion mode — press «Discuss» in the Summary and everyone’s screen focuses on the same card', ru: 'Режим обсуждения — нажмите «Обсудить» в «Итогах», и у всех участников подсветится одна и та же карточка' },
 				{ en: 'A five-minute timer sits next to the card being discussed and starts over on every new one', ru: 'Рядом с обсуждаемой карточкой идёт пятиминутный таймер и начинается заново на каждой новой' },
 				{ en: 'Cards you have already been through get a checkmark, so nothing gets skipped', ru: 'Пройденные карточки помечаются галочкой — ничего не потеряется' },
+				{ en: 'A card’s weight in the Summary is now likes minus dislikes, shown as 7 (17/-10) — objections finally count', ru: 'Вес карточки в «Итогах» теперь считается как лайки минус дизлайки и показывается в виде 7 (17/-10) — возражения наконец учитываются' },
+				{ en: 'Sorting a column by votes uses the same number', ru: 'Сортировка колонки по голосам считает так же' },
 				{ en: 'The participants counter in the header no longer breaks on large teams', ru: 'Счётчик участников в шапке больше не разъезжается на больших командах' }
 			]
 		},
