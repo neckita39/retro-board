@@ -5,9 +5,10 @@
 
 	boardStore.board = null;
 
-	// Live board mock in the hero — a shrunken copy of the real board screen
-	let mockNames = $derived([t('home.mock.name1'), t('home.mock.name2'), t('home.mock.name3')]);
-	const avatarColors = ['bg-well', 'bg-improve', 'bg-bad'];
+	// Live board mock in the hero — a shrunken copy of the real board screen.
+	// Инициалы участников складываются в БИТРИКС (BITRIX в EN) — пасхалка.
+	let mockNames = $derived(t('home.mock.names').split(','));
+	const avatarColors = ['bg-well', 'bg-improve', 'bg-bad', 'bg-accent'];
 </script>
 
 <svelte:head>
@@ -45,7 +46,6 @@
 				</p>
 				<div class="flex flex-wrap gap-3">
 					<a href="/new" class="btn btn-primary btn-lg">{t('home.hero.cta')}</a>
-					<a href="#how" class="btn btn-secondary btn-lg">{t('home.hero.how')}</a>
 				</div>
 			</div>
 
@@ -57,7 +57,7 @@
 						<span class="text-xs font-bold tabular-nums text-accent">04:32</span>
 						<div class="flex">
 							{#each mockNames as name, i (name)}
-								<span class="flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-surface-card text-[10px] font-bold text-white {avatarColors[i]} {i > 0 ? '-ml-[7px]' : ''}">{name[0]}</span>
+								<span class="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 border-surface-card text-[10px] font-bold text-white {avatarColors[i % avatarColors.length]} {i > 0 ? '-ml-[7px]' : ''}">{name[0]}</span>
 							{/each}
 						</div>
 					</div>

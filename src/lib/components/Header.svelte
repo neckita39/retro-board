@@ -194,8 +194,14 @@
 							<span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface-card {socketStore.connected ? 'bg-well' : 'bg-bad'}"></span>
 						</button>
 						{#if othersOnline > 0}
-							<span class="-ml-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface-card bg-surface-hover text-xs font-bold text-text-secondary">
-								+{othersOnline}
+							<!-- Счётчик, а не аватар: без нахлёста (иначе индикатор связи налезает)
+							     и с авторастущей шириной — фиксированный круг ломался на больших командах -->
+							<span
+								class="ml-1.5 flex h-8 min-w-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-surface-hover px-2 text-xs font-bold tabular-nums text-text-secondary"
+								title={t('user.online', { n: socketStore.usersCount })}
+								aria-label={t('user.online', { n: socketStore.usersCount })}
+							>
+								{othersOnline > 99 ? '99+' : `+${othersOnline}`}
 							</span>
 						{/if}
 					{/if}

@@ -12,6 +12,17 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.8',
+			date: '2026-07-26',
+			title: { en: 'One card at a time', ru: 'По одной карточке' },
+			changes: [
+				{ en: 'Discussion mode — press «Discuss» in the Summary and everyone’s screen focuses on the same card', ru: 'Режим обсуждения — нажмите «Обсудить» в «Итогах», и у всех участников подсветится одна и та же карточка' },
+				{ en: 'A five-minute timer sits next to the card being discussed and starts over on every new one', ru: 'Рядом с обсуждаемой карточкой идёт пятиминутный таймер и начинается заново на каждой новой' },
+				{ en: 'Cards you have already been through get a checkmark, so nothing gets skipped', ru: 'Пройденные карточки помечаются галочкой — ничего не потеряется' },
+				{ en: 'The participants counter in the header no longer breaks on large teams', ru: 'Счётчик участников в шапке больше не разъезжается на больших командах' }
+			]
+		},
+		{
 			version: '1.7',
 			date: '2026-07-04',
 			title: { en: 'A fresh new look', ru: 'Новый облик' },

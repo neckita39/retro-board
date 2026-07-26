@@ -14,7 +14,6 @@
 	"home.hero.title2": "nothing extra.",
 	"home.hero.desc": "Create a board, send the link — your team joins instantly. No accounts, no setup.",
 	"home.hero.cta": "Start a retro →",
-	"home.hero.how": "How it works",
 	"home.step1.title": "Create",
 	"home.step1.desc": "A board or a space. No signup, no email.",
 	"home.step2.title": "Share",
@@ -28,9 +27,7 @@
 	"home.mock.card3": "The billing bug ate half the sprint",
 	"home.mock.card4": "Quiet hours without meetings",
 	"home.mock.add": "+ Add",
-	"home.mock.name1": "Ann",
-	"home.mock.name2": "Mike",
-	"home.mock.name3": "Oleg",
+	"home.mock.names": "Boris,Irina,Timur,Roman,Igor,Xenia",
 
 	"new.title": "What are we creating?",
 	"new.subtitle": "No signup — the link appears right after creation.",
