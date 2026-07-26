@@ -73,7 +73,9 @@ Secrets configured in GitHub: SSH_HOST, SSH_USER, SSH_KEY, SSH_PORT, PROJECT_PAT
 - **Export**: JSON and Markdown
 - **Changelog**: `/changelog` — user-facing changelog with timeline UI
 - **Feedback**: `/feedback` — form that sends notifications to Telegram bot
-- **i18n**: English and Russian
+- **Visit analytics**: `retro.guest.from_web` (one per visit, session cookie `retro_visit`) plus `retro.guest.source.{google|yandex|search_other|social|direct|other}` by referrer; bots filtered. Pure logic in `src/lib/server/visitors.ts`, wired in `src/hooks.server.ts`
+- **SEO**: only `/` is indexable — `static/robots.txt` closes the rest and `server.js` sends `X-Robots-Tag: noindex, nofollow` on every path except the root (boards are protected by an unguessable link only). Sitemap at `src/routes/sitemap.xml`, verification files for Google/Yandex live in `static/`
+- **i18n**: English and Russian (locale store defaults to `ru` — that is the version search engines see)
 - **Dark mode**: CSS custom properties, smooth transitions
 
 ## Image upload flow

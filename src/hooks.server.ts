@@ -1,7 +1,39 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { metric } from '$lib/server/statsd.js';
+import { classifySource, isBot, isCountablePage } from '$lib/server/visitors.js';
+
+// Сессионная кука: живёт до закрытия браузера. Один визит — один посетитель,
+// перезагрузка страницы счётчик не двигает.
+const VISIT_COOKIE = 'retro_visit';
+
+function countVisit(event: Parameters<Handle>[0]['event']) {
+	const req = event.request;
+	if (!isCountablePage(event.url.pathname, req.headers.get('accept'))) return;
+	if (isBot(req.headers.get('user-agent'))) return;
+	if (event.cookies.get(VISIT_COOKIE)) return;
+
+	event.cookies.set(VISIT_COOKIE, '1', {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'lax',
+		secure: event.url.protocol === 'https:'
+	});
+
+	// internal — человек уже был посчитан на входе, это переход по сайту
+	const source = classifySource(req.headers.get('referer'), event.url.host);
+	if (source === 'internal') return;
+
+	metric('retro.guest.from_web', 1);
+	metric(`retro.guest.source.${source}`, 1);
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const start = Date.now();
+	try {
+		countVisit(event);
+	} catch {
+		// Аналитика не имеет права уронить страницу
+	}
 	const response = await resolve(event);
 	const duration = Date.now() - start;
 
