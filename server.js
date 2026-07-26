@@ -310,6 +310,17 @@ const roomCreatorTokens = new Map();
 // Живёт только в памяти комнаты, как таймер — это состояние встречи, не доски.
 const roomFocus = new Map();
 const FOCUS_DURATION = 300;
+// Обсуждение, к которому полчаса никто не притрагивался, считаем брошенным:
+// иначе зашедший назавтра участник получит серый список и застывший таймер,
+// а выключить их может только создатель.
+const FOCUS_STALE_MS = 30 * 60 * 1000;
+// Потолок на отметки «обсудили»: реальной повестке хватит с запасом, а вот
+// пейлоад focus:state рассылается всей комнате на каждом переходе.
+const FOCUS_DISCUSSED_MAX = 500;
+
+function roomIsEmpty(slug) {
+	return (roomUsers.get(slug)?.size ?? 0) === 0;
+}
 
 function focusPayload(focus) {
 	return {
@@ -347,7 +358,18 @@ io.on('connection', (socket) => {
 			const board = await db.query.boards.findFirst({
 				where: eq(boards.slug, slug)
 			});
-			if (!board) return;
+			if (!board) {
+				// Комнаты несуществующей доски быть не должно: иначе у неё нет токена
+				// создателя, а значит управлять таймером и обсуждением в ней может кто угодно
+				socket.leave(slug);
+				const ghosts = roomUsers.get(slug);
+				if (ghosts) {
+					ghosts.delete(socket.id);
+					if (ghosts.size === 0) roomUsers.delete(slug);
+				}
+				currentRoom = null;
+				return;
+			}
 
 			roomCreatorTokens.set(slug, board.creatorToken || '');
 
@@ -399,11 +421,17 @@ io.on('connection', (socket) => {
 				socket.emit('timer:state', timer);
 			}
 
-			// Опоздавший сразу ловит текущий фокус обсуждения
+			// Состояние обсуждения шлём ВСЕГДА, в том числе пустое: board:join
+			// переотправляется после реконнекта, и если промолчать, клиент,
+			// переживший рестарт сервера или пропустивший focus:stop, останется
+			// с намертво подсвеченной карточкой.
 			const focus = roomFocus.get(slug);
-			if (focus) {
-				socket.emit('focus:state', focusPayload(focus));
-			}
+			const live = focus && Date.now() - focus.endTime < FOCUS_STALE_MS;
+			if (focus && !live) roomFocus.delete(slug);
+			socket.emit(
+				'focus:state',
+				live ? focusPayload(focus) : { cardId: null, endTime: null, duration: null, discussed: [] }
+			);
 		} catch (err) {
 			logger.error({ err, event: 'board:join', slug }, 'Failed to load board state');
 		}
@@ -484,6 +512,8 @@ io.on('connection', (socket) => {
 	socket.on('card:delete', async ({ cardId }) => {
 		try {
 			await db.delete(cards).where(eq(cards.id, cardId));
+			// Удалённой карточке нечего делать в отметках обсуждения
+			roomFocus.get(currentRoom)?.discussed.delete(cardId);
 			if (currentRoom) io.to(currentRoom).emit('card:deleted', { cardId });
 		} catch (err) {
 			logger.error({ err, event: 'card:delete', cardId }, 'Failed to delete card');
@@ -577,8 +607,9 @@ io.on('connection', (socket) => {
 		return typeof cardId === 'string' && cardId.length > 0 && cardId.length <= 64;
 	}
 
-	socket.on('focus:start', ({ cardId, creatorToken } = {}) => {
-		if (!currentRoom || !validCardId(cardId) || !isRoomCreator(creatorToken)) return;
+	socket.on('focus:start', (payload) => {
+		const cardId = payload?.cardId;
+		if (!currentRoom || !validCardId(cardId) || !isRoomCreator(payload?.creatorToken)) return;
 		const focus = {
 			cardId,
 			endTime: Date.now() + FOCUS_DURATION * 1000,
@@ -590,20 +621,21 @@ io.on('connection', (socket) => {
 		metric('retro.focus.started', 1);
 	});
 
-	socket.on('focus:set', ({ cardId, creatorToken } = {}) => {
-		if (!currentRoom || !validCardId(cardId) || !isRoomCreator(creatorToken)) return;
+	socket.on('focus:set', (payload) => {
+		const cardId = payload?.cardId;
+		if (!currentRoom || !validCardId(cardId) || !isRoomCreator(payload?.creatorToken)) return;
 		const current = roomFocus.get(currentRoom);
 		// Переход имеет смысл только внутри уже идущего обсуждения
 		if (!current) return;
 		current.cardId = cardId;
-		current.discussed.add(cardId);
+		if (current.discussed.size < FOCUS_DISCUSSED_MAX) current.discussed.add(cardId);
 		current.endTime = Date.now() + FOCUS_DURATION * 1000;
 		current.duration = FOCUS_DURATION;
 		io.to(currentRoom).emit('focus:state', focusPayload(current));
 	});
 
-	socket.on('focus:stop', ({ creatorToken } = {}) => {
-		if (!currentRoom || !isRoomCreator(creatorToken)) return;
+	socket.on('focus:stop', (payload) => {
+		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
 		roomFocus.delete(currentRoom);
 		io.to(currentRoom).emit('focus:state', { cardId: null, endTime: null, duration: null, discussed: [] });
 	});
@@ -653,10 +685,10 @@ setInterval(async () => {
 	// Состояние встречи для комнат, где давно никого нет: держать его вечно незачем.
 	// Час — с большим запасом на перезагрузку страницы и обрыв связи.
 	for (const slug of [...roomTimers.keys()]) {
-		if (!roomUsers.has(slug)) roomTimers.delete(slug);
+		if (roomIsEmpty(slug)) roomTimers.delete(slug);
 	}
 	for (const slug of [...roomFocus.keys()]) {
-		if (!roomUsers.has(slug)) roomFocus.delete(slug);
+		if (roomIsEmpty(slug)) roomFocus.delete(slug);
 	}
 }, 60 * 60 * 1000);
 

@@ -60,8 +60,13 @@
 				e.stopPropagation();
 				pinned = !pinned;
 			}}
+			onkeydown={(e) => {
+				if (e.key === 'Escape' && pinned) {
+					e.stopPropagation();
+					pinned = false;
+				}
+			}}
 			aria-describedby="focus-maxim"
-			aria-expanded={pinned}
 			class="flex cursor-help items-center gap-2 rounded-xl border border-border bg-surface-card px-2.5 py-1.5 shadow-[0_4px_14px_rgba(33,30,26,0.08)] transition-colors hover:bg-surface-hover"
 		>
 			<svg

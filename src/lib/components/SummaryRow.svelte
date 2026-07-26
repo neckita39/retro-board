@@ -36,6 +36,12 @@
 
 	let commentCount = $derived(boardStore.getCardComments(card.id).length);
 	let likes = $derived(boardStore.getCardLikes(card.id));
+	let dislikes = $derived(boardStore.getCardDislikes(card.id));
+	let score = $derived(likes - dislikes);
+	// Итог — это лайки минус дизлайки. Разбивку показываем только там, где были
+	// возражения: она объясняет, почему число разошлось с лайками. Без дизлайков
+	// «7 (7/-0)» — лишний шум, и так видно, что это семь лайков.
+	let scoreLabel = $derived(dislikes > 0 ? `${score} (${likes}/-${dislikes})` : `${score}`);
 
 	// Строка сама подъезжает под взгляд, когда обсуждение доходит до неё
 	$effect(() => {
@@ -50,6 +56,7 @@
 	data-testid="summary-card"
 	data-focused={focused ? 'true' : undefined}
 	data-discussed={discussed ? 'true' : undefined}
+	data-dimmed={dimmed ? 'true' : undefined}
 	class="relative rounded-xl transition-all duration-300 {focused
 		? 'border-2 border-accent bg-surface-card px-4 py-3.5 shadow-[0_10px_30px_rgba(196,85,43,0.18)]'
 		: 'border border-border bg-surface-card px-3 py-2.5 hover:border-border-strong'} {dimmed
@@ -69,7 +76,7 @@
 	<div class="relative z-10 {canControl && !focused ? 'pointer-events-none' : ''}">
 		{#if focused}
 			<div class="mb-2 flex items-center gap-2.5">
-				<span class="badge-sm badge-accent shrink-0 tabular-nums">{likes} &uarr;</span>
+				<span class="badge-sm badge-accent shrink-0 tabular-nums">{scoreLabel}</span>
 				{#if position}
 					<span class="text-[12px] font-semibold tabular-nums text-text-muted">
 						{t('focus.progress', { n: position.n, total: position.total })}
@@ -84,14 +91,15 @@
 				{#if discussed}
 					<span
 						class="flex min-w-6 shrink-0 justify-center text-well"
+						role="img"
 						title={t('focus.discussed')}
-						aria-label={t('focus.discussed')}
+						aria-label="{t('focus.discussed')} — {scoreLabel}"
 					>
 						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
 					</span>
 				{:else}
-					<span class="min-w-6 shrink-0 text-center text-[11px] font-semibold tabular-nums text-text-muted">
-						{likes} &uarr;
+					<span class="shrink-0 whitespace-nowrap text-[11px] font-semibold tabular-nums text-text-muted">
+						{scoreLabel}
 					</span>
 				{/if}
 			{/if}
@@ -139,6 +147,10 @@
 			</div>
 		{/if}
 
-		<CommentList cardId={card.id} {expanded} />
+		<!-- pointer-events-auto: иначе во время обсуждения клик по форме комментария
+		     проваливался бы в слой прыжка и переводил фокус вместо ввода текста -->
+		<div class="pointer-events-auto">
+			<CommentList cardId={card.id} {expanded} />
+		</div>
 	</div>
 </div>

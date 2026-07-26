@@ -51,3 +51,48 @@ test('discussion focus is shared with everyone on the board', async ({ browser }
 	await ctxA.close();
 	await ctxB.close();
 });
+
+test('commenting on another card mid-discussion does not steal the focus', async ({ page }) => {
+	await createBoard(page, 'Focus comments board');
+	await addCard(page, 'Went Well', 'the focused one');
+	await addCard(page, 'Went Well', 'the one we comment on');
+
+	await startButton(page).click();
+	await expect(page.locator(focused)).toContainText('the focused one');
+
+	// Ведущий дописывает мысль в карточку, которую сейчас НЕ обсуждают
+	const other = page
+		.getByTestId('summary-card')
+		.filter({ hasText: 'the one we comment on' });
+	await other.getByRole('button', { name: 'Comment', exact: true }).click();
+	// Клик обязателен: fill() ставит фокус через DOM и не заметил бы,
+	// что поле перекрыто слоем прыжка фокуса
+	await other.getByPlaceholder('Add a comment...').click();
+	await other.getByPlaceholder('Add a comment...').fill('worth revisiting');
+	await other.getByPlaceholder('Add a comment...').press('Enter');
+
+	await expect(other.getByText('worth revisiting')).toBeVisible();
+	// Фокус не уехал на прокомментированную карточку
+	await expect(page.locator(focused)).toContainText('the focused one');
+});
+
+test('deleting the discussed card does not grey out the whole agenda', async ({ page }) => {
+	await createBoard(page, 'Focus delete board');
+	await addCard(page, 'Went Well', 'about to vanish');
+	await addCard(page, 'Went Well', 'still here');
+
+	await startButton(page).click();
+	await expect(page.locator(focused)).toContainText('about to vanish');
+
+	// Удаляем обсуждаемую карточку с доски (двойной тап — подтверждение)
+	const boardCard = page.locator('.card-board', { hasText: 'about to vanish' });
+	await boardCard.getByRole('button', { name: 'Delete' }).click();
+	await boardCard.getByRole('button', { name: /Tap again/ }).click();
+	await expect(page.getByTestId('summary-card')).toHaveCount(1);
+
+	// Подсвечивать нечего — значит и гасить остальное нельзя
+	await expect(page.locator(focused)).toHaveCount(0);
+	await expect(page.locator('[data-testid="summary-card"][data-dimmed="true"]')).toHaveCount(0);
+	// Обсуждение при этом не считается завершённым
+	await expect(page.getByRole('button', { name: 'End discussion' })).toBeVisible();
+});

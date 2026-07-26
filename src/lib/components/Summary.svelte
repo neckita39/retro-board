@@ -15,6 +15,9 @@
 	let focusActive = $derived(socketStore.focusCardId !== null);
 	let canControl = $derived(boardStore.isCreator && focusActive);
 	let focusedIdx = $derived(focusIndex(summaryCards, socketStore.focusCardId));
+	// Обсуждаемую карточку могли удалить прямо во время обсуждения. Тогда гасить
+	// список нельзя — подсвечивать стало нечего, и все увидели бы серую простыню.
+	let focusVisible = $derived(focusActive && focusedIdx !== -1);
 	let focusedColumn = $derived(summaryCards[focusedIdx]?.columnType ?? null);
 	let nextId = $derived(
 		nextCardId(summaryCards, socketStore.focusCardId, socketStore.focusDiscussed)
@@ -74,7 +77,7 @@
 			{#each summaryCards as card, i (card.id)}
 				{@const showHeader = card.columnType !== (i > 0 ? summaryCards[i - 1].columnType : '')}
 				{#if showHeader}
-					<div class="mt-2 transition-opacity duration-300 first:mt-0 {focusActive && card.columnType !== focusedColumn ? 'opacity-45' : 'opacity-100'}">
+					<div class="mt-2 transition-opacity duration-300 first:mt-0 {focusVisible && card.columnType !== focusedColumn ? 'opacity-45' : 'opacity-100'}">
 						<span class="badge-sm {tagColors[card.columnType]}">
 							{t(`column.${card.columnType}`)}
 						</span>
@@ -84,7 +87,7 @@
 					{card}
 					focused={card.id === socketStore.focusCardId}
 					discussed={socketStore.focusDiscussed.includes(card.id)}
-					dimmed={focusActive && card.id !== socketStore.focusCardId}
+					dimmed={focusVisible && card.id !== socketStore.focusCardId}
 					{canControl}
 					position={{ n: i + 1, total: summaryCards.length }}
 					hasNext={nextId !== null}
