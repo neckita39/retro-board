@@ -295,8 +295,11 @@ const httpServer = createServer(async (req, res) => {
 	// В поиске нужна только главная. Доски и пространства открыты по неугадываемой
 	// ссылке — утёкшая в индекс ретроспектива уже не отзывается. robots.txt просит
 	// туда не ходить, а этот заголовок сработает, даже если краулер пришёл по ссылке.
+	// Служебные файлы поисковиков под правило не попадают: индексировать их
+	// никто и не собирается, а noindex на карте сайта только путает диагностику.
 	const pathname = (req.url || '/').split('?')[0];
-	if (pathname !== '/') {
+	const crawlerFiles = ['/robots.txt', '/sitemap.xml'];
+	if (pathname !== '/' && !crawlerFiles.includes(pathname)) {
 		res.setHeader('X-Robots-Tag', 'noindex, nofollow');
 	}
 
