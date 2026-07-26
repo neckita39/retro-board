@@ -83,6 +83,15 @@
 	"summary.empty": "No cards yet. Add some cards to see the summary.",
 	"summary.photo": "Photo",
 
+	"focus.start": "Discuss",
+	"focus.stop": "End discussion",
+	"focus.next": "Next",
+	"focus.prev": "Back",
+	"focus.progress": "{n} of {total}",
+	"focus.discussed": "Discussed",
+	"focus.disabled": "Add cards to start a discussion",
+	"focus.maxim": "Any argument that cannot be settled in five minutes cannot be settled by arguing",
+
 	"timer.min": "min",
 	"timer.start": "Start",
 	"timer.stop": "Stop",

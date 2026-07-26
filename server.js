@@ -306,6 +306,19 @@ const io = new SocketIOServer(httpServer, {
 const roomUsers = new Map();
 const roomTimers = new Map();
 const roomCreatorTokens = new Map();
+// Обсуждение: slug -> { cardId, endTime, duration, discussed: Set<cardId> }.
+// Живёт только в памяти комнаты, как таймер — это состояние встречи, не доски.
+const roomFocus = new Map();
+const FOCUS_DURATION = 300;
+
+function focusPayload(focus) {
+	return {
+		cardId: focus.cardId,
+		endTime: focus.endTime,
+		duration: focus.duration,
+		discussed: [...focus.discussed]
+	};
+}
 
 io.on('connection', (socket) => {
 	metrics.wsConnections++;
@@ -384,6 +397,12 @@ io.on('connection', (socket) => {
 			const timer = roomTimers.get(slug);
 			if (timer && timer.endTime > Date.now()) {
 				socket.emit('timer:state', timer);
+			}
+
+			// Опоздавший сразу ловит текущий фокус обсуждения
+			const focus = roomFocus.get(slug);
+			if (focus) {
+				socket.emit('focus:state', focusPayload(focus));
 			}
 		} catch (err) {
 			logger.error({ err, event: 'board:join', slug }, 'Failed to load board state');
@@ -547,6 +566,48 @@ io.on('connection', (socket) => {
 		io.to(currentRoom).emit('timer:state', { endTime: null, duration: null });
 	});
 
+	// --- Обсуждение: фокус на одной карточке, общий для всей комнаты ---
+
+	function isRoomCreator(creatorToken) {
+		const roomToken = roomCreatorTokens.get(currentRoom) || '';
+		return !roomToken || creatorToken === roomToken;
+	}
+
+	function validCardId(cardId) {
+		return typeof cardId === 'string' && cardId.length > 0 && cardId.length <= 64;
+	}
+
+	socket.on('focus:start', ({ cardId, creatorToken } = {}) => {
+		if (!currentRoom || !validCardId(cardId) || !isRoomCreator(creatorToken)) return;
+		const focus = {
+			cardId,
+			endTime: Date.now() + FOCUS_DURATION * 1000,
+			duration: FOCUS_DURATION,
+			discussed: new Set([cardId])
+		};
+		roomFocus.set(currentRoom, focus);
+		io.to(currentRoom).emit('focus:state', focusPayload(focus));
+		metric('retro.focus.started', 1);
+	});
+
+	socket.on('focus:set', ({ cardId, creatorToken } = {}) => {
+		if (!currentRoom || !validCardId(cardId) || !isRoomCreator(creatorToken)) return;
+		const current = roomFocus.get(currentRoom);
+		// Переход имеет смысл только внутри уже идущего обсуждения
+		if (!current) return;
+		current.cardId = cardId;
+		current.discussed.add(cardId);
+		current.endTime = Date.now() + FOCUS_DURATION * 1000;
+		current.duration = FOCUS_DURATION;
+		io.to(currentRoom).emit('focus:state', focusPayload(current));
+	});
+
+	socket.on('focus:stop', ({ creatorToken } = {}) => {
+		if (!currentRoom || !isRoomCreator(creatorToken)) return;
+		roomFocus.delete(currentRoom);
+		io.to(currentRoom).emit('focus:state', { cardId: null, endTime: null, duration: null, discussed: [] });
+	});
+
 	socket.on('disconnect', () => {
 		metrics.wsConnections--;
 		if (currentRoom) {
@@ -557,6 +618,9 @@ io.on('connection', (socket) => {
 				if (users.size === 0) {
 					roomUsers.delete(currentRoom);
 					roomCreatorTokens.delete(currentRoom);
+					// Таймер и фокус НЕ трогаем: комната пустеет и на обычной перезагрузке
+					// страницы, а терять отметки «обсудили» на релоаде нельзя.
+					// Их подчищает часовая уборка ниже.
 				}
 			}
 		}
@@ -584,6 +648,15 @@ setInterval(async () => {
 		}
 	} catch (err) {
 		logger.error({ err }, 'Orphan image cleanup failed');
+	}
+
+	// Состояние встречи для комнат, где давно никого нет: держать его вечно незачем.
+	// Час — с большим запасом на перезагрузку страницы и обрыв связи.
+	for (const slug of [...roomTimers.keys()]) {
+		if (!roomUsers.has(slug)) roomTimers.delete(slug);
+	}
+	for (const slug of [...roomFocus.keys()]) {
+		if (!roomUsers.has(slug)) roomFocus.delete(slug);
 	}
 }, 60 * 60 * 1000);
 

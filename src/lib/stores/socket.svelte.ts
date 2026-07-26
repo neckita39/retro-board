@@ -7,6 +7,10 @@ class SocketStore {
 	usersCount = $state(0);
 	timerEnd = $state<number | null>(null);
 	timerDuration = $state<number | null>(null);
+	focusCardId = $state<string | null>(null);
+	focusEndTime = $state<number | null>(null);
+	focusDuration = $state<number | null>(null);
+	focusDiscussed = $state<string[]>([]);
 
 	private currentSlug: string | null = null;
 	private currentCreatorToken = '';
@@ -66,6 +70,13 @@ class SocketStore {
 			this.timerEnd = endTime;
 			this.timerDuration = duration;
 		});
+
+		this.socket.on('focus:state', ({ cardId, endTime, duration, discussed }) => {
+			this.focusCardId = cardId ?? null;
+			this.focusEndTime = endTime ?? null;
+			this.focusDuration = duration ?? null;
+			this.focusDiscussed = discussed ?? [];
+		});
 	}
 
 	joinBoard(slug: string, creatorToken?: string | null) {
@@ -103,6 +114,18 @@ class SocketStore {
 		this.socket?.emit('timer:stop', { creatorToken: creatorToken ?? '' });
 	}
 
+	startFocus(cardId: string, creatorToken?: string | null) {
+		this.socket?.emit('focus:start', { cardId, creatorToken: creatorToken ?? '' });
+	}
+
+	setFocus(cardId: string, creatorToken?: string | null) {
+		this.socket?.emit('focus:set', { cardId, creatorToken: creatorToken ?? '' });
+	}
+
+	stopFocus(creatorToken?: string | null) {
+		this.socket?.emit('focus:stop', { creatorToken: creatorToken ?? '' });
+	}
+
 	toggleVote(cardId: string, type: 'like' | 'dislike', sessionId: string) {
 		this.socket?.emit('vote:toggle', { cardId, type, sessionId });
 	}
@@ -118,6 +141,12 @@ class SocketStore {
 		this.currentSlug = null;
 		this.currentCreatorToken = '';
 		this.everConnected = false;
+		this.timerEnd = null;
+		this.timerDuration = null;
+		this.focusCardId = null;
+		this.focusEndTime = null;
+		this.focusDuration = null;
+		this.focusDiscussed = [];
 	}
 }
 

@@ -6,6 +6,8 @@
 	import type { ColumnType } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
+	let { creatorToken = null }: { creatorToken?: string | null } = $props();
+
 	const columns: ColumnType[] = ['went_well', 'didnt_go_well', 'improve'];
 
 	// Mobile: columns become segment tabs, one column visible at a time
@@ -41,7 +43,7 @@
 	{/each}
 </div>
 
-<Summary />
+<Summary {creatorToken} />
 
 <!-- Mobile composer — pinned to the bottom, adds to the active column -->
 <div class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface-card px-4 pb-[max(env(safe-area-inset-bottom),0.875rem)] pt-3 md:hidden">

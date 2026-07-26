@@ -16,7 +16,7 @@ Retrospectrix — real-time retrospective board. SvelteKit (Svelte 5 runes) + So
 
 ## Key directories
 
-- `src/lib/components/` — Svelte components (Card, CardForm, CommentForm, Lightbox, ToggleSwitch, etc.)
+- `src/lib/components/` — Svelte components (Card, CardForm, CommentForm, Lightbox, ToggleSwitch, Summary/SummaryRow/FocusTimer, etc.)
 - `src/lib/stores/` — Svelte stores (.svelte.ts files use $state runes)
 - `src/lib/i18n/` — i18n: en.json, ru.json, t() function
 - `src/lib/server/` — server-side code (DB, encryption, image processing, StatsD)
@@ -69,6 +69,7 @@ Secrets configured in GitHub: SSH_HOST, SSH_USER, SSH_KEY, SSH_PORT, PROJECT_PAT
 - **Spaces**: group boards together, optional password protection
 - **Image attachments**: attach images to cards/comments, auto-compressed via Sharp, stored in PostgreSQL bytea, lightbox viewer
 - **Timer**: discussion timer with visual countdown
+- **Focus mode**: creator presses "Обсудить" in Summary — the discussed card is highlighted on every participant's screen, others dim, page auto-scrolls, own 5-minute timer per card, visited cards get a checkmark. Room state in memory (`roomFocus` in server.js), navigation logic in `src/lib/focus.ts`
 - **Export**: JSON and Markdown
 - **Changelog**: `/changelog` — user-facing changelog with timeline UI
 - **Feedback**: `/feedback` — form that sends notifications to Telegram bot

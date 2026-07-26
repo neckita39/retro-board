@@ -83,6 +83,15 @@
 	"summary.empty": "Здесь появятся итоги, когда вы добавите карточки.",
 	"summary.photo": "Фото",
 
+	"focus.start": "Обсудить",
+	"focus.stop": "Закончить обсуждение",
+	"focus.next": "Далее",
+	"focus.prev": "Назад",
+	"focus.progress": "{n} из {total}",
+	"focus.discussed": "Обсудили",
+	"focus.disabled": "Добавьте карточки, чтобы начать обсуждение",
+	"focus.maxim": "Любой спор, который не удаётся завершить за 5 минут, не может быть решён обсуждением",
+
 	"timer.min": "мин",
 	"timer.start": "Старт",
 	"timer.stop": "Стоп",

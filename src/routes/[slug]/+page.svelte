@@ -43,5 +43,5 @@
 	{/if}
 	<Onboarding />
 	<NamePrompt />
-	<Board />
+	<Board creatorToken={data.creatorToken} />
 </div>

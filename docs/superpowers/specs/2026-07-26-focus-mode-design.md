@@ -69,7 +69,7 @@ const focus = roomFocus.get(slug);
 if (focus) socket.emit('focus:state', { ...focus, discussed: [...focus.discussed] });
 ```
 
-В `disconnect` при `users.size === 0` чистим `roomFocus.delete(currentRoom)` — и заодно `roomTimers.delete(currentRoom)`, который сейчас там не удаляется (соседняя строка, утечка одной записи на комнату).
+Уборка — **не** в `disconnect`. Комната опустевает и на обычной перезагрузке страницы, а терять на релоаде отметки «обсудили» (и заодно чужой таймер) нельзя. Вместо этого в уже существующей часовой чистке дропаем `roomTimers` и `roomFocus` для комнат, которых нет в `roomUsers`: час — запас с избытком на релоад и обрыв связи, а бесконечного роста мап не будет.
 
 ## Клиентская часть
 
