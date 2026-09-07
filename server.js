@@ -1,4 +1,5 @@
 import { handler } from './build/handler.js';
+import { isIndexable } from './seo-paths.js';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import crypto from 'crypto';
@@ -292,14 +293,11 @@ const httpServer = createServer(async (req, res) => {
 		res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 	}
 
-	// В поиске нужна только главная. Доски и пространства открыты по неугадываемой
-	// ссылке — утёкшая в индекс ретроспектива уже не отзывается. robots.txt просит
-	// туда не ходить, а этот заголовок сработает, даже если краулер пришёл по ссылке.
-	// Служебные файлы поисковиков под правило не попадают: индексировать их
-	// никто и не собирается, а noindex на карте сайта только путает диагностику.
-	const pathname = (req.url || '/').split('?')[0];
-	const crawlerFiles = ['/robots.txt', '/sitemap.xml'];
-	if (pathname !== '/' && !crawlerFiles.includes(pathname)) {
+	// Индексируем только контентные страницы из seo-paths.js. Доски и пространства
+	// открыты по неугадываемой ссылке — утёкшая в индекс ретроспектива уже не
+	// отзывается. robots.txt просит туда не ходить, а этот заголовок сработает,
+	// даже если краулер пришёл по прямой ссылке в обход robots.txt.
+	if (!isIndexable(req.url || '/')) {
 		res.setHeader('X-Robots-Tag', 'noindex, nofollow');
 	}
 

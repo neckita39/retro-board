@@ -4,11 +4,22 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<!-- Шрифты со своего хоста, объявлены в src/fonts.css. Предзагружаем
+		     кириллические подмножества: страница по умолчанию рендерится
+		     по-русски, и без этого первый кадр успевает мигнуть подстановкой. -->
 		<link
-			href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400..800&family=Golos+Text:wght@400..700&display=swap"
-			rel="stylesheet"
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			href="%sveltekit.assets%/fonts/golos-text-cyrillic.woff2"
+			crossorigin
+		/>
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			href="%sveltekit.assets%/fonts/unbounded-cyrillic.woff2"
+			crossorigin
 		/>
 		<!-- Заголовок ставит каждая страница сама через svelte:head.
 		     Запасной тут был бы первым в разметке — поисковик взял бы именно его. -->

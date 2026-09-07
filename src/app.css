@@ -1,5 +1,7 @@
-/* Fonts (Unbounded + Golos Text) are loaded via <link> in app.html —
-   a CSS @import after the tailwind import gets dropped from the bundle */
+/* Шрифты идут первой строкой намеренно: @import после импорта tailwind
+   выбрасывается из бандла (на это и жаловался прежний комментарий здесь).
+   Раньше их тянул <link> на fonts.googleapis.com, теперь — свой хост. */
+@import './fonts.css';
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
+	import Seo from '$lib/components/Seo.svelte';
 	import { t } from '$lib/i18n/index.js';
 
 	interface Endpoint {
@@ -38,9 +39,11 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{t('apiDocs.title')} — {t('header.brand')}</title>
-</svelte:head>
+<Seo
+	title="{t('apiDocs.title')} — {t('header.brand')}"
+	description={t('apiDocs.seo.description')}
+	path="/api"
+/>
 
 <div class="flex min-h-screen flex-col">
 	<Header showNav showCreate />

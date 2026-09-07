@@ -1,14 +1,28 @@
-# В поиске нужна только главная. Доски и пространства защищены одной лишь
-# ссылкой — краулеру там делать нечего, поэтому он их даже не забирает.
-# Ассеты открыты намеренно: без CSS и JS поисковик не отрисует главную
-# и решит, что страница сломана.
+# В поиске нужны только контентные страницы. Доски и пространства защищены
+# одной лишь ссылкой — краулеру там делать нечего, поэтому он их даже не
+# забирает. Ассеты открыты намеренно: без CSS и JS поисковик не отрисует
+# страницы и решит, что они сломаны.
+#
+# Список путей должен совпадать с INDEXABLE_PATHS в seo-paths.js — там же
+# лежит allow-лист для заголовка X-Robots-Tag, и тест проверяет, что эти
+# два списка не разъехались.
 
 User-agent: *
 Allow: /$
+Allow: /formats
+Allow: /formats/start-stop-continue
+Allow: /formats/mad-sad-glad
+Allow: /formats/4l
+Allow: /formats/sailboat
+Allow: /how-to-run-a-retro
+Allow: /changelog
+Allow: /api
 Allow: /_app/
 Allow: /favicon.svg
 Allow: /logo.png
+Allow: /og.png
 Allow: /board-bg.png
+Allow: /fonts/
 Allow: /sitemap.xml
 Allow: /yandex_f733dfd3901e361e.html
 Allow: /google55ffc062319d38bd.html

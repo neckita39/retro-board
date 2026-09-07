@@ -45,8 +45,12 @@
 	let isBoard = $derived(showOnline && !!boardStore.board);
 	let othersOnline = $derived(Math.max(0, socketStore.usersCount - 1));
 
+	// «Возможности» вёл на '/', куда уже ведёт логотип слева. Место занял раздел
+	// форматов — в отличие от дубля ссылки, он даёт вес странице, которая должна
+	// ранжироваться.
 	let navItems = $derived([
-		{ key: 'nav.features', href: '/', active: page.url.pathname === '/' },
+		{ key: 'nav.formats', href: '/formats', active: page.url.pathname.startsWith('/formats') },
+		{ key: 'nav.guide', href: '/how-to-run-a-retro', active: page.url.pathname === '/how-to-run-a-retro' },
 		{ key: 'nav.changelog', href: '/changelog', active: page.url.pathname.startsWith('/changelog') },
 		{ key: 'nav.api', href: '/api', active: page.url.pathname === '/api' },
 		{ key: 'nav.feedback', href: null, active: page.url.pathname.startsWith('/feedback') }
@@ -119,8 +123,14 @@
 		{:else}
 			<div class="flex min-w-0 items-center gap-7">
 				<div class="flex min-w-0 items-baseline gap-3">
-					<a href="/" class="font-heading shrink-0 text-[18px] font-extrabold tracking-[-0.01em] text-text-primary">
-						{t('header.brand')}
+					<!-- До sm полное имя не влезает рядом с иконками и кнопкой — оно наезжало
+					     на них. Показываем марку, а название прячем визуально: в разметке
+					     и в дереве доступности оно остаётся. -->
+					<a href="/" class="font-heading flex shrink-0 items-center text-[18px] font-extrabold tracking-[-0.01em] text-text-primary">
+						<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-text-primary text-[15px] text-surface sm:hidden" aria-hidden="true">
+							{t('header.brand').charAt(0)}
+						</span>
+						<span class="sr-only sm:not-sr-only">{t('header.brand')}</span>
 					</a>
 					{#if spaceName}
 						<span class="text-sm text-border-strong">/</span>
@@ -340,7 +350,8 @@
 					</button>
 				{:else if showCreate}
 					<a href="/new" class="btn btn-primary btn-md">
-						{t('home.create')}
+						<span class="sm:hidden">{t('home.create.short')}</span>
+						<span class="hidden sm:inline">{t('home.create')}</span>
 					</a>
 				{/if}
 			{/if}

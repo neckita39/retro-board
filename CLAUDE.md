@@ -16,9 +16,10 @@ Retrospectrix — real-time retrospective board. SvelteKit (Svelte 5 runes) + So
 
 ## Key directories
 
-- `src/lib/components/` — Svelte components (Card, CardForm, CommentForm, Lightbox, ToggleSwitch, Summary/SummaryRow/FocusTimer, etc.)
+- `src/lib/components/` — Svelte components (Card, CardForm, CommentForm, Lightbox, ToggleSwitch, Summary/SummaryRow/FocusTimer, Seo, JsonLd, etc.)
 - `src/lib/stores/` — Svelte stores (.svelte.ts files use $state runes)
 - `src/lib/i18n/` — i18n: en.json, ru.json, t() function
+- `src/lib/content/` — long-form page content as inline `{ en, ru }` pairs (formats.ts, guide.ts) plus the `txt()` helper; dictionaries stay for UI chrome
 - `src/lib/server/` — server-side code (DB, encryption, image processing, StatsD)
 - `src/routes/` — SvelteKit routes
 - `src/routes/api/` — REST endpoints (upload, image serving, feedback)
@@ -74,7 +75,10 @@ Secrets configured in GitHub: SSH_HOST, SSH_USER, SSH_KEY, SSH_PORT, PROJECT_PAT
 - **Changelog**: `/changelog` — user-facing changelog with timeline UI
 - **Feedback**: `/feedback` — form that sends notifications to Telegram bot
 - **Visit analytics**: `retro.guest.from_web` (one per visit, session cookie `retro_visit`) plus `retro.guest.source.{google|yandex|search_other|social|direct|other}` by referrer; bots filtered. Pure logic in `src/lib/server/visitors.ts`, wired in `src/hooks.server.ts`
-- **SEO**: only `/` is indexable — `static/robots.txt` closes the rest and `server.js` sends `X-Robots-Tag: noindex, nofollow` on every path except the root (boards are protected by an unguessable link only). Sitemap at `src/routes/sitemap.xml`, verification files for Google/Yandex live in `static/`
+- **Content pages**: `/formats` + `/formats/[format]` (Start Stop Continue, Mad Sad Glad, 4L, Sailboat) and `/how-to-run-a-retro` — the SEO landing pages. Content lives in `src/lib/content/`, unknown format slugs 404 via `+page.server.ts`
+- **SEO**: `seo-paths.js` **in the repo root** is the single source of truth for what may be indexed — `server.js`, `sitemap.xml` and the robots test all read it. It sits in the root because `server.js` runs in production next to `build/` and `src/` is not copied into the runtime image (see Dockerfile); add it to the Dockerfile COPY line if you split it up. Everything not in `INDEXABLE_PATHS` gets `X-Robots-Tag: noindex, nofollow` — boards `/{slug}` and spaces `/spaces/*` are protected by an unguessable link only and must never be listed. `src/lib/seo.test.ts` asserts robots.txt and the path list have not drifted. Verification files for Google/Yandex live in `static/`
+- **Meta tags**: every public page uses `<Seo>` (title/description/canonical/og/twitter) and `<JsonLd>` for schema.org. Note: a literal `<` followed by `script` anywhere in a Svelte file — markup *or* comment — terminates the component's script block; `JsonLd.svelte` builds the tag from concatenated pieces for exactly this reason
+- **Fonts**: Unbounded and Golos Text are self-hosted from `static/fonts/`, declared in `src/fonts.css`. That import must stay **above** `@import 'tailwindcss'` in `app.css` — an `@import` after it is dropped from the bundle
 - **i18n**: English and Russian (locale store defaults to `ru` — that is the version search engines see)
 - **Dark mode**: CSS custom properties, smooth transitions
 

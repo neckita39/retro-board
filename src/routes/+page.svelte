@@ -1,7 +1,12 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import JsonLd from '$lib/components/JsonLd.svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { FORMATS } from '$lib/content/formats.js';
+	import { txt } from '$lib/content/localized.js';
+	import { SITE } from '$lib/seo.js';
 
 	boardStore.board = null;
 
@@ -9,24 +14,34 @@
 	// Инициалы участников складываются в БИТРИКС (BITRIX в EN) — пасхалка.
 	let mockNames = $derived(t('home.mock.names').split(','));
 	const avatarColors = ['bg-well', 'bg-improve', 'bg-bad', 'bg-accent'];
+
+	const FAQ_KEYS = [1, 2, 3, 4, 5];
+
+	let app = $derived({
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareApplication',
+		name: t('header.brand'),
+		url: `${SITE}/`,
+		applicationCategory: 'BusinessApplication',
+		operatingSystem: 'Web',
+		description: t('seo.description'),
+		offers: { '@type': 'Offer', price: '0', priceCurrency: 'RUB' }
+	});
+
+	let faq = $derived({
+		'@context': 'https://schema.org',
+		'@type': 'FAQPage',
+		mainEntity: FAQ_KEYS.map((n) => ({
+			'@type': 'Question',
+			name: t(`home.faq.q${n}`),
+			acceptedAnswer: { '@type': 'Answer', text: t(`home.faq.a${n}`) }
+		}))
+	});
 </script>
 
-<svelte:head>
-	<title>{t('seo.title')}</title>
-	<meta name="description" content={t('seo.description')} />
-	<link rel="canonical" href="https://retrospectrix.ru/" />
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://retrospectrix.ru/" />
-	<meta property="og:site_name" content={t('header.brand')} />
-	<meta property="og:title" content={t('seo.title')} />
-	<meta property="og:description" content={t('seo.description')} />
-	<meta property="og:image" content="https://retrospectrix.ru/logo.png" />
-	<!-- Логотип квадратный, поэтому компактная карточка, а не широкая -->
-	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content={t('seo.title')} />
-	<meta name="twitter:description" content={t('seo.description')} />
-	<meta name="twitter:image" content="https://retrospectrix.ru/logo.png" />
-</svelte:head>
+<Seo title={t('seo.title')} description={t('seo.description')} path="/" />
+<JsonLd data={app} />
+<JsonLd data={faq} />
 
 {#snippet mockLike(n: number, active: boolean)}
 	<span class="inline-flex items-center gap-[3px] rounded-full px-[7px] py-[2px] text-[10px] font-bold {active ? 'bg-well-bg text-well-strong' : 'border border-border text-text-muted'}">
@@ -51,7 +66,10 @@
 					<span class="rounded-full border border-border-strong bg-surface-card px-3 py-[5px] text-xs font-bold text-text-secondary">{t('home.hero.badge1')}</span>
 					<span class="rounded-full border border-border-strong bg-surface-card px-3 py-[5px] text-xs font-bold text-text-secondary">{t('home.hero.badge2')}</span>
 				</div>
-				<h1 class="font-heading text-[32px] font-bold leading-[1.15] tracking-[-0.03em] text-text-primary sm:text-[40px]">
+				<!-- clamp, а не фикс: «Ретроспективы» одним словом занимает 309px и на
+				     экране 320px распирало страницу в горизонтальный скролл. С 376px
+				     упирается в прежние 32px, то есть шире SE ничего не изменилось. -->
+				<h1 class="font-heading text-[clamp(26px,8.5vw,32px)] font-bold leading-[1.15] tracking-[-0.03em] text-text-primary sm:text-[40px]">
 					{t('home.hero.title1')}<br />{t('home.hero.title2')}
 				</h1>
 				<p class="max-w-[420px] text-[17px] leading-relaxed text-text-secondary">
@@ -129,10 +147,79 @@
 				</div>
 			{/each}
 		</section>
+		<!-- CONTENT — до этого на главной было ~60 слов видимого текста, один h1
+		     и ни одного h2. Ранжироваться было нечем. -->
+		<section class="mx-auto flex max-w-[1360px] flex-col gap-8 px-5 pb-14 sm:px-8 lg:px-14">
+			<div class="grid gap-6 sm:grid-cols-3">
+				{#each ['what', 'why', 'how'] as key (key)}
+					<article class="flex flex-col gap-2.5">
+						<h2 class="font-heading text-[21px] font-bold tracking-[-0.01em] text-text-primary">
+							{t(`home.seo.h2.${key}`)}
+						</h2>
+						<p class="text-[15px] leading-[1.75] text-text-secondary">{t(`home.seo.${key}`)}</p>
+					</article>
+				{/each}
+			</div>
+		</section>
+
+		<!-- FORMATS — внутренние ссылки на раздел, который и должен ранжироваться -->
+		<section class="mx-auto flex max-w-[1360px] flex-col gap-5 px-5 pb-14 sm:px-8 lg:px-14">
+			<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+				<h2 class="font-heading text-[21px] font-bold tracking-[-0.01em] text-text-primary">
+					{t('formats.heading')}
+				</h2>
+				<a href="/formats" class="text-sm font-semibold text-accent transition-opacity hover:opacity-75">
+					{t('nav.formats')} →
+				</a>
+			</div>
+			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				{#each FORMATS as format (format.slug)}
+					<a
+						href="/formats/{format.slug}"
+						class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5 transition-colors hover:bg-surface-hover"
+					>
+						<span class="font-heading text-[16px] font-bold text-text-primary">{txt(format.name)}</span>
+						<span class="text-sm leading-relaxed text-text-secondary">{txt(format.tagline)}</span>
+					</a>
+				{/each}
+			</div>
+		</section>
+
+		<!-- FAQ — размечен как FAQPage, чтобы попасть в расширенный сниппет -->
+		<section class="mx-auto flex max-w-[1360px] flex-col gap-5 px-5 pb-16 sm:px-8 lg:px-14">
+			<h2 class="font-heading text-[21px] font-bold tracking-[-0.01em] text-text-primary">
+				{t('home.faq.heading')}
+			</h2>
+			<div class="grid gap-3 sm:grid-cols-2">
+				{#each FAQ_KEYS as n (n)}
+					<div class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5">
+						<h3 class="font-heading text-[16px] font-bold text-text-primary">{t(`home.faq.q${n}`)}</h3>
+						<p class="text-[15px] leading-[1.7] text-text-secondary">{t(`home.faq.a${n}`)}</p>
+					</div>
+				{/each}
+			</div>
+		</section>
 	</main>
 
-	<!-- Footer — tagline only; navigation and GitHub live in the header -->
-	<footer class="border-t border-border bg-surface-card px-5 py-5 text-center sm:px-8 lg:px-14">
-		<span class="text-[13px] text-text-muted">{t('home.footer.tagline')}</span>
+	<footer class="border-t border-border bg-surface-card px-5 py-8 sm:px-8 lg:px-14">
+		<div class="mx-auto flex max-w-[1360px] flex-col gap-6">
+			<div class="flex flex-wrap gap-x-12 gap-y-6">
+				<nav class="flex flex-col gap-2">
+					<span class="text-xs font-bold uppercase tracking-wider text-text-muted">{t('home.footer.product')}</span>
+					<a href="/new" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('home.create')}</a>
+					<a href="/changelog" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('nav.changelog')}</a>
+					<a href="/api" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('nav.api')}</a>
+				</nav>
+				<nav class="flex flex-col gap-2">
+					<span class="text-xs font-bold uppercase tracking-wider text-text-muted">{t('home.footer.learn')}</span>
+					<a href="/how-to-run-a-retro" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('guide.heading')}</a>
+					<a href="/formats" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('formats.heading')}</a>
+					{#each FORMATS.slice(0, 2) as format (format.slug)}
+						<a href="/formats/{format.slug}" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{txt(format.name)}</a>
+					{/each}
+				</nav>
+			</div>
+			<span class="text-[13px] text-text-muted">{t('home.footer.tagline')}</span>
+		</div>
 	</footer>
 </div>

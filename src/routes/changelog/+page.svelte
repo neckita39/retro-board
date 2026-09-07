@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
+	import Seo from '$lib/components/Seo.svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 
@@ -11,6 +12,18 @@
 	}
 
 	const releases: Release[] = [
+		{
+			version: '1.9',
+			date: '2026-08-16',
+			title: { en: 'Guides and formats', ru: 'Гайды и форматы' },
+			changes: [
+				{ en: 'A step-by-step guide on how to run a retrospective — with timings for each stage and the mistakes that quietly ruin the meeting', ru: 'Пошаговый гайд «Как провести ретроспективу» — с таймингом каждого этапа и ошибками, которые тихо ломают встречу' },
+				{ en: 'A section on retrospective formats: Start Stop Continue, Mad Sad Glad, 4L and Sailboat — what each is for, when to pick it and how to facilitate it', ru: 'Раздел о форматах ретроспективы: Start Stop Continue, Mad Sad Glad, 4L и Sailboat — зачем каждый, когда его брать и как провести' },
+				{ en: 'The header no longer overlaps itself on iPhone — the site name used to run into the icons', ru: 'Шапка больше не наезжает сама на себя на айфоне — название сайта налезало на иконки' },
+				{ en: 'Pages load faster: fonts now come from our own server instead of a third-party one', ru: 'Страницы загружаются быстрее: шрифты теперь отдаёт наш сервер, а не сторонний' },
+				{ en: 'Links to the site now unfurl with a proper preview card in messengers', ru: 'Ссылки на сайт теперь разворачиваются в мессенджерах нормальной карточкой с превью' }
+			]
+		},
 		{
 			version: '1.8',
 			date: '2026-07-26',
@@ -132,9 +145,11 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{t('changelog.title')} — {t('header.brand')}</title>
-</svelte:head>
+<Seo
+	title="{t('changelog.title')} — {t('header.brand')}"
+	description={t('changelog.seo.description')}
+	path="/changelog"
+/>
 
 <div class="min-h-screen bg-surface">
 	<Header showNav showCreate />

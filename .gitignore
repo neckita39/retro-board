@@ -22,7 +22,14 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 *.png
+!static/og.png
 .playwright-mcp/
+
+# Дизайн-прототипы (март 2026) — не для прода
+/concept.html
+/redesign-prototype.html
+/timer-concepts.html
+/design_handoff_retrospectrix_redesign/
 
 # Playwright
 test-results/
