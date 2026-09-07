@@ -44,6 +44,13 @@
 		editing = false;
 	}
 
+	function handleEditBlur() {
+		// Blur из-за потери фокуса самим окном (переключение раскладки
+		// Win+Space / Cmd+Space, alt-tab) — пользователь ещё пишет, не сохраняем
+		if (!document.hasFocus()) return;
+		saveEdit();
+	}
+
 	function handleEditKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
@@ -78,7 +85,7 @@
 		<textarea
 			bind:value={editContent}
 			onkeydown={handleEditKeydown}
-			onblur={saveEdit}
+			onblur={handleEditBlur}
 			maxlength="2000"
 			class="w-full resize-none rounded-[10px] border border-border bg-surface p-2 text-[15px] leading-normal text-text-primary focus:border-text-primary focus:outline-none"
 			rows="2"

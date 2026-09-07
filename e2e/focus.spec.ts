@@ -39,11 +39,13 @@ test('discussion focus is shared with everyone on the board', async ({ browser }
 	await expect(pageB.locator(focused)).toContainText('ci is finally fast', { timeout: 10_000 });
 	await expect(pageB.locator(discussed)).toContainText('ship it on friday');
 
-	// Конец повестки — дальше идти некуда
-	await expect(pageA.getByRole('button', { name: /Next/ })).toBeDisabled();
+	// Конец повестки: вместо задизейбленной «Далее» — кнопка завершения прямо в карточке
+	await expect(pageA.getByRole('button', { name: /Next/ })).toHaveCount(0);
+	const finish = pageA.locator(focused).getByRole('button', { name: 'End discussion' });
+	await expect(finish).toBeVisible();
 
 	// Завершение снимает фокус у всех
-	await pageA.getByRole('button', { name: 'End discussion' }).click();
+	await finish.click();
 	await expect(pageA.locator(focused)).toHaveCount(0);
 	await expect(pageB.locator(focused)).toHaveCount(0, { timeout: 10_000 });
 	await expect(startButton(pageA)).toBeVisible();

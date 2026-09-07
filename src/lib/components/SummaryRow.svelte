@@ -16,7 +16,8 @@
 		hasPrev = false,
 		onJump,
 		onNext,
-		onPrev
+		onPrev,
+		onStop
 	}: {
 		card: Card;
 		focused?: boolean;
@@ -29,6 +30,7 @@
 		onJump?: () => void;
 		onNext?: () => void;
 		onPrev?: () => void;
+		onStop?: () => void;
 	} = $props();
 
 	let expanded = $state(false);
@@ -137,13 +139,17 @@
 				>
 					&larr; {t('focus.prev')}
 				</button>
-				<button
-					onclick={onNext}
-					disabled={!hasNext}
-					class="btn btn-primary btn-sm disabled:cursor-not-allowed disabled:opacity-40"
-				>
-					{t('focus.next')} &rarr;
-				</button>
+				{#if hasNext}
+					<button onclick={onNext} class="btn btn-primary btn-sm">
+						{t('focus.next')} &rarr;
+					</button>
+				{:else}
+					<!-- Конец повестки: вместо задизейбленной «Далее» — завершение
+					     прямо под рукой, а не малозаметная кнопка в шапке итогов -->
+					<button onclick={onStop} class="btn btn-primary btn-sm">
+						{t('focus.stop')}
+					</button>
+				{/if}
 			</div>
 		{/if}
 

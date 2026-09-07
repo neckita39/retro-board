@@ -95,6 +95,7 @@
 					onJump={() => jump(card.id)}
 					onNext={() => nextId && jump(nextId)}
 					onPrev={() => prevId && jump(prevId)}
+					onStop={stop}
 				/>
 			{/each}
 		</div>

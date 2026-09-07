@@ -174,7 +174,7 @@
 							type="text"
 							bind:value={userName}
 							onkeydown={(e) => e.key === 'Enter' && saveName()}
-							onblur={saveName}
+							onblur={() => document.hasFocus() && saveName()}
 							placeholder={t('name.placeholder')}
 							class="input input-sm w-28"
 						/>
