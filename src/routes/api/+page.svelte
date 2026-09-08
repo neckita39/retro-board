@@ -95,7 +95,8 @@
 					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
   <span class="text-[#E0A470]">"board"</span>: {'{'}
     <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"V1StGXR8_Z5jdHi6B-myT"</span>,
-    <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Sprint 42"</span>
+    <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Sprint 42"</span>,
+    <span class="text-[#E0A470]">"format"</span>: <span class="text-[#9CBF8E]">"classic"</span>
   {'}'},
   <span class="text-[#E0A470]">"columns"</span>: {'{'}
     <span class="text-[#E0A470]">"went_well"</span>: [
@@ -116,6 +117,8 @@
 				<strong class="text-text-primary">{t('apiDocs.security.title')}.</strong>
 				{t('apiDocs.security.desc')}
 			</div>
+
+			<p class="text-sm leading-relaxed text-text-secondary">{t('apiDocs.format.note')}</p>
 
 			<!-- Parameters -->
 			{#if selected.id === 'md'}

@@ -13,6 +13,19 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.10',
+			date: '2026-09-08',
+			title: { en: 'Pick a format', ru: 'Выбор формата' },
+			changes: [
+				{ en: 'When creating a board you can pick its format: Start Stop Continue, Mad Sad Glad, 4L or Sailboat — the columns match the format', ru: 'При создании доски можно выбрать её формат: Start Stop Continue, Mad Sad Glad, 4L или Sailboat — колонки подстраиваются под формат' },
+				{ en: 'The classic board is preselected and marked as recommended, so nothing changes if you just press «Create»', ru: 'Классическая доска выбрана заранее и помечена как рекомендуемая — если просто нажать «Создать», ничего не поменяется' },
+				{ en: 'The browser remembers your last format, and a space suggests the format of its previous board', ru: 'Браузер запоминает последний формат, а пространство предлагает формат предыдущей доски' },
+				{ en: 'Every format page now has a «Create a board in this format» button', ru: 'На каждой странице формата появилась кнопка «Создать доску в этом формате»' },
+				{ en: 'Cards can be dragged between columns with the mouse', ru: 'Карточки можно перетаскивать между колонками мышью' },
+				{ en: 'The Summary shows who wrote each card', ru: 'В «Итогах» видно, кто написал карточку' }
+			]
+		},
+		{
 			version: '1.9',
 			date: '2026-08-16',
 			title: { en: 'Guides and formats', ru: 'Гайды и форматы' },
