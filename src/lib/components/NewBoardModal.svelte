@@ -1,24 +1,30 @@
 <script lang="ts">
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
+	import FormatPicker from './FormatPicker.svelte';
 
 	let {
 		spaceSlug,
 		spaceName,
 		suggestedTitle = '',
 		suggestedFrom = null,
+		defaultFormat = null,
 		onClose
 	}: {
 		spaceSlug: string;
 		spaceName: string;
 		suggestedTitle?: string;
 		suggestedFrom?: string | null;
+		/** Формат последней доски пространства — предвыбор для следующей */
+		defaultFormat?: string | null;
 		onClose: () => void;
 	} = $props();
 
 	// The modal is remounted on every open, so capturing the initial suggestion is intended
 	// svelte-ignore state_referenced_locally
 	let title = $state(suggestedTitle);
+	// svelte-ignore state_referenced_locally
+	let format = $state(defaultFormat ?? 'classic');
 	let inputRef = $state<HTMLInputElement | null>(null);
 
 	$effect(() => {
@@ -73,6 +79,7 @@
 					class="input h-[50px] bg-surface px-4 text-base"
 				/>
 			</label>
+			<FormatPicker bind:value={format} compact />
 			{#if suggestedFrom && title === suggestedTitle && suggestedTitle}
 				<p class="text-[13px] leading-relaxed text-text-muted">{t('space.modal.hint.auto', { title: suggestedFrom })}</p>
 			{:else}

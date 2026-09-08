@@ -4,11 +4,17 @@ import { boards, spaces } from '$lib/server/db/schema.js';
 import { metric } from '$lib/server/statsd.js';
 import { hashPassword } from '$lib/server/password.js';
 import { nanoid } from 'nanoid';
+import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import type { PageServerLoad, Actions } from './$types.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const type = url.searchParams.get('type');
-	return { type: type === 'space' ? 'space' : 'board' };
+	const requested = url.searchParams.get('format');
+	return {
+		type: type === 'space' ? 'space' : 'board',
+		// Ссылка со страницы формата предвыбирает его; мусор в параметре игнорируем
+		format: isValidFormat(requested) ? requested : null
+	};
 };
 
 export const actions: Actions = {
@@ -17,10 +23,13 @@ export const actions: Actions = {
 		const locale = formData.get('locale') === 'ru' ? 'ru' : 'en';
 		const title = (formData.get('title') as string)?.trim().slice(0, 100) || (locale === 'ru' ? 'Ретро' : 'Retro');
 
+		const requested = formData.get('format');
+		const format = isValidFormat(requested) ? (requested as string) : DEFAULT_FORMAT;
+
 		const slug = nanoid(21);
 		const creatorToken = nanoid(32);
 
-		await db.insert(boards).values({ title, slug, creatorToken });
+		await db.insert(boards).values({ title, slug, creatorToken, format });
 
 		cookies.set(`retro_creator_${slug}`, creatorToken, {
 			path: '/',

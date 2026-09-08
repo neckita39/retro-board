@@ -4,6 +4,9 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
+	import FormatPicker from '$lib/components/FormatPicker.svelte';
+	import { browser } from '$app/environment';
+	import { isValidFormat } from '$lib/formats.js';
 
 	let { data } = $props();
 
@@ -13,6 +16,19 @@
 	// svelte-ignore state_referenced_locally
 	let mode = $state<'board' | 'space'>(data.type === 'space' ? 'space' : 'board');
 	let passwordEnabled = $state(false);
+
+	// Приоритет: ссылка со страницы формата → то, что выбирали в прошлый раз → классика
+	function remembered(): string {
+		if (!browser) return 'classic';
+		const saved = localStorage.getItem('retro_format');
+		return isValidFormat(saved) ? (saved as string) : 'classic';
+	}
+	// svelte-ignore state_referenced_locally
+	let format = $state(data.format ?? remembered());
+
+	function rememberFormat() {
+		if (browser) localStorage.setItem('retro_format', format);
+	}
 
 	let joinOpen = $state(false);
 	let joinValue = $state('');
@@ -96,7 +112,7 @@
 			{#key mode}
 			<div class="flex w-full flex-col gap-3.5" style="animation: fadeUp 0.35s cubic-bezier(0.25, 1, 0.5, 1) both;">
 			{#if mode === 'board'}
-				<form method="POST" action="?/createBoard" class="flex flex-col gap-3.5">
+				<form method="POST" action="?/createBoard" class="flex flex-col gap-3.5" onsubmit={rememberFormat}>
 					<input type="hidden" name="locale" value={localeStore.locale} />
 					<label class="flex flex-col gap-2">
 						<span class="text-sm font-semibold text-text-primary">{t('new.board.name')}</span>
@@ -108,6 +124,7 @@
 							class="input input-lg"
 						/>
 					</label>
+					<FormatPicker bind:value={format} />
 					<button type="submit" class="btn btn-primary btn-lg h-[54px] w-full">
 						{t('new.board.submit')}
 					</button>

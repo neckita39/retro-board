@@ -239,6 +239,7 @@
 			spaceName={data.space.name}
 			{suggestedTitle}
 			suggestedFrom={suggestedTitle ? latestTitle : null}
+			defaultFormat={'lastFormat' in data.space ? (data.space.lastFormat ?? null) : null}
 			onClose={() => (creating = false)}
 		/>
 	{/if}

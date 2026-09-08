@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import { db } from '$lib/server/db/index.js';
 import { spaces, boards, cards } from '$lib/server/db/schema.js';
 import { eq, sql, desc } from 'drizzle-orm';
@@ -73,6 +74,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			id: space.id,
 			slug: space.slug,
 			name: space.name,
+			lastFormat: space.lastFormat,
 			createdAt: space.createdAt.toISOString()
 		},
 		authenticated: true,
@@ -165,13 +167,15 @@ export const actions: Actions = {
 		const locale = formData.get('locale') === 'ru' ? 'ru' : 'en';
 		const title = (formData.get('title') as string)?.trim() || (locale === 'ru' ? 'Ретро' : 'Retro');
 
+		const requested = formData.get('format');
+		const format = isValidFormat(requested) ? (requested as string) : DEFAULT_FORMAT;
+
 		const slug = nanoid(21);
 		const creatorToken = nanoid(32);
 
-		await db.insert(boards).values({
-			title, slug, creatorToken,
-			spaceId: space.id
-		});
+		await db.insert(boards).values({ title, slug, creatorToken, spaceId: space.id, format });
+		// Пространство помнит последний выбор — он станет предвыбором для следующей доски
+		await db.update(spaces).set({ lastFormat: format }).where(eq(spaces.id, space.id));
 
 		cookies.set(`retro_creator_${slug}`, creatorToken, {
 			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365

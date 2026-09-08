@@ -120,7 +120,7 @@
 			<h2 class="font-heading text-[19px] font-bold text-text-primary">{t('formats.cta.title')}</h2>
 			<p class="text-[15px] leading-relaxed text-text-secondary">{t('formats.cta.desc')}</p>
 			<div class="flex flex-wrap gap-2.5">
-				<a href="/new" class="btn btn-primary btn-md">{t('home.hero.cta')}</a>
+				<a href="/new?format={format.slug}" class="btn btn-primary btn-md">{t('formats.cta.create')}</a>
 				<a href="/how-to-run-a-retro" class="btn btn-secondary btn-md">{t('formats.cta.guide')}</a>
 			</div>
 		</section>
