@@ -70,7 +70,7 @@
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 	role="group"
-	class="-m-2 flex flex-col gap-3 rounded-2xl p-2 outline-2 outline-offset-2 transition-[background-color,outline-color] duration-200 {isDropTarget
+	class="flex h-full flex-col gap-3 rounded-2xl outline-2 outline-offset-4 transition-[background-color,outline-color] duration-200 {isDropTarget
 		? dragOver
 			? `outline-solid ${dropActive[column]}`
 			: 'outline-dashed outline-border-strong'

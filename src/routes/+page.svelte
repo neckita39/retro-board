@@ -5,6 +5,7 @@
 	import { t } from '$lib/i18n/index.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { FORMATS } from '$lib/content/formats.js';
+	import { AUTHOR_NAME, AUTHOR_EMAIL } from '$lib/content/about.js';
 	import { txt } from '$lib/content/localized.js';
 	import { SITE } from '$lib/seo.js';
 
@@ -218,8 +219,20 @@
 						<a href="/formats/{format.slug}" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{txt(format.name)}</a>
 					{/each}
 				</nav>
+				<nav class="flex flex-col gap-2">
+					<span class="text-xs font-bold uppercase tracking-wider text-text-muted">{t('home.footer.service')}</span>
+					<a href="/about" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('nav.about')}</a>
+					<a href="/privacy" class="text-sm text-text-secondary transition-colors hover:text-text-primary">{t('nav.privacy')}</a>
+				</nav>
 			</div>
-			<span class="text-[13px] text-text-muted">{t('home.footer.tagline')}</span>
+			<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+				<span class="text-[13px] text-text-muted">{t('home.footer.tagline')}</span>
+				<span class="text-[13px] text-text-muted">
+					{t('home.footer.madeBy', { name: txt(AUTHOR_NAME) })}
+					<span aria-hidden="true"> · </span>
+					<a href="mailto:{AUTHOR_EMAIL}" class="transition-colors hover:text-text-primary">{AUTHOR_EMAIL}</a>
+				</span>
+			</div>
 		</div>
 	</footer>
 </div>

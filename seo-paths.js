@@ -21,6 +21,8 @@ export const INDEXABLE_PATHS = [
 	'/formats/4l',
 	'/formats/sailboat',
 	'/how-to-run-a-retro',
+	'/about',
+	'/privacy',
 	'/changelog',
 	'/api'
 ];

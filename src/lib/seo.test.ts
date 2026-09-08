@@ -21,6 +21,11 @@ describe('isIndexable', () => {
 		expect(isIndexable('/changelog')).toBe(true);
 	});
 
+	it('открывает страницы о проекте и политику — трастовые сигналы', () => {
+		expect(isIndexable('/about')).toBe(true);
+		expect(isIndexable('/privacy')).toBe(true);
+	});
+
 	it('закрывает доски — они защищены только ссылкой', () => {
 		expect(isIndexable('/GDyCkwD0Ks5mS3qyYkGY-')).toBe(false);
 		expect(isIndexable('/V1StGXR8_Z5jdHi6B-myT')).toBe(false);
