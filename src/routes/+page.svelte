@@ -9,6 +9,8 @@
 	import { txt } from '$lib/content/localized.js';
 	import { SITE } from '$lib/seo.js';
 
+	let { data } = $props();
+
 	boardStore.board = null;
 
 	// Live board mock in the hero — a shrunken copy of the real board screen.
@@ -79,6 +81,14 @@
 				<div class="flex flex-wrap gap-3">
 					<a href="/new" class="btn btn-primary btn-lg">{t('home.hero.cta')}</a>
 				</div>
+				{#if data.stats}
+					<p data-testid="public-stats" class="text-[13px] text-text-muted">
+						{t('home.stats.prefix')}
+						<span class="font-semibold tabular-nums text-text-secondary">{t('home.stats.boards', { n: data.stats.boards })}</span>
+						{t('home.stats.and')}
+						<span class="font-semibold tabular-nums text-text-secondary">{t('home.stats.spaces', { n: data.stats.spaces })}</span>
+					</p>
+				{/if}
 			</div>
 
 			<!-- Live board mock -->
