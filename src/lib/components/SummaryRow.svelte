@@ -84,6 +84,9 @@
 						{t('focus.progress', { n: position.n, total: position.total })}
 					</span>
 				{/if}
+				{#if card.authorName}
+					<span class="min-w-0 truncate text-[12px] text-text-muted">· {card.authorName}</span>
+				{/if}
 				<span class="ml-auto"><FocusTimer /></span>
 			</div>
 		{/if}
@@ -114,6 +117,10 @@
 
 			{#if card.imageId}
 				<svg class="h-3.5 w-3.5 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+			{/if}
+
+			{#if !focused && card.authorName}
+				<span class="max-w-28 shrink-0 truncate text-[11px] text-text-muted">{card.authorName}</span>
 			{/if}
 
 			<button

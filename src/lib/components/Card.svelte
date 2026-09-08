@@ -4,6 +4,7 @@
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
+	import { dndStore } from '$lib/stores/dnd.svelte.js';
 	import type { Card, ColumnType } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -59,6 +60,20 @@
 		if (e.key === 'Escape') cancelEdit();
 	}
 
+	let dragging = $derived(dndStore.cardId === card.id);
+
+	function handleDragStart(e: DragEvent) {
+		if (editing) {
+			e.preventDefault();
+			return;
+		}
+		dndStore.start(card.id, card.columnType);
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', card.id);
+		}
+	}
+
 	function moveTo(col: ColumnType) {
 		socketStore.moveCard(card.id, col);
 		moveOpen = false;
@@ -80,7 +95,15 @@
 	}
 </script>
 
-<div class="card-board card-interactive overflow-hidden">
+<div
+	role="article"
+	draggable={!editing}
+	ondragstart={handleDragStart}
+	ondragend={() => dndStore.end()}
+	class="card-board card-interactive overflow-hidden transition-[opacity,transform] duration-200 {editing
+		? ''
+		: 'cursor-grab active:cursor-grabbing'} {dragging ? 'rotate-1 scale-[0.97] opacity-40' : ''}"
+>
 	{#if editing}
 		<textarea
 			bind:value={editContent}

@@ -18,4 +18,10 @@ test('create a board and add a card', async ({ page }) => {
 	const card = page.locator('.card-board', { hasText: 'the pipeline is green' });
 	await expect(card).toBeVisible();
 	await expect(card.getByText('E2E', { exact: true })).toBeVisible();
+
+	// В «Итогах» у карточки тоже видно автора
+	const summaryRow = page
+		.getByTestId('summary-card')
+		.filter({ hasText: 'the pipeline is green' });
+	await expect(summaryRow.getByText('E2E', { exact: true })).toBeVisible();
 });
