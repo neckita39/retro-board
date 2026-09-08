@@ -9,6 +9,7 @@ const board: Board = {
 	id: 'b1',
 	slug: 'test',
 	title: 'Test Board',
+	format: 'classic',
 	createdAt: '2025-01-01T00:00:00Z'
 };
 

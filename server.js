@@ -39,7 +39,6 @@ function metric(name, value, type = 'c') {
 }
 
 // --- Schema (duplicated for standalone server) ---
-const columnTypeEnum = pgEnum('column_type', ['went_well', 'didnt_go_well', 'improve']);
 const voteTypeEnum = pgEnum('vote_type', ['like', 'dislike']);
 
 const spaces = pgTable('spaces', {
@@ -48,6 +47,7 @@ const spaces = pgTable('spaces', {
 	name: text('name').notNull(),
 	passwordHash: text('password_hash').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
+	lastFormat: text('last_format'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -57,6 +57,7 @@ const boards = pgTable('boards', {
 	title: text('title').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
 	spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'set null' }),
+	format: text('format').notNull().default('classic'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -72,7 +73,7 @@ const images = pgTable('images', {
 const cards = pgTable('cards', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	boardId: uuid('board_id').notNull().references(() => boards.id, { onDelete: 'cascade' }),
-	columnType: columnTypeEnum('column_type').notNull(),
+	columnType: text('column_type').notNull(),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),

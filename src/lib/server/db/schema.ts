@@ -6,7 +6,6 @@ const bytea = customType<{ data: Buffer }>({
 	}
 });
 
-export const columnTypeEnum = pgEnum('column_type', ['went_well', 'didnt_go_well', 'improve']);
 export const voteTypeEnum = pgEnum('vote_type', ['like', 'dislike']);
 
 export const spaces = pgTable('spaces', {
@@ -15,6 +14,8 @@ export const spaces = pgTable('spaces', {
 	name: text('name').notNull(),
 	passwordHash: text('password_hash'),
 	creatorToken: text('creator_token').notNull().default(''),
+	// Формат последней созданной здесь доски — предвыбор для следующей
+	lastFormat: text('last_format'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -24,6 +25,8 @@ export const boards = pgTable('boards', {
 	title: text('title').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
 	spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'set null' }),
+	// Id из board-formats.js; фиксируется при создании
+	format: text('format').notNull().default('classic'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -41,7 +44,8 @@ export const cards = pgTable('cards', {
 	boardId: uuid('board_id')
 		.notNull()
 		.references(() => boards.id, { onDelete: 'cascade' }),
-	columnType: columnTypeEnum('column_type').notNull(),
+	// Id колонки внутри формата доски (board-formats.js); валидируется сервером
+	columnType: text('column_type').notNull(),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),

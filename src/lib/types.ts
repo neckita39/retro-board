@@ -1,10 +1,13 @@
-export type ColumnType = 'went_well' | 'didnt_go_well' | 'improve';
+/** Id колонки внутри формата доски — см. board-formats.js */
+export type ColumnType = string;
 export type VoteType = 'like' | 'dislike';
 
 export interface Board {
 	id: string;
 	slug: string;
 	title: string;
+	/** Id формата из board-formats.js; у досок до форматов — 'classic' */
+	format: string;
 	createdAt: string;
 }
 
