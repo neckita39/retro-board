@@ -1,5 +1,6 @@
 import { handler } from './build/handler.js';
 import { isIndexable } from './seo-paths.js';
+import { isValidColumn } from './board-formats.js';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import crypto from 'crypto';
@@ -418,6 +419,7 @@ io.on('connection', (socket) => {
 					id: board.id,
 					slug: board.slug,
 					title: board.title,
+					format: board.format,
 					spaceId: board.spaceId,
 					createdAt: board.createdAt
 				},
@@ -453,6 +455,10 @@ io.on('connection', (socket) => {
 		if (!hasContent && !hasImage) return;
 		if (hasContent && content.length > 2000) return;
 		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
+		// Колонка обязана существовать в формате этой доски — иначе карточка
+		// исчезнет с экрана у всех, а в базе останется
+		const [owner] = await db.select({ format: boards.format }).from(boards).where(eq(boards.id, boardId)).limit(1);
+		if (!owner || !isValidColumn(owner.format, column)) return;
 		// Validate imageId exists
 		let imageMeta = null;
 		if (hasImage) {
@@ -481,9 +487,16 @@ io.on('connection', (socket) => {
 	socket.on('card:update', async ({ cardId, content, imageId: imgId, columnType }) => {
 		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
 		const hasImage = imgId && typeof imgId === 'string';
-		const validColumns = ['went_well', 'didnt_go_well', 'improve'];
 		const hasColumn = columnType !== undefined;
-		if (hasColumn && !validColumns.includes(columnType)) return;
+		if (hasColumn) {
+			const [owner] = await db
+				.select({ format: boards.format })
+				.from(cards)
+				.innerJoin(boards, eq(cards.boardId, boards.id))
+				.where(eq(cards.id, cardId))
+				.limit(1);
+			if (!owner || !isValidColumn(owner.format, columnType)) return;
+		}
 		if (!hasContent && imgId === undefined && !hasColumn) return; // must update something
 		if (hasContent && content.length > 2000) return;
 

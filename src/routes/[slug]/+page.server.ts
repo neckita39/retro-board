@@ -79,6 +79,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			id: board.id,
 			slug: board.slug,
 			title: board.title,
+			format: board.format,
 			createdAt: board.createdAt.toISOString()
 		},
 		space,
