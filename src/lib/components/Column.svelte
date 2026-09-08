@@ -4,10 +4,14 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { dndStore } from '$lib/stores/dnd.svelte.js';
-	import type { ColumnType } from '$lib/types.js';
+	import { TONE } from '$lib/formats.js';
+	import { txt } from '$lib/content/localized.js';
 	import { t } from '$lib/i18n/index.js';
 
-	let { column }: { column: ColumnType } = $props();
+	let { column }: { column: string } = $props();
+
+	let def = $derived(boardStore.columnDef(column));
+	let tone = $derived(TONE[def.tone]);
 
 	let sortBy = $state<'newest' | 'votes'>('newest');
 
@@ -44,24 +48,6 @@
 		dndStore.end();
 	}
 
-	const borderColor: Record<ColumnType, string> = {
-		went_well: 'border-well',
-		didnt_go_well: 'border-bad',
-		improve: 'border-improve'
-	};
-
-	const countColor: Record<ColumnType, string> = {
-		went_well: 'text-well',
-		didnt_go_well: 'text-bad',
-		improve: 'text-improve'
-	};
-
-	// Подсветка цели дропа цветом самой колонки
-	const dropActive: Record<ColumnType, string> = {
-		went_well: 'outline-well bg-well-bg',
-		didnt_go_well: 'outline-bad bg-bad-bg',
-		improve: 'outline-improve bg-improve-bg'
-	};
 </script>
 
 <div
@@ -72,16 +58,16 @@
 	role="group"
 	class="flex h-full flex-col gap-3 rounded-2xl outline-2 outline-offset-4 transition-[background-color,outline-color] duration-200 {isDropTarget
 		? dragOver
-			? `outline-solid ${dropActive[column]}`
+			? `outline-solid ${tone.outline}`
 			: 'outline-dashed outline-border-strong'
 		: 'outline-transparent'}"
 >
 	<!-- Column header — title underlined with the column color -->
-	<div class="flex items-baseline gap-2.5 border-b-[3px] pb-2.5 {borderColor[column]}">
+	<div class="flex items-baseline gap-2.5 border-b-[3px] pb-2.5 {tone.border}">
 		<h2 class="font-heading text-lg font-bold text-text-primary lg:text-[21px]">
-			{t(`column.${column}`)}
+			{txt(def.title)}
 		</h2>
-		<span class="text-sm font-semibold tabular-nums {countColor[column]}">{columnCards.length}</span>
+		<span class="text-sm font-semibold tabular-nums {tone.text}">{columnCards.length}</span>
 		<button
 			onclick={() => (sortBy = sortBy === 'newest' ? 'votes' : 'newest')}
 			class="btn-icon btn-icon-sm ml-auto self-center {sortBy === 'votes' ? 'text-accent' : ''}"

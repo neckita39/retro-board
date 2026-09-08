@@ -3,42 +3,39 @@
 	import CardForm from './CardForm.svelte';
 	import Summary from './Summary.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
-	import type { ColumnType } from '$lib/types.js';
-	import { t } from '$lib/i18n/index.js';
+	import { TONE } from '$lib/formats.js';
+	import { txt } from '$lib/content/localized.js';
 
 	let { creatorToken = null }: { creatorToken?: string | null } = $props();
 
-	const columns: ColumnType[] = ['went_well', 'didnt_go_well', 'improve'];
+	let columns = $derived(boardStore.columns);
 
 	// Mobile: columns become segment tabs, one column visible at a time
-	let active = $state<ColumnType>('went_well');
+	let active = $state(boardStore.columns[0].id);
 
-	const activeTab: Record<ColumnType, string> = {
-		went_well: 'bg-well text-white',
-		didnt_go_well: 'bg-bad text-white',
-		improve: 'bg-improve text-white'
-	};
+	// Четыре колонки в один ряд помещаются только на широких экранах
+	let gridCols = $derived(columns.length > 3 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3');
 </script>
 
 <!-- Mobile segment tabs -->
 <div class="flex gap-1.5 px-4 pb-1 pt-3 md:hidden">
-	{#each columns as column (column)}
+	{#each columns as column (column.id)}
 		<button
-			onclick={() => (active = column)}
-			aria-pressed={active === column}
-			class="min-h-11 flex-1 rounded-xl px-1 text-[13px] transition-colors {active === column
-				? `${activeTab[column]} border-none font-bold`
+			onclick={() => (active = column.id)}
+			aria-pressed={active === column.id}
+			class="min-h-11 flex-1 rounded-xl px-1 text-[13px] transition-colors {active === column.id
+				? `${TONE[column.tone].tab} border-none font-bold`
 				: 'border border-border bg-surface-card font-semibold text-text-secondary'}"
 		>
-			{t(`column.short.${column}`)} · {boardStore.getColumnCards(column).length}
+			{txt(column.short)} · {boardStore.getColumnCards(column.id).length}
 		</button>
 	{/each}
 </div>
 
-<div class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:grid-cols-3 md:pb-10 lg:px-7">
-	{#each columns as column (column)}
-		<div class="min-w-0 {column === active ? '' : 'hidden md:block'}">
-			<Column {column} />
+<div class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7 {gridCols}">
+	{#each columns as column (column.id)}
+		<div class="min-w-0 {column.id === active ? '' : 'hidden md:block'}">
+			<Column column={column.id} />
 		</div>
 	{/each}
 </div>

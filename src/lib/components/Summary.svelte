@@ -3,7 +3,8 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { focusIndex, nextCardId, prevCardId } from '$lib/focus.js';
-	import type { ColumnType } from '$lib/types.js';
+	import { TONE } from '$lib/formats.js';
+	import { txt } from '$lib/content/localized.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { creatorToken = null }: { creatorToken?: string | null } = $props();
@@ -23,12 +24,6 @@
 		nextCardId(summaryCards, socketStore.focusCardId, socketStore.focusDiscussed)
 	);
 	let prevId = $derived(prevCardId(summaryCards, socketStore.focusCardId));
-
-	const tagColors: Record<ColumnType, string> = {
-		went_well: 'bg-well-bg text-well-strong',
-		didnt_go_well: 'bg-bad-bg text-bad-strong',
-		improve: 'bg-improve-bg text-improve-strong'
-	};
 
 	function start() {
 		const first = summaryCards[0];
@@ -77,10 +72,9 @@
 			{#each summaryCards as card, i (card.id)}
 				{@const showHeader = card.columnType !== (i > 0 ? summaryCards[i - 1].columnType : '')}
 				{#if showHeader}
+					{@const def = boardStore.columnDef(card.columnType)}
 					<div class="mt-2 transition-opacity duration-300 first:mt-0 {focusVisible && card.columnType !== focusedColumn ? 'opacity-45' : 'opacity-100'}">
-						<span class="badge-sm {tagColors[card.columnType]}">
-							{t(`column.${card.columnType}`)}
-						</span>
+						<span class="badge-sm {TONE[def.tone].badge}">{txt(def.title)}</span>
 					</div>
 				{/if}
 				<SummaryRow

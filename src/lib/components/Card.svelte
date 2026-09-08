@@ -6,6 +6,8 @@
 	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
 	import { dndStore } from '$lib/stores/dnd.svelte.js';
 	import type { Card, ColumnType } from '$lib/types.js';
+	import { TONE } from '$lib/formats.js';
+	import { txt } from '$lib/content/localized.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { card }: { card: Card } = $props();
@@ -17,16 +19,9 @@
 	let deleteConfirming = $state(false);
 	let confirmTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	const ALL_COLUMNS: ColumnType[] = ['went_well', 'didnt_go_well', 'improve'];
-	let otherColumns = $derived(ALL_COLUMNS.filter((c) => c !== card.columnType));
+	let otherColumns = $derived(boardStore.columns.filter((c) => c.id !== card.columnType));
 
 	let commentCount = $derived(boardStore.getCardComments(card.id).length);
-
-	const tagColors: Record<ColumnType, string> = {
-		went_well: 'bg-well-bg text-well-strong',
-		didnt_go_well: 'bg-bad-bg text-bad-strong',
-		improve: 'bg-improve-bg text-improve-strong'
-	};
 
 	function startEdit() {
 		editContent = card.content;
@@ -167,9 +162,9 @@
 	{#if moveOpen}
 		<div class="mt-3 flex flex-wrap items-center gap-1.5" style="animation: fadeUp 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;">
 			<span class="text-[11px] text-text-muted">{t('card.move')}:</span>
-			{#each otherColumns as col (col)}
-				<button onclick={() => moveTo(col)} class="badge-sm {tagColors[col]} transition-transform hover:scale-105">
-					{t(`column.${col}`)}
+			{#each otherColumns as col (col.id)}
+				<button onclick={() => moveTo(col.id)} class="badge-sm {TONE[col.tone].badge} transition-transform hover:scale-105">
+					{txt(col.title)}
 				</button>
 			{/each}
 		</div>
