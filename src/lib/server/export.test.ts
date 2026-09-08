@@ -6,7 +6,7 @@ import { assembleExport, toMarkdown } from './export.js';
 
 const ORIGIN = 'https://x.test';
 
-const board = { title: 'Sprint 42', slug: 'abc123', createdAt: new Date('2026-07-01T00:00:00Z') };
+const board = { title: 'Sprint 42', slug: 'abc123', format: 'classic', createdAt: new Date('2026-07-01T00:00:00Z') };
 
 const cardRows = [
 	{
@@ -46,7 +46,7 @@ const commentRows = [
 describe('assembleExport', () => {
 	it('groups cards by column with likes, dislikes, image urls and dates', () => {
 		const data = assembleExport(board, cardRows, voteRows, commentRows, ORIGIN);
-		expect(data.board).toEqual({ title: 'Sprint 42', slug: 'abc123', createdAt: '2026-07-01T00:00:00.000Z' });
+		expect(data.board).toEqual({ title: 'Sprint 42', slug: 'abc123', format: 'classic', createdAt: '2026-07-01T00:00:00.000Z' });
 		const wentWell = data.columns.went_well;
 		expect(wentWell).toHaveLength(1);
 		expect(wentWell[0].likes).toBe(2);
@@ -97,5 +97,28 @@ describe('toMarkdown', () => {
 		const md = toMarkdown(assembleExport(board, cardRows, [], [], ORIGIN), 'en');
 		expect(md).toContain('- CI is green — *Maria*\n');
 		expect(md).not.toContain('[0');
+	});
+});
+
+describe('экспорт не-классического формата', () => {
+	const sailboat = { ...board, format: 'sailboat' };
+	const rows = [
+		{ id: 'c1', columnType: 'rocks', content: 'legacy auth expires', authorName: null, imageId: null, createdAt: new Date('2026-07-01T10:00:00Z') }
+	];
+
+	it('ключи JSON — колонки формата в его порядке', () => {
+		const data = assembleExport(sailboat, rows, [], [], ORIGIN);
+		expect(data.board.format).toBe('sailboat');
+		expect(Object.keys(data.columns)).toEqual(['wind', 'anchors', 'rocks', 'island']);
+		expect(data.columns.rocks[0].content).toBe('legacy auth expires');
+	});
+
+	it('заголовки Markdown — названия колонок формата на нужном языке', () => {
+		const en = toMarkdown(assembleExport(sailboat, rows, [], [], ORIGIN), 'en');
+		expect(en).toContain('## Wind');
+		expect(en).toContain('## Island');
+		expect(en).not.toContain('## Went Well');
+		const ru = toMarkdown(assembleExport(sailboat, rows, [], [], ORIGIN), 'ru');
+		expect(ru).toContain('## Рифы');
 	});
 });

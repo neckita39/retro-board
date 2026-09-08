@@ -4,8 +4,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { decrypt } from '$lib/server/crypto.js';
 import { translate, type Locale } from '$lib/i18n/index.js';
 import { createRateLimiter } from '$lib/server/ratelimit.js';
-
-export const COLUMN_TYPES = ['went_well', 'didnt_go_well', 'improve'] as const;
+import { findBoardFormat } from '$lib/formats.js';
 
 // Shared across export.md / export.json routes: 30 requests per IP per minute
 export const exportRateLimiter = createRateLimiter({ max: 30, windowMs: 60_000 });
@@ -28,7 +27,7 @@ export interface ExportCard {
 }
 
 export interface BoardExport {
-	board: { title: string; slug: string; createdAt: string };
+	board: { title: string; slug: string; format: string; createdAt: string };
 	columns: Record<string, ExportCard[]>;
 }
 
@@ -36,6 +35,7 @@ export interface BoardExport {
 interface BoardRow {
 	title: string;
 	slug: string;
+	format: string;
 	createdAt: Date;
 }
 interface CardRow {
@@ -66,10 +66,11 @@ export function assembleExport(
 	origin: string
 ): BoardExport {
 	const imageUrl = (id: string | null) => (id ? `${origin}/api/image/${id}` : null);
+	const format = findBoardFormat(board.format);
 	const columns: Record<string, ExportCard[]> = {};
-	for (const col of COLUMN_TYPES) {
-		columns[col] = boardCards
-			.filter((c) => c.columnType === col)
+	for (const col of format.columns) {
+		columns[col.id] = boardCards
+			.filter((c) => c.columnType === col.id)
 			.map((card) => ({
 				content: decrypt(card.content) ?? card.content,
 				authorName: decrypt(card.authorName),
@@ -88,7 +89,7 @@ export function assembleExport(
 			}));
 	}
 	return {
-		board: { title: board.title, slug: board.slug, createdAt: board.createdAt.toISOString() },
+		board: { title: board.title, slug: board.slug, format: format.id, createdAt: board.createdAt.toISOString() },
 		columns
 	};
 }
@@ -117,9 +118,9 @@ export function toMarkdown(data: BoardExport, lang: Locale = 'en'): string {
 	md += `*${translate(lang, 'apiExport.exported')}: ${new Date().toISOString().slice(0, 10)}*\n\n`;
 	md += `---\n\n`;
 
-	for (const col of COLUMN_TYPES) {
-		const items = data.columns[col] ?? [];
-		md += `## ${translate(lang, `column.${col}`)}\n\n`;
+	for (const col of findBoardFormat(data.board.format).columns) {
+		const items = data.columns[col.id] ?? [];
+		md += `## ${lang === 'ru' ? col.title.ru : col.title.en}\n\n`;
 
 		if (items.length === 0) {
 			md += `*${translate(lang, 'apiExport.noCards')}*\n\n`;

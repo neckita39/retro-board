@@ -1,4 +1,5 @@
 import type { Board, Card, Vote, Comment, BoardState } from '$lib/types.js';
+import { findBoardFormat, type BoardColumn, type BoardFormat } from '$lib/formats.js';
 
 class BoardStore {
 	board = $state<Board | null>(null);
@@ -75,14 +76,27 @@ class BoardStore {
 		return score;
 	}
 
+	/** Формат текущей доски; до загрузки доски — classic */
+	get format(): BoardFormat {
+		return findBoardFormat(this.board?.format);
+	}
+
+	get columns(): BoardColumn[] {
+		return this.format.columns;
+	}
+
+	/** Карточка с колонкой не из формата рендерится в первую — но не роняет доску */
+	columnDef(id: string): BoardColumn {
+		return this.columns.find((c) => c.id === id) ?? this.columns[0];
+	}
+
 	getSummaryCards() {
-		const order: string[] = ['went_well', 'didnt_go_well', 'improve'];
-		return [...this.cards]
-			.sort((a, b) => {
-				const colDiff = order.indexOf(a.columnType) - order.indexOf(b.columnType);
-				if (colDiff !== 0) return colDiff;
-				return this.getCardScore(b.id) - this.getCardScore(a.id);
-			});
+		const order = this.columns.map((c) => c.id);
+		return [...this.cards].sort((a, b) => {
+			const colDiff = order.indexOf(a.columnType) - order.indexOf(b.columnType);
+			if (colDiff !== 0) return colDiff;
+			return this.getCardScore(b.id) - this.getCardScore(a.id);
+		});
 	}
 }
 

@@ -262,6 +262,31 @@ describe('BoardStore', () => {
 		expect(boardStore.getColumnCards('went_well', 'votes').map((c) => c.id)).toEqual(['c2', 'c1']);
 	});
 
+	it('columns и columnDef берутся из формата доски', () => {
+		boardStore.setState({ board: { ...board, format: 'sailboat' }, cards: [], votes: [], comments: [] });
+		expect(boardStore.format.id).toBe('sailboat');
+		expect(boardStore.columns.map((c) => c.id)).toEqual(['wind', 'anchors', 'rocks', 'island']);
+		expect(boardStore.columnDef('rocks').title.ru).toBe('Рифы');
+	});
+
+	it('неизвестная колонка не роняет рендер — отдаётся первая колонка формата', () => {
+		expect(boardStore.columnDef('nope').id).toBe('went_well');
+	});
+
+	it('getSummaryCards идёт по порядку колонок формата, а не classic', () => {
+		boardStore.setState({
+			board: { ...board, format: 'sailboat' },
+			cards: [
+				makeCard({ id: 'i', columnType: 'island' }),
+				makeCard({ id: 'w', columnType: 'wind' }),
+				makeCard({ id: 'r', columnType: 'rocks' })
+			],
+			votes: [],
+			comments: []
+		});
+		expect(boardStore.getSummaryCards().map((c) => c.id)).toEqual(['w', 'r', 'i']);
+	});
+
 	it('getColumnCards falls back to newest-first among equal votes', () => {
 		boardStore.setState({
 			board,
