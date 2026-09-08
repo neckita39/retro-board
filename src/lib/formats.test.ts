@@ -1,0 +1,62 @@
+import { describe, it, expect } from 'vitest';
+import {
+	BOARD_FORMATS,
+	DEFAULT_FORMAT,
+	findBoardFormat,
+	isValidFormat,
+	isValidColumn,
+	TONE
+} from './formats.js';
+import { FORMATS } from './content/formats.js';
+
+describe('реестр форматов', () => {
+	it('classic — дефолт и хранит прежние id колонок', () => {
+		expect(DEFAULT_FORMAT).toBe('classic');
+		expect(findBoardFormat('classic').columns.map((c) => c.id)).toEqual([
+			'went_well',
+			'didnt_go_well',
+			'improve'
+		]);
+	});
+
+	it('id форматов и колонок уникальны', () => {
+		const ids = BOARD_FORMATS.map((f) => f.id);
+		expect(new Set(ids).size).toBe(ids.length);
+		for (const f of BOARD_FORMATS) {
+			const cols = f.columns.map((c) => c.id);
+			expect(new Set(cols).size).toBe(cols.length);
+			expect(cols.length).toBeGreaterThanOrEqual(3);
+		}
+	});
+
+	it('у каждой SEO-страницы формата есть доска-формат с тем же id', () => {
+		for (const seo of FORMATS) {
+			expect(isValidFormat(seo.slug)).toBe(true);
+			expect(findBoardFormat(seo.slug).columns).toHaveLength(seo.columns.length);
+		}
+	});
+
+	it('неизвестный формат падает в classic, неизвестная колонка — невалидна', () => {
+		expect(findBoardFormat('nope').id).toBe('classic');
+		expect(findBoardFormat(null).id).toBe('classic');
+		expect(isValidFormat('nope')).toBe(false);
+		expect(isValidColumn('sailboat', 'island')).toBe(true);
+		expect(isValidColumn('sailboat', 'went_well')).toBe(false);
+		expect(isValidColumn('classic', 'went_well')).toBe(true);
+	});
+
+	it('названия classic совпадают со словарём — экспорт и e2e на них завязаны', () => {
+		const [well, bad, improve] = findBoardFormat('classic').columns;
+		expect(well.title).toEqual({ en: 'Went Well', ru: 'Прошло хорошо' });
+		expect(bad.title).toEqual({ en: "Didn't Go Well", ru: 'Не получилось' });
+		expect(improve.title).toEqual({ en: 'To Improve', ru: 'Улучшить' });
+	});
+
+	it('у каждого тона есть полный набор классов', () => {
+		for (const tone of ['well', 'bad', 'improve', 'accent'] as const) {
+			expect(TONE[tone].border).toMatch(/^border-/);
+			expect(TONE[tone].badge).toContain('bg-');
+			expect(TONE[tone].tab).toContain('text-white');
+		}
+	});
+});
