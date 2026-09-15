@@ -37,3 +37,6 @@ playwright-report/
 
 # Brainstorming visual companion
 .superpowers/
+
+# Черновик статьи для Хабра — не для прода
+/habr-article.md

@@ -4,9 +4,11 @@
 
 # Retrospectrix
 
-**Доска для ретроспектив**
+**Бесплатная онлайн-доска для ретроспектив — без регистрации**
 
-Создай доску, отправь ссылку команде и работайте вместе — без регистрации.
+Создайте доску, отправьте ссылку команде — все уже на доске. Никаких аккаунтов, почты и триалов.
+
+**[retrospectrix.ru](https://retrospectrix.ru)**
 
 [![CI/CD](https://github.com/neckita39/retro-board/actions/workflows/ci.yml/badge.svg)](https://github.com/neckita39/retro-board/actions/workflows/ci.yml)
 ![Svelte 5](https://img.shields.io/badge/Svelte-5-ff3e00?logo=svelte&logoColor=white)
@@ -24,30 +26,36 @@
 <tr>
 <td width="50%">
 
-**Три колонки** — Что прошло хорошо, Что пошло не так, Что улучшить
+**Форматы ретро** — классика (хорошо / не получилось / улучшить), Start Stop Continue, Mad Sad Glad, 4L, Sailboat. Формат выбирается при создании доски
 
-**Реальное время** — совместная работа через WebSocket
+**Реальное время** — карточки, голоса и комментарии обновляются у всех мгновенно (Socket.IO)
 
-**Голосование** — лайки и дизлайки на карточках
+**Голосование** — лайки и дизлайки; вес карточки = лайки − дизлайки
 
-**Комментарии** — обсуждение прямо на доске
+**Drag & drop** — перенос карточек между колонками мышью
+
+**Комментарии и картинки** — обсуждение и вложения прямо на доске, лайтбокс
 
 </td>
 <td width="50%">
 
-**Таймер** — ограничение времени на обсуждение
+**Режим обсуждения** — ведущий ведёт команду по повестке: одна карточка подсвечена у всех, таймер 5 минут на каждую, пройденные помечаются
 
-**Тёмная тема** — переключение одной кнопкой
+**Пространства** — серия ретро одной команды, опционально под паролем
 
-**i18n** — английский и русский
+**Таймер** — общий обратный отсчёт на встречу
 
-**Экспорт** — JSON или Markdown
+**Экспорт и API** — JSON и Markdown по коду доски, без ключей — удобно для ботов и AI-агентов
+
+**Тёмная тема · RU / EN**
 
 </td>
 </tr>
 </table>
 
-**Шифрование** (AES-256-GCM) · **Мониторинг** (StatsD + Netdata) · **CI/CD** (GitHub Actions)
+**Шифрование** (AES-256-GCM) · **Мониторинг** (StatsD + Netdata) · **CI/CD** с e2e-гейтом (GitHub Actions)
+
+Контентные страницы: [форматы ретроспективы](https://retrospectrix.ru/formats), [как провести ретро](https://retrospectrix.ru/how-to-run-a-retro), [о проекте](https://retrospectrix.ru/about), [политика конфиденциальности](https://retrospectrix.ru/privacy), [changelog](https://retrospectrix.ru/changelog).
 
 ---
 
@@ -59,22 +67,43 @@ cd retro-board
 docker compose up -d --build
 ```
 
-Открывай http://localhost:3777
+Откройте http://localhost:3777
+
+<details>
+<summary><b>Разработка без Docker для приложения</b></summary>
+
+<br>
+
+```bash
+docker compose up -d db        # только PostgreSQL (порт 5433)
+npm install
+npm run dev
+```
+
+Миграции — ручные SQL-файлы в `drizzle/`, применяются `node migrate.js` (в Docker — автоматически при старте).
+
+</details>
 
 ---
 
 ## Конфигурация
 
-Скопируй `.env.example` в `.env`:
+Скопируйте `.env.example` в `.env`:
 
 | Переменная | Описание | По умолчанию |
 |-----------|----------|-------------|
 | `DATABASE_URL` | Подключение к PostgreSQL | `postgresql://retro:retro@db:5432/retro` |
 | `PORT` | Порт приложения | `3000` |
-| `ORIGIN` | URL для CORS | `http://localhost:3777` |
+| `ORIGIN` | Публичный URL (CORS, ссылки) | `http://localhost:3777` |
 | `ENCRYPTION_KEY` | Ключ шифрования (64 hex) | пусто = без шифрования |
+| `BODY_SIZE_LIMIT` | Лимит загрузки картинок, байт | `20971520` (20 MB) |
+| `APP_PORT` | Внешний порт в продакшене | `80` |
+| `TG_BOT_TOKEN`, `TG_CHAT_ID` | Уведомления о фидбеке в Telegram | пусто = выключено |
+| `TG_PROXY` / `TG_API_BASE` | SOCKS-прокси или форвардер, если Telegram API недоступен с хостинга | — |
+| `STATSD_HOST`, `STATSD_PORT` | Куда слать метрики | `localhost:8125` |
+| `LOG_LEVEL` | Уровень логов Pino | `info` |
 
-Сгенерировать ключ: `openssl rand -hex 32`
+Сгенерируйте ключ: `openssl rand -hex 32`
 
 **Продакшен:**
 
@@ -87,8 +116,12 @@ docker compose -f docker-compose.prod.yml up -d --build
 ## Тесты
 
 ```bash
-npm test
+npm test          # юнит-тесты (Vitest) — без БД и браузера
+npm run check     # svelte-check
+npm run test:e2e  # Playwright: собирает приложение и гоняет его против настоящего Postgres
 ```
+
+Для e2e предварительно запустите `docker compose up -d db`. Каждый e2e-тест создаёт свою доску, чистить БД не нужно.
 
 ---
 
@@ -97,8 +130,21 @@ npm test
 При пуше в `main` GitHub Actions автоматически:
 
 ```
-push → install → test → build → deploy
+push → install → unit tests → build → e2e (Playwright + Postgres) → deploy по SSH
 ```
+
+Деплой не случится, если упал любой шаг — в том числе e2e.
+
+---
+
+## Данные и приватность
+
+- Доска доступна только по неугадываемой ссылке (`nanoid`, 21 символ). Доски и пространства закрыты от поисковиков (`noindex` + `robots.txt`); индексируются только контентные страницы из `seo-paths.js`.
+- Тексты карточек, имена авторов и комментарии шифруются при хранении (см. ниже). Картинки сжимаются в WebP и лежат в PostgreSQL.
+- Аккаунтов нет. Одна техническая сессионная кука для подсчёта визитов; имя, язык и тема живут в `localStorage`.
+- Удаление доски каскадом удаляет карточки, комментарии, голоса и картинки. Картинки-сироты чистятся автоматически через сутки.
+
+Подробнее — на странице [конфиденциальности](https://retrospectrix.ru/privacy).
 
 ---
 
@@ -110,6 +156,41 @@ push → install → test → build → deploy
 При установке `ENCRYPTION_KEY` содержимое карточек, имена авторов и комментарии шифруются AES-256-GCM перед записью в БД. Без ключа данные хранятся как есть.
 
 Старые данные, созданные до включения шифрования, продолжают работать.
+
+</details>
+
+<details>
+<summary><b>Форматы досок</b></summary>
+
+<br>
+
+Реестр пресетов — `board-formats.js` в корне репозитория (там же, где `seo-paths.js`: `server.js` работает в рантайм-образе без `src/`). Его читают сервер, клиент и экспорт.
+
+| Формат | Колонки |
+|--------|---------|
+| `classic` | went_well · didnt_go_well · improve |
+| `start-stop-continue` | start · stop · continue |
+| `mad-sad-glad` | mad · sad · glad |
+| `4l` | liked · learned · lacked · longed |
+| `sailboat` | wind · anchors · rocks · island |
+
+Формат задаётся при создании и не меняется. Id формата совпадает со slug страницы `/formats/<slug>`, поэтому `/new?format=sailboat` предвыбирает его. Ключи `columns` в JSON-экспорте зависят от формата доски (`board.format`).
+
+</details>
+
+<details>
+<summary><b>API</b></summary>
+
+<br>
+
+Read-only доступ по коду доски, без аутентификации — код доски и есть ключ:
+
+```
+GET /api/v1/boards/{slug}/export.json            # board, columns → cards, votes, comments, image urls
+GET /api/v1/boards/{slug}/export.md?lang=en|ru    # Markdown; lang — язык заголовков
+```
+
+Лимит 30 запросов в минуту с IP. Документация — [retrospectrix.ru/api](https://retrospectrix.ru/api).
 
 </details>
 
@@ -128,11 +209,13 @@ App (Pino logs + StatsD UDP) → Netdata Agent → Netdata Cloud
 | `GET /ready` | Readiness-проверка (с БД) |
 | `GET /metrics` | Метрики приложения |
 
+Продуктовые счётчики: `retro.board.created`, `retro.space.created`, `retro.card.created`, `retro.focus.started`, `retro.export.api`, `retro.guest.from_web`, `retro.guest.source.{google|yandex|search_other|social|direct|other}`.
+
 **Настройка Netdata Cloud:**
 
-1. Зарегистрироваться на [app.netdata.cloud](https://app.netdata.cloud)
-2. Создать Space → Room → "Connect Nodes" → Docker
-3. Добавить в `.env`:
+1. Зарегистрируйтесь на [app.netdata.cloud](https://app.netdata.cloud)
+2. Создайте Space → Room → "Connect Nodes" → Docker
+3. Добавьте в `.env`:
    ```env
    NETDATA_CLAIM_TOKEN=your-claim-token
    NETDATA_CLAIM_ROOMS=your-room-id
@@ -160,6 +243,15 @@ docker compose -f docker-compose.prod.yml logs app -f
 <td align="center"><img src="https://socket.io/images/logo.svg" width="24" /><br><b>Socket.IO</b></td>
 <td align="center"><img src="https://www.postgresql.org/media/img/about/press/elephant.png" width="24" /><br><b>PostgreSQL</b></td>
 <td align="center"><img src="https://vitest.dev/logo.svg" width="24" /><br><b>Vitest</b></td>
+<td align="center"><img src="https://playwright.dev/img/playwright-logo.svg" width="24" /><br><b>Playwright</b></td>
 <td align="center"><img src="https://github.githubassets.com/favicons/favicon-dark.svg" width="24" /><br><b>Actions</b></td>
 </tr>
 </table>
+
+Svelte 5 (runes) · Tailwind 4 · Drizzle ORM · Sharp · Pino · Vite 7 · adapter-node
+
+---
+
+## Автор
+
+Никита Щербо — [nikita.kantiana@gmail.com](mailto:nikita.kantiana@gmail.com). Идеи и баги — в [форму обратной связи](https://retrospectrix.ru/feedback) или issues.
