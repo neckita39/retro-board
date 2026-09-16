@@ -65,7 +65,7 @@
 		{#if error}
 			{t(`space.analysis.error.${error.kind}`, { n: error.hours })}
 		{:else}
-			{t('space.analysis.running')}
+			{t('space.analysis.toast.started')}
 		{/if}
 	</div>
 {/if}

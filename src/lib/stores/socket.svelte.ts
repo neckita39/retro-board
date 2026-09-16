@@ -1,5 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
 import { boardStore } from './board.svelte.js';
+import { toastStore } from './toast.svelte.js';
+import { t } from '$lib/i18n/index.js';
+import { analysisTransition, type AnalysisState } from '$lib/analysis-state.js';
 
 class SocketStore {
 	socket = $state<Socket | null>(null);
@@ -11,8 +14,11 @@ class SocketStore {
 	focusEndTime = $state<number | null>(null);
 	focusDuration = $state<number | null>(null);
 	focusDiscussed = $state<string[]>([]);
+	/** Статус AI-анализа текущего пространства; null — пространство не подключено */
+	analysis = $state<AnalysisState | null>(null);
 
 	private currentSlug: string | null = null;
+	private currentSpace: string | null = null;
 	private currentCreatorToken = '';
 	private everConnected = false;
 
@@ -30,6 +36,10 @@ class SocketStore {
 					slug: this.currentSlug,
 					creatorToken: this.currentCreatorToken
 				});
+			}
+			if (this.everConnected && this.currentSpace) {
+				this.socket?.emit('space:join', { slug: this.currentSpace });
+				void this.refreshAnalysis();
 			}
 			this.everConnected = true;
 		});
@@ -81,6 +91,55 @@ class SocketStore {
 			this.focusDuration = duration ?? null;
 			this.focusDiscussed = discussed ?? [];
 		});
+
+		this.socket.on('analysis:state', (state: AnalysisState) => {
+			this.applyAnalysis(state);
+		});
+	}
+
+	/** Комната пространства — статус анализа для всех, кто в нём. Первый статус
+	 *  добираем по HTTP: задача могла закончиться, пока сокет подключался. */
+	joinSpace(slug: string) {
+		this.currentSpace = slug;
+		this.socket?.emit('space:join', { slug });
+		void this.refreshAnalysis();
+	}
+
+	async refreshAnalysis() {
+		const slug = this.currentSpace;
+		if (!slug) return;
+		try {
+			const res = await fetch(`/spaces/${slug}/analysis`);
+			if (!res.ok) return;
+			const state = (await res.json()) as AnalysisState;
+			if (this.currentSpace === slug) this.applyAnalysis(state);
+		} catch {
+			// сеть моргнула — следующий сокет-ивент или реконнект всё поправят
+		}
+	}
+
+	/** Состояние из данных страницы: молча, если ещё ничего не знали */
+	seedAnalysis(state: AnalysisState | null) {
+		if (!state) return;
+		if (this.analysis === null) this.analysis = state;
+		else this.applyAnalysis(state);
+	}
+
+	applyAnalysis(next: AnalysisState) {
+		const transition = analysisTransition(this.analysis, next);
+		this.analysis = next;
+		if (!transition || next.state === 'idle') return;
+		if (transition === 'started') {
+			toastStore.push({ kind: 'info', text: t('space.analysis.toast.started', { title: next.title }) });
+		} else if (transition === 'ready' && next.state === 'ready') {
+			toastStore.push({
+				kind: 'success',
+				text: t('space.analysis.toast.ready', { title: next.title }),
+				action: { label: t('space.analysis.toast.open'), href: `/${next.board.slug}` }
+			});
+		} else if (transition === 'failed' && next.state === 'failed') {
+			toastStore.push({ kind: 'error', text: t(`space.analysis.error.${next.error}`) });
+		}
 	}
 
 	joinBoard(slug: string, creatorToken?: string | null) {
@@ -148,6 +207,8 @@ class SocketStore {
 		this.connected = false;
 		this.currentSlug = null;
 		this.currentCreatorToken = '';
+		this.currentSpace = null;
+		this.analysis = null;
 		this.everConnected = false;
 		this.timerEnd = null;
 		this.timerDuration = null;

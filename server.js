@@ -3,6 +3,7 @@ import { isIndexable } from './seo-paths.js';
 import { isValidColumn } from './board-formats.js';
 import { normalizeTitle } from './titles.js';
 import { createServer } from 'http';
+import { EventEmitter } from 'events';
 import { Server as SocketIOServer } from 'socket.io';
 import crypto from 'crypto';
 import pg from 'pg';
@@ -26,6 +27,11 @@ const bytea = customType({
 		return 'bytea';
 	}
 });
+
+// Шина SvelteKit → Socket.IO: form action анализа пространства шлёт сюда события,
+// а мы ретранслируем их комнате space:{slug}. Один процесс, поэтому globalThis хватает.
+const bus = new EventEmitter();
+globalThis.__retroBus = bus;
 
 // --- Logger ---
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
@@ -343,10 +349,26 @@ function focusPayload(focus) {
 	};
 }
 
+bus.on('space', ({ spaceSlug, event, payload }) => {
+	if (typeof spaceSlug !== 'string' || typeof event !== 'string') return;
+	io.to(`space:${spaceSlug}`).emit(event, payload);
+});
+
 io.on('connection', (socket) => {
 	metrics.wsConnections++;
 	let currentRoom = null;
 	let socketCreatorToken = '';
+	// Комната пространства: только статус AI-анализа, содержимого досок в ней нет,
+	// поэтому проверок доступа не делаем — slug пространства и так неугадываем
+	let currentSpace = null;
+
+	socket.on('space:join', (payload) => {
+		const slug = payload?.slug;
+		if (typeof slug !== 'string' || !slug || slug.length > 64) return;
+		if (currentSpace) socket.leave(`space:${currentSpace}`);
+		currentSpace = slug;
+		socket.join(`space:${slug}`);
+	});
 
 	socket.on('board:join', async ({ slug, creatorToken: joinToken }) => {
 		socketCreatorToken = joinToken || '';
