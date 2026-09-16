@@ -81,7 +81,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const cookieToken = cookies.get(`retro_creator_${params.slug}`) ?? '';
 
 	let isCreator = spaceCreator;
-	let showAdminBanner = false;
+	let showCreatedToast = false;
 
 	if (adminParam && adminParam === board.creatorToken) {
 		cookies.set(`retro_creator_${params.slug}`, adminParam, {
@@ -91,7 +91,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			maxAge: 60 * 60 * 24 * 365
 		});
 		isCreator = true;
-		showAdminBanner = true;
+		showCreatedToast = true;
 	} else if (cookieToken && cookieToken === board.creatorToken) {
 		isCreator = true;
 	}
@@ -110,7 +110,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		spaceName: space?.name ?? null,
 		spaceSlug: space?.slug ?? null,
 		isCreator,
-		showAdminBanner,
+		showCreatedToast,
 		adminLink,
 		analysisEnabled: spaceViewable && !!env.DEEPSEEK_API_KEY,
 		analysis,

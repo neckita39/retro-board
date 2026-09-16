@@ -56,7 +56,7 @@
 			<span class="text-[13px] text-text-muted">{t('guide.meta', { n: totalMinutes })}</span>
 		</header>
 
-		<p class="text-[17px] leading-[1.75] text-text-primary/90">{txt(GUIDE_INTRO)}</p>
+		<p class="text-[17px] leading-[1.75] text-text-primary">{txt(GUIDE_INTRO)}</p>
 
 		<section class="flex flex-col gap-5">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('guide.section.steps')}</h2>
@@ -71,7 +71,7 @@
 								<h3 class="font-heading text-[17px] font-bold text-text-primary">{txt(step.title)}</h3>
 								<span class="text-xs font-semibold text-text-muted">{t('guide.step.minutes', { n: step.minutes })}</span>
 							</div>
-							<p class="text-[15px] leading-[1.7] text-text-primary/85">{txt(step.body)}</p>
+							<p class="text-[15px] leading-[1.7] text-text-primary">{txt(step.body)}</p>
 						</div>
 					</li>
 				{/each}
@@ -80,7 +80,7 @@
 
 		<section class="flex flex-col gap-4">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('guide.section.mistakes')}</h2>
-			<ul class="list-disc space-y-2 pl-[18px] text-[16px] leading-[1.7] text-text-primary/85 marker:text-text-muted">
+			<ul class="list-disc space-y-2 pl-[18px] text-[16px] leading-[1.7] text-text-primary marker:text-text-muted">
 				{#each GUIDE_MISTAKES as item (item.en)}
 					<li>{txt(item)}</li>
 				{/each}
@@ -89,7 +89,7 @@
 
 		<section class="flex flex-col gap-4">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('guide.section.formats')}</h2>
-			<p class="text-[16px] leading-[1.7] text-text-primary/85">{t('guide.formats.desc')}</p>
+			<p class="text-[16px] leading-[1.7] text-text-primary">{t('guide.formats.desc')}</p>
 			<div class="grid gap-3 sm:grid-cols-2">
 				{#each FORMATS as format (format.slug)}
 					<a
@@ -109,7 +109,7 @@
 				{#each GUIDE_FAQ as item (item.question.en)}
 					<div class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5">
 						<h3 class="font-heading text-[16px] font-bold text-text-primary">{txt(item.question)}</h3>
-						<p class="text-[15px] leading-[1.7] text-text-primary/85">{txt(item.answer)}</p>
+						<p class="text-[15px] leading-[1.7] text-text-primary">{txt(item.answer)}</p>
 					</div>
 				{/each}
 			</div>

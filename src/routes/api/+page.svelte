@@ -89,7 +89,7 @@
 				<button
 					onclick={() => (selectedId = endpoint.id)}
 					aria-pressed={selectedId === endpoint.id}
-					class="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors {selectedId === endpoint.id
+					class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors {selectedId === endpoint.id
 						? 'border border-border bg-surface-card'
 						: 'border border-transparent hover:bg-surface-hover'}"
 				>
@@ -116,66 +116,66 @@
 			</div>
 
 			<!-- Example response — dark code block -->
-			<div class="overflow-x-auto rounded-2xl bg-[#211E1A] px-6 py-[22px]">
+			<div class="overflow-x-auto rounded-2xl bg-code-bg px-6 py-[22px]">
 				{#if selected.id === 'md'}
-					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code><span class="text-[#E0A470]"># Sprint 42</span>
+					<pre class="font-mono text-[13px] leading-[1.7] text-code-fg"><code><span class="text-code-key"># Sprint 42</span>
 
-<span class="text-[#E0A470]">## Went Well</span>
+<span class="text-code-key">## Went Well</span>
 
-- CI is finally green — <span class="text-[#9CBF8E]">*Maria*</span> [<span class="text-[#8FB6D9]">3</span> likes]
-  - Huge relief! — <span class="text-[#9CBF8E]">*Peter*</span></code></pre>
+- CI is finally green — <span class="text-code-string">*Maria*</span> [<span class="text-code-number">3</span> likes]
+  - Huge relief! — <span class="text-code-string">*Peter*</span></code></pre>
 				{:else if selected.id === 'space-boards-md'}
-					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code><span class="text-[#E0A470]"># Team Alpha</span>
+					<pre class="font-mono text-[13px] leading-[1.7] text-code-fg"><code><span class="text-code-key"># Team Alpha</span>
 
 - [Sprint 42](https://retrospectrix.ru/V1StGXR8_Z5jdHi6B-myT) — 2026-09-16 · classic
 - [Space analysis for 16.09.2026](https://retrospectrix.ru/3fJ9…) — 2026-09-16 · analysis</code></pre>
 				{:else if selected.id === 'space-boards-json'}
-					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
-  <span class="text-[#E0A470]">"space"</span>: {'{'} <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"sP4c3…"</span>, <span class="text-[#E0A470]">"name"</span>: <span class="text-[#9CBF8E]">"Team Alpha"</span> {'}'},
-  <span class="text-[#E0A470]">"boards"</span>: [
+					<pre class="font-mono text-[13px] leading-[1.7] text-code-fg"><code>{'{'}
+  <span class="text-code-key">"space"</span>: {'{'} <span class="text-code-key">"slug"</span>: <span class="text-code-string">"sP4c3…"</span>, <span class="text-code-key">"name"</span>: <span class="text-code-string">"Team Alpha"</span> {'}'},
+  <span class="text-code-key">"boards"</span>: [
     {'{'}
-      <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"V1StGXR8_Z5jdHi6B-myT"</span>,
-      <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Sprint 42"</span>,
-      <span class="text-[#E0A470]">"format"</span>: <span class="text-[#9CBF8E]">"classic"</span>,
-      <span class="text-[#E0A470]">"createdAt"</span>: <span class="text-[#9CBF8E]">"2026-09-16T10:00:00.000Z"</span>,
-      <span class="text-[#E0A470]">"url"</span>: <span class="text-[#9CBF8E]">"https://retrospectrix.ru/V1StGXR8_Z5jdHi6B-myT"</span>
+      <span class="text-code-key">"slug"</span>: <span class="text-code-string">"V1StGXR8_Z5jdHi6B-myT"</span>,
+      <span class="text-code-key">"title"</span>: <span class="text-code-string">"Sprint 42"</span>,
+      <span class="text-code-key">"format"</span>: <span class="text-code-string">"classic"</span>,
+      <span class="text-code-key">"createdAt"</span>: <span class="text-code-string">"2026-09-16T10:00:00.000Z"</span>,
+      <span class="text-code-key">"url"</span>: <span class="text-code-string">"https://retrospectrix.ru/V1StGXR8_Z5jdHi6B-myT"</span>
     {'}'}
   ]
 {'}'}</code></pre>
 				{:else if selected.id === 'space-analyses-md'}
-					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code><span class="text-[#E0A470]"># Team Alpha — AI analyses</span>
+					<pre class="font-mono text-[13px] leading-[1.7] text-code-fg"><code><span class="text-code-key"># Team Alpha — AI analyses</span>
 
-<span class="text-[#E0A470]">## Space analysis for 16.09.2026</span>
+<span class="text-code-key">## Space analysis for 16.09.2026</span>
 
-<span class="text-[#E0A470]">### Still bad</span>
+<span class="text-code-key">### Still bad</span>
 
-- Flaky tests keep blocking merges (in 3 boards) — <span class="text-[#9CBF8E]">*AI analysis*</span></code></pre>
+- Flaky tests keep blocking merges (in 3 boards) — <span class="text-code-string">*AI analysis*</span></code></pre>
 				{:else if selected.id === 'space-analyses-json'}
-					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
-  <span class="text-[#E0A470]">"space"</span>: {'{'} <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"sP4c3…"</span>, <span class="text-[#E0A470]">"name"</span>: <span class="text-[#9CBF8E]">"Team Alpha"</span> {'}'},
-  <span class="text-[#E0A470]">"analyses"</span>: [
+					<pre class="font-mono text-[13px] leading-[1.7] text-code-fg"><code>{'{'}
+  <span class="text-code-key">"space"</span>: {'{'} <span class="text-code-key">"slug"</span>: <span class="text-code-string">"sP4c3…"</span>, <span class="text-code-key">"name"</span>: <span class="text-code-string">"Team Alpha"</span> {'}'},
+  <span class="text-code-key">"analyses"</span>: [
     {'{'}
-      <span class="text-[#E0A470]">"board"</span>: {'{'} <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"3fJ9…"</span>, <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Space analysis for 16.09.2026"</span>, <span class="text-[#E0A470]">"format"</span>: <span class="text-[#9CBF8E]">"analysis"</span> {'}'},
-      <span class="text-[#E0A470]">"columns"</span>: {'{'}
-        <span class="text-[#E0A470]">"again_bad"</span>: [ {'{'} <span class="text-[#E0A470]">"content"</span>: <span class="text-[#9CBF8E]">"Flaky tests keep blocking merges (in 3 boards)"</span>, <span class="text-[#E0A470]">"authorName"</span>: <span class="text-[#9CBF8E]">"AI analysis"</span> {'}'} ]
+      <span class="text-code-key">"board"</span>: {'{'} <span class="text-code-key">"slug"</span>: <span class="text-code-string">"3fJ9…"</span>, <span class="text-code-key">"title"</span>: <span class="text-code-string">"Space analysis for 16.09.2026"</span>, <span class="text-code-key">"format"</span>: <span class="text-code-string">"analysis"</span> {'}'},
+      <span class="text-code-key">"columns"</span>: {'{'}
+        <span class="text-code-key">"again_bad"</span>: [ {'{'} <span class="text-code-key">"content"</span>: <span class="text-code-string">"Flaky tests keep blocking merges (in 3 boards)"</span>, <span class="text-code-key">"authorName"</span>: <span class="text-code-string">"AI analysis"</span> {'}'} ]
       {'}'}
     {'}'}
   ]
 {'}'}</code></pre>
 				{:else}
-					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
-  <span class="text-[#E0A470]">"board"</span>: {'{'}
-    <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"V1StGXR8_Z5jdHi6B-myT"</span>,
-    <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Sprint 42"</span>,
-    <span class="text-[#E0A470]">"format"</span>: <span class="text-[#9CBF8E]">"classic"</span>
+					<pre class="font-mono text-[13px] leading-[1.7] text-code-fg"><code>{'{'}
+  <span class="text-code-key">"board"</span>: {'{'}
+    <span class="text-code-key">"slug"</span>: <span class="text-code-string">"V1StGXR8_Z5jdHi6B-myT"</span>,
+    <span class="text-code-key">"title"</span>: <span class="text-code-string">"Sprint 42"</span>,
+    <span class="text-code-key">"format"</span>: <span class="text-code-string">"classic"</span>
   {'}'},
-  <span class="text-[#E0A470]">"columns"</span>: {'{'}
-    <span class="text-[#E0A470]">"went_well"</span>: [
+  <span class="text-code-key">"columns"</span>: {'{'}
+    <span class="text-code-key">"went_well"</span>: [
       {'{'}
-        <span class="text-[#E0A470]">"content"</span>: <span class="text-[#9CBF8E]">"CI is finally green"</span>,
-        <span class="text-[#E0A470]">"authorName"</span>: <span class="text-[#9CBF8E]">"Maria"</span>,
-        <span class="text-[#E0A470]">"likes"</span>: <span class="text-[#8FB6D9]">3</span>,
-        <span class="text-[#E0A470]">"dislikes"</span>: <span class="text-[#8FB6D9]">0</span>
+        <span class="text-code-key">"content"</span>: <span class="text-code-string">"CI is finally green"</span>,
+        <span class="text-code-key">"authorName"</span>: <span class="text-code-string">"Maria"</span>,
+        <span class="text-code-key">"likes"</span>: <span class="text-code-number">3</span>,
+        <span class="text-code-key">"dislikes"</span>: <span class="text-code-number">0</span>
       {'}'}
     ]
   {'}'}

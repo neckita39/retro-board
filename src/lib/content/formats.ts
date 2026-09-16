@@ -18,6 +18,8 @@ export interface FormatColumn {
 export interface RetroFormat {
 	slug: string;
 	name: Localized;
+	/** Короткое имя для пикера форматов: полное («4L — Liked, …») там не влезает в строку */
+	short: Localized;
 	tagline: Localized;
 	/** Сколько длится встреча по этому формату, в минутах */
 	minutes: number;
@@ -36,6 +38,7 @@ export const FORMATS: RetroFormat[] = [
 	{
 		slug: 'start-stop-continue',
 		name: { en: 'Start Stop Continue', ru: 'Start Stop Continue' },
+		short: { en: 'Start Stop Continue', ru: 'Start Stop Continue' },
 		tagline: {
 			en: 'The shortest path from talk to action',
 			ru: 'Самый короткий путь от разговора к действию'
@@ -121,6 +124,7 @@ export const FORMATS: RetroFormat[] = [
 	{
 		slug: 'mad-sad-glad',
 		name: { en: 'Mad Sad Glad', ru: 'Mad Sad Glad' },
+		short: { en: 'Mad Sad Glad', ru: 'Mad Sad Glad' },
 		tagline: {
 			en: 'When the numbers are fine but the team is not',
 			ru: 'Когда с цифрами всё хорошо, а с командой нет'
@@ -206,6 +210,7 @@ export const FORMATS: RetroFormat[] = [
 	{
 		slug: '4l',
 		name: { en: '4L — Liked, Learned, Lacked, Longed for', ru: '4L — Liked, Learned, Lacked, Longed for' },
+		short: { en: '4L', ru: '4L' },
 		tagline: {
 			en: 'Separates what you learned from what you missed',
 			ru: 'Разделяет то, чему научились, и то, чего не хватило'
@@ -298,6 +303,7 @@ export const FORMATS: RetroFormat[] = [
 	{
 		slug: 'sailboat',
 		name: { en: 'Sailboat', ru: 'Sailboat — Лодка' },
+		short: { en: 'Sailboat', ru: 'Sailboat' },
 		tagline: {
 			en: 'Looks forward, not just back',
 			ru: 'Смотрит вперёд, а не только назад'

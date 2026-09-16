@@ -74,7 +74,7 @@
 			</div>
 		</header>
 
-		<p class="text-[17px] leading-[1.75] text-text-primary/90">{txt(format.intro)}</p>
+		<p class="text-[17px] leading-[1.75] text-text-primary">{txt(format.intro)}</p>
 
 		<section class="flex flex-col gap-4">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('formats.section.columns')}</h2>
@@ -90,7 +90,7 @@
 
 		<section class="flex flex-col gap-4">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('formats.section.when')}</h2>
-			<ul class="list-disc space-y-1.5 pl-[18px] text-[16px] leading-[1.7] text-text-primary/85 marker:text-text-muted">
+			<ul class="list-disc space-y-1.5 pl-[18px] text-[16px] leading-[1.7] text-text-primary marker:text-text-muted">
 				{#each format.whenToUse as item (item.en)}
 					<li>{txt(item)}</li>
 				{/each}
@@ -105,15 +105,15 @@
 						<span class="font-heading mt-[2px] flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-[13px] font-extrabold text-white">
 							{i + 1}
 						</span>
-						<span class="text-[16px] leading-[1.7] text-text-primary/90">{txt(step)}</span>
+						<span class="text-[16px] leading-[1.7] text-text-primary">{txt(step)}</span>
 					</li>
 				{/each}
 			</ol>
 		</section>
 
-		<section class="flex flex-col gap-2.5 rounded-2xl border border-bad/30 bg-bad-bg p-5 sm:p-6">
+		<section class="flex flex-col gap-2.5 rounded-2xl border border-bad bg-bad-bg p-5 sm:p-6">
 			<h2 class="font-heading text-[17px] font-bold text-text-primary">{t('formats.section.watch')}</h2>
-			<p class="text-[15px] leading-[1.7] text-text-primary/85">{txt(format.watchOut)}</p>
+			<p class="text-[15px] leading-[1.7] text-text-primary">{txt(format.watchOut)}</p>
 		</section>
 
 		<section class="flex flex-col items-start gap-3 rounded-2xl border border-border bg-surface-card p-6">

@@ -16,7 +16,6 @@
 	// Live board mock in the hero — a shrunken copy of the real board screen.
 	// Инициалы участников складываются в БИТРИКС (BITRIX в EN) — пасхалка.
 	let mockNames = $derived(t('home.mock.names').split(','));
-	const avatarColors = ['bg-well', 'bg-improve', 'bg-bad', 'bg-accent'];
 
 	const FAQ_KEYS = [1, 2, 3, 4, 5];
 
@@ -92,14 +91,14 @@
 			</div>
 
 			<!-- Live board mock -->
-			<div class="flex flex-col gap-3.5 rounded-[18px] border border-border bg-surface-card p-5 shadow-[0_16px_40px_rgba(33,30,26,0.10)]" style="animation: fadeUp 0.6s cubic-bezier(0.25,1,0.5,1) 0.15s both;" aria-hidden="true">
+			<div class="flex flex-col gap-3.5 rounded-[18px] border border-border bg-surface-card p-5 shadow-1" style="animation: fadeUp 0.6s cubic-bezier(0.25,1,0.5,1) 0.15s both;" aria-hidden="true">
 				<div class="flex items-center justify-between">
 					<span class="font-heading text-[15px] font-bold text-text-primary">{t('home.mock.board')}</span>
 					<div class="flex items-center gap-2">
 						<span class="text-xs font-bold tabular-nums text-accent">04:32</span>
 						<div class="flex">
 							{#each mockNames as name, i (name)}
-								<span class="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 border-surface-card text-[10px] font-bold text-white {avatarColors[i % avatarColors.length]} {i > 0 ? '-ml-[7px]' : ''}">{name[0]}</span>
+								<span class="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 border-surface-card text-[10px] font-bold bg-text-primary text-surface {i > 0 ? '-ml-[7px]' : ''}">{name[0]}</span>
 							{/each}
 						</div>
 					</div>

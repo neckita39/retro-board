@@ -36,14 +36,14 @@
 		<div class="w-full max-w-lg" style="animation: fadeUp 0.8s cubic-bezier(0.25,1,0.5,1) both;">
 			{#if status === 'success'}
 				<div class="text-center" style="animation: fadeUp 0.5s cubic-bezier(0.25,1,0.5,1) both;">
-					<div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+					<div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-accent-bg">
 						<svg class="h-8 w-8 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<polyline points="20 6 9 17 4 12"/>
 						</svg>
 					</div>
 					<h1 class="font-heading text-2xl font-bold text-text-primary">{t('feedback.success')}</h1>
 					<div class="mt-8 flex justify-center gap-3">
-						<a href="/" class="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-hover">{t('changelog.back')}</a>
+						<a href="/" class="btn btn-secondary btn-md">{t('changelog.back')}</a>
 						<button onclick={() => (status = 'idle')} class="btn btn-primary btn-md">
 							{t('feedback.another')}
 						</button>
@@ -51,7 +51,7 @@
 				</div>
 			{:else}
 				<div class="mb-8 text-center">
-					<div class="badge badge-outline shadow-sm backdrop-blur-sm">
+					<div class="badge badge-outline">
 						<svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 						{t('feedback.link')}
 					</div>
@@ -73,7 +73,7 @@
 					</div>
 
 					<div>
-						<label for="fb-message" class="mb-1.5 block text-sm font-medium text-text-secondary">{t('feedback.message')} <span class="text-red-400">*</span></label>
+						<label for="fb-message" class="mb-1.5 block text-sm font-medium text-text-secondary">{t('feedback.message')} <span class="text-bad">*</span></label>
 						<textarea
 							id="fb-message"
 							bind:value={message}
@@ -81,21 +81,21 @@
 							maxlength="2000"
 							rows="5"
 							placeholder={t('feedback.message.placeholder')}
-							class="textarea input-lg"
+							class="textarea px-[18px] py-3.5"
 						></textarea>
 					</div>
 
 					{#if status === 'error'}
 						<div class="error-box">
-							<svg class="h-4 w-4 flex-shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-							<span class="text-sm text-red-600 dark:text-red-400">{t('feedback.error')}</span>
+							<svg class="h-4 w-4 shrink-0 text-bad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+							<span>{t('feedback.error')}</span>
 						</div>
 					{/if}
 
 					<button
 						type="submit"
 						disabled={!message.trim() || status === 'sending'}
-						class="btn btn-primary btn-md w-full"
+						class="btn btn-primary btn-lg w-full"
 					>
 						{#if status === 'sending'}
 							<span class="inline-flex items-center gap-2">

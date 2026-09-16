@@ -53,15 +53,33 @@
 	});
 </script>
 
+<!-- Счётчик комментариев: 28px, нейтральная заливка при наличии комментариев,
+     без заливки и рамки — пока их нет. В обычной строке стоит справа в ряду,
+     в обсуждаемой — уезжает в ряд с кнопками «Назад» / «Далее» -->
+{#snippet commentPill()}
+	<button
+		onclick={() => (expanded = !expanded)}
+		aria-expanded={expanded}
+		aria-label={commentCount > 0 ? t('comment.count', { n: commentCount }) : t('comment.add')}
+		class="pointer-events-auto inline-flex h-7 shrink-0 items-center gap-[5px] rounded-full px-2.5 text-[13px] font-semibold transition-colors {commentCount >
+		0
+			? 'bg-surface-hover text-text-primary hover:opacity-85'
+			: 'text-text-muted hover:bg-surface-hover hover:text-text-secondary'}"
+	>
+		<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+		{#if commentCount > 0}{commentCount}{:else}{t('comment.add')}{/if}
+	</button>
+{/snippet}
+
 <div
 	bind:this={el}
 	data-testid="summary-card"
 	data-focused={focused ? 'true' : undefined}
 	data-discussed={discussed ? 'true' : undefined}
 	data-dimmed={dimmed ? 'true' : undefined}
-	class="relative rounded-xl transition-all duration-300 {focused
-		? 'border-2 border-accent bg-surface-card px-4 py-3.5 shadow-[0_10px_30px_rgba(196,85,43,0.18)]'
-		: 'border border-border bg-surface-card px-3 py-2.5 hover:border-border-strong'} {dimmed
+	class="relative rounded-xl bg-surface-card transition-all duration-300 {focused
+		? 'border-2 border-accent px-4 py-3.5'
+		: 'border border-border px-3.5 py-2.5 hover:border-border-strong'} {dimmed
 		? 'opacity-45'
 		: 'opacity-100'}"
 >
@@ -77,15 +95,15 @@
 
 	<div class="relative z-10 {canControl && !focused ? 'pointer-events-none' : ''}">
 		{#if focused}
-			<div class="mb-2 flex items-center gap-2.5">
+			<div class="mb-2.5 flex items-center gap-2.5">
 				<span class="badge-sm badge-accent shrink-0 tabular-nums">{scoreLabel}</span>
 				{#if position}
-					<span class="text-[12px] font-semibold tabular-nums text-text-muted">
+					<span class="shrink-0 text-[13px] font-semibold tabular-nums text-text-muted">
 						{t('focus.progress', { n: position.n, total: position.total })}
 					</span>
 				{/if}
 				{#if card.authorName}
-					<span class="min-w-0 truncate text-[12px] text-text-muted">· {card.authorName}</span>
+					<span class="min-w-0 truncate text-[13px] text-text-muted">· {card.authorName}</span>
 				{/if}
 				<span class="ml-auto"><FocusTimer /></span>
 			</div>
@@ -103,60 +121,49 @@
 						<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
 					</span>
 				{:else}
-					<span class="shrink-0 whitespace-nowrap text-[11px] font-semibold tabular-nums text-text-muted">
+					<span class="flex min-w-6 shrink-0 justify-center whitespace-nowrap text-[13px] font-semibold tabular-nums text-text-muted">
 						{scoreLabel}
 					</span>
 				{/if}
 			{/if}
 
 			{#if card.content}
-				<p class="flex-1 {focused ? 'text-[15px] leading-relaxed' : 'text-[13px]'} text-text-primary">{card.content}</p>
+				<p class="min-w-0 flex-1 text-[15px] text-text-primary {focused ? 'leading-[1.6]' : 'leading-[1.4]'}">{card.content}</p>
 			{:else}
-				<p class="flex-1 {focused ? 'text-[15px]' : 'text-[13px]'} italic text-text-muted">{t('summary.photo')}</p>
+				<p class="min-w-0 flex-1 text-[15px] italic text-text-muted {focused ? 'leading-[1.6]' : 'leading-[1.4]'}">{t('summary.photo')}</p>
 			{/if}
 
 			{#if card.imageId}
 				<svg class="h-3.5 w-3.5 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
 			{/if}
 
-			{#if !focused && card.authorName}
-				<span class="max-w-28 shrink-0 truncate text-[11px] text-text-muted">{card.authorName}</span>
+			{#if !focused}
+				{#if card.authorName}
+					<span class="max-w-28 shrink-0 truncate text-[13px] text-text-muted">{card.authorName}</span>
+				{/if}
+				{@render commentPill()}
 			{/if}
-
-			<button
-				onclick={() => (expanded = !expanded)}
-				aria-expanded={expanded}
-				aria-label={commentCount > 0 ? t('comment.count', { n: commentCount }) : t('comment.add')}
-				class="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold transition-colors {commentCount >
-				0
-					? 'bg-accent-bg text-accent hover:opacity-85'
-					: 'text-text-muted hover:bg-surface-hover hover:text-text-secondary'}"
-			>
-				<svg class="h-3 w-3" viewBox="0 0 24 24" fill={commentCount > 0 ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-				{#if commentCount > 0}{commentCount}{:else}{t('comment.add')}{/if}
-			</button>
 		</div>
 
-		{#if focused && canControl}
+		{#if focused}
 			<div class="mt-3 flex items-center gap-2 border-t border-border pt-2.5">
-				<button
-					onclick={onPrev}
-					disabled={!hasPrev}
-					class="btn btn-secondary btn-sm disabled:cursor-not-allowed disabled:opacity-40"
-				>
-					&larr; {t('focus.prev')}
-				</button>
-				{#if hasNext}
-					<button onclick={onNext} class="btn btn-primary btn-sm">
-						{t('focus.next')} &rarr;
+				{#if canControl}
+					<button onclick={onPrev} disabled={!hasPrev} class="btn btn-secondary btn-sm">
+						&larr; {t('focus.prev')}
 					</button>
-				{:else}
-					<!-- Конец повестки: вместо задизейбленной «Далее» — завершение
-					     прямо под рукой, а не малозаметная кнопка в шапке итогов -->
-					<button onclick={onStop} class="btn btn-primary btn-sm">
-						{t('focus.stop')}
-					</button>
+					{#if hasNext}
+						<button onclick={onNext} class="btn btn-primary btn-sm">
+							{t('focus.next')} &rarr;
+						</button>
+					{:else}
+						<!-- Конец повестки: вместо задизейбленной «Далее» — завершение
+						     прямо под рукой, а не малозаметная кнопка в шапке итогов -->
+						<button onclick={onStop} class="btn btn-primary btn-sm">
+							{t('focus.stop')}
+						</button>
+					{/if}
 				{/if}
+				<span class="ml-auto flex">{@render commentPill()}</span>
 			</div>
 		{/if}
 

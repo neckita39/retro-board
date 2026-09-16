@@ -39,10 +39,16 @@
 	}
 </script>
 
-<div class="border-t border-border bg-surface-card/50 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7">
+<div class="border-t border-border bg-surface-card p-4 pb-32 sm:p-6 md:pb-10 lg:px-7">
 	<div class="mx-auto max-w-[1360px]">
-	<div class="mb-4 flex items-center gap-3">
-		<h2 class="font-heading text-lg font-bold text-text-primary">{t('summary.title')}</h2>
+	<div class="mb-3.5 flex items-center gap-3">
+		<h2 class="font-heading text-[21px] font-bold leading-[1.2] text-text-primary">{t('summary.title')}</h2>
+		<!-- Ход обсуждения виден всем, не только ведущему -->
+		{#if focusVisible}
+			<span class="text-[13px] font-semibold tabular-nums text-text-muted">
+				{t('summary.discussing', { n: focusedIdx + 1, total: summaryCards.length })}
+			</span>
+		{/if}
 		{#if boardStore.isCreator}
 			{#if focusActive}
 				<button onclick={stop} class="btn btn-secondary btn-sm ml-auto">
@@ -53,7 +59,7 @@
 					onclick={start}
 					disabled={summaryCards.length === 0}
 					title={summaryCards.length === 0 ? t('focus.disabled') : undefined}
-					class="btn btn-primary btn-sm ml-auto disabled:cursor-not-allowed disabled:opacity-40"
+					class="btn btn-primary btn-sm ml-auto"
 				>
 					<svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
 					{t('focus.start')}
@@ -64,7 +70,7 @@
 
 	{#if summaryCards.length === 0}
 		<div class="flex flex-col items-center gap-2 py-6 text-center">
-			<svg class="h-8 w-8 text-text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+			<svg class="h-8 w-8 text-border-strong" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
 			<p class="text-[13px] text-text-muted">{t('summary.empty')}</p>
 		</div>
 	{:else}
@@ -73,7 +79,7 @@
 				{@const showHeader = card.columnType !== (i > 0 ? summaryCards[i - 1].columnType : '')}
 				{#if showHeader}
 					{@const def = boardStore.columnDef(card.columnType)}
-					<div class="mt-2 transition-opacity duration-300 first:mt-0 {focusVisible && card.columnType !== focusedColumn ? 'opacity-45' : 'opacity-100'}">
+					<div class="mt-1.5 transition-opacity duration-300 first:mt-0 {focusVisible && card.columnType !== focusedColumn ? 'opacity-45' : 'opacity-100'}">
 						<span class="badge-sm {TONE[def.tone].badge}">{txt(def.title)}</span>
 					</div>
 				{/if}

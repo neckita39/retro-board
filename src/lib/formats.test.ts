@@ -69,11 +69,20 @@ describe('реестр форматов', () => {
 		expect(isValidColumn('analysis', 'went_well')).toBe(false);
 	});
 
-	it('у каждого тона есть полный набор классов', () => {
-		for (const tone of ['well', 'bad', 'improve', 'accent'] as const) {
+	it('у каждого тона есть полный набор классов, полоска — сплошная', () => {
+		for (const tone of ['well', 'bad', 'improve', 'plum'] as const) {
 			expect(TONE[tone].border).toMatch(/^border-/);
 			expect(TONE[tone].badge).toContain('bg-');
 			expect(TONE[tone].tab).toContain('text-white');
+			expect(TONE[tone].bar).toBe(`bg-${tone}`);
+		}
+	});
+
+	it('четвёртая колонка 4L и Sailboat — сливовая, не терракотовая', () => {
+		expect(findBoardFormat('4l').columns.at(-1)).toMatchObject({ id: 'longed', tone: 'plum' });
+		expect(findBoardFormat('sailboat').columns.at(-1)).toMatchObject({ id: 'island', tone: 'plum' });
+		for (const f of BOARD_FORMATS) {
+			for (const c of f.columns) expect(['well', 'bad', 'improve', 'plum']).toContain(c.tone);
 		}
 	});
 });

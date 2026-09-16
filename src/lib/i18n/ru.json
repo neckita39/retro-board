@@ -50,7 +50,7 @@
 	"new.space.note": "Ссылка на пространство появится сразу",
 	"new.format.title": "Формат",
 	"new.format.more": "Подробнее",
-	"format.recommended": "Рекомендуем для начала",
+	"format.recommended": "Рекомендуем",
 	"format.classic.name": "Классическая",
 	"format.classic.desc": "Что было хорошо, что нет, что улучшить. Если сомневаетесь, с чего начать, — берите её.",
 
@@ -96,6 +96,7 @@
 	"summary.title": "Итоги",
 	"summary.empty": "Здесь появятся итоги, когда вы добавите карточки.",
 	"summary.photo": "Фото",
+	"summary.discussing": "Обсуждение · {n} из {total}",
 
 	"focus.start": "Обсудить",
 	"focus.stop": "Закончить обсуждение",
@@ -163,11 +164,8 @@
 	"board.delete": "Удалить доску",
 	"board.delete.confirm": "Удалить доску?",
 
-	"admin.banner.title": "Доска создана — поделитесь!",
-	"admin.banner.desc": "Сохраните ссылку ниже — только с ней вы сможете управлять таймером и удалить доску с другого устройства или браузера.",
+	"admin.banner.title": "Доска создана — поделитесь ссылкой с командой.",
 	"admin.banner.copy": "Скопировать ссылку",
-	"admin.banner.saved": "Сохранили? Можете закрыть.",
-	"admin.banner.close": "Закрыть",
 
 	"copy.title": "Ссылка",
 	"copy.link": "Ссылка",
@@ -213,6 +211,7 @@
 	"space.password.enable.placeholder": "Новый пароль",
 	"space.password.enabled": "Пароль включён",
 	"space.password.disabled": "Пароль отключён",
+	"space.password.toggle": "Пароль",
 	"space.rename": "Переименовать пространство",
 	"space.rename.label": "Название пространства",
 	"space.delete": "Удалить пространство",
@@ -237,20 +236,16 @@
 	"space.analysis.tile.dismiss": "Скрыть",
 	"analysis.badge": "AI-анализ",
 	"new.space.ai": "AI-анализ паттернов по всем ретро",
-	"space.admin.title": "Вы создали это пространство",
-	"space.admin.desc": "Сохраните ссылку ниже — только с ней вы сможете удалить пространство с другого устройства или браузера.",
+	"space.admin.title": "Пространство создано — поделитесь ссылкой с командой.",
 	"space.admin.copy": "Скопировать ссылку",
 	"space.board_count": "{n} доска|{n} доски|{n} досок",
 
 	"name.title": "Как вас зовут?",
-	"name.desc": "Имя будет отображаться на карточках, которые вы создаёте",
+	"name.desc": "Имя появится на ваших карточках. Дальше — поделитесь ссылкой, добавляйте карточки и голосуйте за важное.",
 	"name.placeholder": "Ваше имя",
 	"name.save": "Сохранить",
 	"name.skip": "Пропустить",
 	"name.greeting": "Привет, {name}!",
-
-	"onboarding.tip": "Поделитесь ссылкой, добавляйте карточки и голосуйте за важное.",
-	"onboarding.done": "Понятно",
 
 	"formats.seo.title": "Форматы ретроспективы: 4 рабочих сценария для команды",
 	"formats.seo.description": "Start Stop Continue, Mad Sad Glad, 4L и Sailboat — чем отличаются, когда какой брать и как провести встречу по каждому. Бесплатная доска для ретроспективы онлайн, без регистрации.",
@@ -332,6 +327,7 @@
 	"feedback.another": "Написать ещё",
 	"feedback.error": "Что-то пошло не так. Попробуйте ещё раз.",
 	"feedback.link": "Обратная связь",
+	"feedback.close": "Закрыть",
 
 	"image.attach": "Прикрепить изображение",
 	"image.remove": "Удалить изображение",

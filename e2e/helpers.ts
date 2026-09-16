@@ -1,7 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-// Выставляет локаль/имя/онбординг ДО первой навигации, чтобы баннеры
-// NamePrompt и Onboarding не появлялись, а строки UI были на английском.
+// Выставляет локаль/имя ДО первой навигации, чтобы карточка имени (NamePrompt)
+// не появлялась, а строки UI были на английском. retro_onboarding_seen остался
+// от старой подсказки-онбординга — безвреден.
 export async function initStorage(page: Page) {
 	await page.addInitScript(() => {
 		localStorage.setItem('retro-locale', 'en');
@@ -10,17 +11,22 @@ export async function initStorage(page: Page) {
 	});
 }
 
-// Создаёт доску через UI и возвращает её slug.
-// Закрывает admin-баннер (fixed bottom-center), чтобы он не перехватывал клики.
+// Закрывает тост «Board/Space created — share the link…» (правый верхний угол).
+// Он тоже success, поэтому убираем сразу — иначе позже его спутают с «AI analysis is ready».
+export async function dismissToast(page: Page) {
+	const toast = page.getByTestId('toast').filter({ hasText: /created — share the link/ });
+	await toast.getByRole('button', { name: 'Dismiss' }).click();
+	await expect(toast).toBeHidden();
+}
+
+// Создаёт доску через UI и возвращает её slug. Закрывает тост «создана».
 export async function createBoard(page: Page, title: string): Promise<string> {
 	await initStorage(page);
 	await page.goto('/new');
 	await page.getByPlaceholder('Board title (optional)').fill(title);
 	await page.locator('form[action="?/createBoard"] button[type="submit"]').click();
 	await page.waitForURL(/\/[A-Za-z0-9_-]{21}/);
-	const closeBanner = page.getByRole('button', { name: 'Close' });
-	await closeBanner.click();
-	await expect(closeBanner).toBeHidden();
+	await dismissToast(page);
 	return new URL(page.url()).pathname.slice(1);
 }
 
@@ -41,7 +47,7 @@ export async function addCard(page: Page, columnName: string, text: string) {
 // пространства тоже 21 символ, и waitForURL на нём сработал бы мгновенно.
 export const BOARD_URL = /\/\/[^/]+\/[A-Za-z0-9_-]{21}(\?.*)?$/;
 
-// Создаёт пространство через UI, закрывает admin-баннер.
+// Создаёт пространство через UI, закрывает тост «создано».
 // adminUrl — ссылка с ?admin=, по ней другой браузер становится создателем пространства.
 export async function createSpace(page: Page, name: string): Promise<{ slug: string; adminUrl: string }> {
 	await initStorage(page);
@@ -52,9 +58,7 @@ export async function createSpace(page: Page, name: string): Promise<{ slug: str
 	await page.locator('form[action="?/createSpace"] button[type="submit"]').click();
 	await page.waitForURL(/\/spaces\/[A-Za-z0-9_-]{21}/);
 	const adminUrl = page.url();
-	const closeBanner = page.getByRole('button', { name: 'Close' });
-	await closeBanner.click();
-	await expect(closeBanner).toBeHidden();
+	await dismissToast(page);
 	return { slug: new URL(adminUrl).pathname.split('/')[2], adminUrl };
 }
 
@@ -66,9 +70,7 @@ export async function createBoardInSpace(page: Page, spaceSlug: string, title: s
 	await modal.getByPlaceholder('Board title (optional)').fill(title);
 	await modal.locator('button[type="submit"]').click();
 	await page.waitForURL(BOARD_URL);
-	const closeBanner = page.getByRole('button', { name: 'Close' });
-	await closeBanner.click();
-	await expect(closeBanner).toBeHidden();
+	await dismissToast(page);
 	return new URL(page.url()).pathname.slice(1);
 }
 
@@ -83,8 +85,6 @@ export async function createLockedSpace(page: Page, name: string, password: stri
 	await page.locator('form[action="?/createSpace"] button[type="submit"]').click();
 	await page.waitForURL(/\/spaces\/[A-Za-z0-9_-]{21}/);
 	const adminUrl = page.url();
-	const closeBanner = page.getByRole('button', { name: 'Close' });
-	await closeBanner.click();
-	await expect(closeBanner).toBeHidden();
+	await dismissToast(page);
 	return { slug: new URL(adminUrl).pathname.split('/')[2], adminUrl };
 }

@@ -39,22 +39,22 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		transition:fade={{ duration: 200 }}
-		class="fixed inset-0 z-[600] bg-black/30 backdrop-blur-sm"
+		class="fixed inset-0 z-[600] bg-scrim backdrop-blur-sm"
 		onclick={close}
 	></div>
 
 	<!-- Panel -->
 	<div
 		transition:fly={{ x: 400, duration: 350, easing: (t) => 1 - Math.pow(1 - t, 3) }}
-		class="fixed right-0 top-0 bottom-0 z-[601] flex w-full max-w-[400px] flex-col border-l border-border bg-surface-card shadow-2xl"
+		class="fixed right-0 top-0 bottom-0 z-[601] flex w-full max-w-[400px] flex-col border-l border-border bg-surface-card shadow-2"
 	>
 		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-border px-5 py-4">
-			<h2 class="text-lg font-bold text-text-primary">{t('feedback.title')}</h2>
+			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('feedback.title')}</h2>
 			<button
 				onclick={close}
-				class="btn-icon btn-icon-md"
-				aria-label={t('admin.banner.close')}
+				class="btn-icon btn-icon-lg btn-icon-bordered shrink-0"
+				aria-label={t('feedback.close')}
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 			</button>
@@ -64,10 +64,10 @@
 		<div class="flex-1 overflow-y-auto px-5 py-5">
 			{#if status === 'success'}
 				<div class="flex flex-col items-center justify-center py-12 text-center" style="animation: fadeUp 0.5s cubic-bezier(0.25,1,0.5,1) both;">
-					<div class="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
-						<svg class="h-7 w-7 text-accent badge-pop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+					<div class="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-well-bg">
+						<svg class="h-7 w-7 text-well-strong badge-pop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
 					</div>
-					<p class="text-lg font-bold text-text-primary">{t('feedback.success')}</p>
+					<p class="text-[17px] font-bold text-text-primary">{t('feedback.success')}</p>
 					<button
 						onclick={() => (status = 'idle')}
 						class="btn btn-primary btn-md mt-6"
@@ -92,7 +92,7 @@
 					</div>
 
 					<div>
-						<label for="fp-message" class="mb-1.5 block text-sm font-medium text-text-secondary">{t('feedback.message')} <span class="text-red-400">*</span></label>
+						<label for="fp-message" class="mb-1.5 block text-sm font-medium text-text-secondary">{t('feedback.message')} <span class="text-bad">*</span></label>
 						<textarea
 							id="fp-message"
 							bind:value={message}
@@ -100,14 +100,14 @@
 							maxlength="2000"
 							rows="5"
 							placeholder={t('feedback.message.placeholder')}
-							class="textarea input-md w-full"
+							class="textarea px-3 py-2.5"
 						></textarea>
 					</div>
 
 					{#if status === 'error'}
 						<div class="error-box">
-							<svg class="h-4 w-4 shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-							<span class="text-sm text-red-600 dark:text-red-400">{t('feedback.error')}</span>
+							<svg class="h-4 w-4 shrink-0 text-bad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+							<span>{t('feedback.error')}</span>
 						</div>
 					{/if}
 

@@ -22,7 +22,7 @@
 	// Четыре колонки в один ряд помещаются только на широких экранах
 	let gridCols = $derived(columns.length > 3 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3');
 
-	// Доска-анализ выделяется фиолетовой градиентной рамкой вокруг колонок.
+	// Доска-анализ выделяется плоской синей рамкой (семейство improve) вокруг колонок.
 	// На телефоне рамки нет: колонки идут во всю ширину и упираются в композер
 	let isAnalysis = $derived(boardStore.board?.format === ANALYSIS_FORMAT);
 </script>
@@ -42,8 +42,10 @@
 	{/each}
 </div>
 
+<!-- Отступы снаружи контейнера 1360, как у шапки и «Итогов»: колонки вровень с брендом -->
+<div class="px-4 pb-32 pt-4 sm:px-7 sm:pt-6 md:pb-10">
 <div
-	class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7 {gridCols} {isAnalysis ? 'md:ai-frame md:rounded-3xl md:mt-5' : ''}"
+	class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 {gridCols} {isAnalysis ? 'md:rounded-2xl md:border-2 md:border-improve md:p-5' : ''}"
 	data-testid="board-columns"
 >
 	{#each columns as column (column.id)}
@@ -51,6 +53,7 @@
 			<Column column={column.id} />
 		</div>
 	{/each}
+</div>
 </div>
 
 <Summary {creatorToken} />

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { onDestroy, untrack } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
-	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import Board from '$lib/components/Board.svelte';
 	import NamePrompt from '$lib/components/NamePrompt.svelte';
-	import Onboarding from '$lib/components/Onboarding.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { toastStore } from '$lib/stores/toast.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { data } = $props();
@@ -39,6 +38,22 @@
 		});
 	});
 
+	// «Доска создана» — тост с «Скопировать ссылку», один раз при первом открытии
+	// по admin-ссылке. ?admin убираем из адреса сразу, чтобы в буфер и в историю
+	// попала публичная ссылка.
+	onMount(() => {
+		if (!data.showCreatedToast || !data.adminLink) return;
+		const clean = new URL(window.location.href);
+		clean.searchParams.delete('admin');
+		history.replaceState({}, '', clean.toString());
+		toastStore.push({
+			kind: 'success',
+			text: t('admin.banner.title'),
+			action: { label: t('admin.banner.copy'), onClick: () => navigator.clipboard.writeText(window.location.href) },
+			timeoutMs: 15000
+		});
+	});
+
 	onDestroy(() => {
 		socketStore.disconnect();
 	});
@@ -57,10 +72,6 @@
 		creatorToken={data.creatorToken}
 		analysis={data.space && data.analysisEnabled ? { spaceSlug: data.space.slug } : null}
 	/>
-	{#if data.showAdminBanner && data.adminLink}
-		<AdminBanner adminLink={data.adminLink} />
-	{/if}
-	<Onboarding />
 	<NamePrompt />
 	<Board creatorToken={data.creatorToken} />
 </div>

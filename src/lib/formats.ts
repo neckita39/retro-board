@@ -11,7 +11,7 @@ import {
 	isValidColumn
 } from '../../board-formats.js';
 
-export type Tone = 'well' | 'bad' | 'improve' | 'accent';
+export type Tone = 'well' | 'bad' | 'improve' | 'plum';
 
 export interface BoardColumn {
 	id: string;
@@ -41,6 +41,7 @@ export interface ToneClasses {
 	badge: string;
 	tab: string;
 	outline: string;
+	/** Сплошной цвет: полоски колонок в пикере и на плитках. Тинты на белом были невидимы */
 	bar: string;
 }
 
@@ -51,7 +52,7 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-well-bg text-well-strong',
 		tab: 'bg-well text-white',
 		outline: 'outline-well bg-well-bg',
-		bar: 'bg-well-bg'
+		bar: 'bg-well'
 	},
 	bad: {
 		border: 'border-bad',
@@ -59,7 +60,7 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-bad-bg text-bad-strong',
 		tab: 'bg-bad text-white',
 		outline: 'outline-bad bg-bad-bg',
-		bar: 'bg-bad-bg'
+		bar: 'bg-bad'
 	},
 	improve: {
 		border: 'border-improve',
@@ -67,14 +68,14 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-improve-bg text-improve-strong',
 		tab: 'bg-improve text-white',
 		outline: 'outline-improve bg-improve-bg',
-		bar: 'bg-improve-bg'
+		bar: 'bg-improve'
 	},
-	accent: {
-		border: 'border-accent',
-		text: 'text-accent',
-		badge: 'bg-accent-bg text-accent',
-		tab: 'bg-accent text-white',
-		outline: 'outline-accent bg-accent-bg',
-		bar: 'bg-accent-bg'
+	plum: {
+		border: 'border-plum',
+		text: 'text-plum',
+		badge: 'bg-plum-bg text-plum-strong',
+		tab: 'bg-plum text-white',
+		outline: 'outline-plum bg-plum-bg',
+		bar: 'bg-plum'
 	}
 };

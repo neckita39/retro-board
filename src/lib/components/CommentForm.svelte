@@ -71,10 +71,10 @@
 
 {#if imagePreview}
 	<div class="relative mb-1 inline-block">
-		<img src={imagePreview} alt="" class="max-h-16 rounded border border-border object-contain {uploading ? 'opacity-40' : ''}" />
+		<img src={imagePreview} alt="" class="max-h-16 rounded-lg border border-border object-contain {uploading ? 'opacity-40' : ''}" />
 		{#if uploading}
 			<div class="absolute inset-0 flex items-center justify-center">
-				<svg class="h-4 w-4 animate-spin text-accent" viewBox="0 0 24 24" fill="none">
+				<svg class="h-4 w-4 animate-spin text-text-secondary" viewBox="0 0 24 24" fill="none">
 					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25" />
 					<path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
 				</svg>
@@ -83,7 +83,7 @@
 		<button
 			type="button"
 			onclick={removeImage}
-			class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+			class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-bad text-white"
 			aria-label={t('image.remove')}
 		>
 			<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -92,21 +92,23 @@
 {/if}
 {#if uploadError}
 	<div class="error-box error-box-sm mb-1">
-		<svg class="h-3 w-3 flex-shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-		<span class="text-[10px] text-red-600 dark:text-red-400">{uploadError}</span>
+		<svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+		<span>{uploadError}</span>
 	</div>
 {/if}
 
 <input bind:this={fileInputRef} type="file" accept="image/*" onchange={handleFileSelect} class="hidden" />
 
-<form onsubmit={(e) => { e.preventDefault(); submit(); }} class="flex gap-1.5">
+<!-- Строка на 32px: скрепка, поле и «Отправить» одного роста -->
+<form onsubmit={(e) => { e.preventDefault(); submit(); }} class="flex items-center gap-1.5">
 	<button
 		type="button"
 		onclick={() => fileInputRef?.click()}
-		class="flex-shrink-0 rounded p-1 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-secondary"
+		class="btn-icon btn-icon-sm shrink-0"
 		title={t('image.attach')}
+		aria-label={t('image.attach')}
 	>
-		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 			<rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
 		</svg>
 	</button>
@@ -116,7 +118,7 @@
 		onkeydown={handleKeydown}
 		maxlength="1000"
 		placeholder={t('comment.placeholder')}
-		class="input input-sm flex-1"
+		class="input input-sm min-w-0 flex-1"
 	/>
 	<button
 		type="submit"

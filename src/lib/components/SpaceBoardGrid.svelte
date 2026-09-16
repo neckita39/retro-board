@@ -4,6 +4,7 @@
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
 	import AnalyzeButton from './AnalyzeButton.svelte';
+	import AiBadge from './AiBadge.svelte';
 	import { truncatedTitle } from '$lib/actions/truncated-title.js';
 	import type { AnalysisState } from '$lib/analysis-state.js';
 
@@ -16,6 +17,8 @@
 		wellCount: number;
 		badCount: number;
 		improveCount: number;
+		/** Четвёртая колонка (4L, Sailboat) — сливовый сегмент полосы */
+		plumCount: number;
 	}
 
 	let {
@@ -70,6 +73,10 @@
 		if (days > -365) return rtf.format(Math.round(days / 30), 'month');
 		return rtf.format(Math.round(days / 365), 'year');
 	}
+
+	// Плитка-анализ и её заглушки: плоская рамка 2px семейства improve;
+	// паддинг на 1px меньше, чтобы плитка осталась того же размера, что соседи
+	const AI_FRAME = 'border-2 border-improve p-[19px]';
 </script>
 
 <div class="flex flex-col gap-5">
@@ -77,18 +84,18 @@
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<button
 			onclick={() => (sortOrder = sortOrder === 'newest' ? 'oldest' : 'newest')}
-			class="btn btn-secondary btn-sm"
+			class="btn btn-secondary btn-md pr-3.5"
 		>
 			{t(sortOrder === 'newest' ? 'space.sort.newest' : 'space.sort.oldest')}
-			<span class="text-text-muted">{sortOrder === 'newest' ? '▾' : '▴'}</span>
+			<svg class="h-3.5 w-3.5 shrink-0 text-text-muted transition-transform duration-200 {sortOrder === 'oldest' ? 'rotate-180' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 		</button>
-		<div class="relative w-full max-w-[240px]">
-			<svg class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+		<div class="relative w-full max-w-[260px]">
+			<svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 			<input
 				type="text"
 				bind:value={search}
 				placeholder={t('space.boards.search')}
-				class="input input-sm pl-8 pr-3"
+				class="input input-md pl-9 pr-3"
 			/>
 		</div>
 	</div>
@@ -108,32 +115,32 @@
 			</button>
 			{#if showPending && analysis && analysis.state !== 'idle'}
 				<div
-					class="tile-enter ai-frame flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card p-5 [--ai-frame-bg:var(--color-surface-card)]"
+					class="tile-enter flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card {AI_FRAME}"
 					aria-busy="true"
 					data-testid="analysis-pending"
 				>
-					<span class="font-heading min-w-0 line-clamp-2 text-base font-bold leading-snug text-text-primary" use:truncatedTitle={analysis.title}>{analysis.title}</span>
+					<span class="font-heading min-w-0 line-clamp-2 text-[17px] font-bold leading-[1.3] text-text-primary" use:truncatedTitle={analysis.title}>{analysis.title}</span>
 					<div class="mt-auto flex items-center justify-between gap-2 text-[13px] font-semibold text-text-secondary">
 						<span class="flex min-w-0 items-center gap-2">
-							<svg class="h-4 w-4 shrink-0 animate-spin text-ai-from" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
+							<svg class="h-4 w-4 shrink-0 animate-spin text-improve" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
 							{t('space.analysis.tile.pending')}
 						</span>
-						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+						<AiBadge />
 					</div>
 				</div>
 			{:else if analysis?.state === 'failed'}
 				<div
-					class="tile-enter ai-frame flex min-h-[150px] flex-col gap-3 rounded-2xl bg-surface-card p-5 opacity-90 [--ai-frame-bg:var(--color-surface-card)]"
+					class="tile-enter flex min-h-[150px] flex-col gap-3 rounded-2xl bg-surface-card {AI_FRAME}"
 					data-testid="analysis-failed"
 				>
 					<div class="flex items-start justify-between gap-2">
-						<span class="font-heading min-w-0 line-clamp-2 text-base font-bold leading-snug text-text-primary" use:truncatedTitle={analysis.title}>{analysis.title}</span>
+						<span class="font-heading min-w-0 line-clamp-2 text-[17px] font-bold leading-[1.3] text-text-primary" use:truncatedTitle={analysis.title}>{analysis.title}</span>
 						<span class="flex shrink-0 items-center gap-1.5">
 							<!-- Крестик: убирает упавшую попытку у всех в пространстве -->
 							<form method="POST" action="/spaces/{spaceSlug}?/dismissAnalysis" class="contents" use:enhance>
 								<button
 									type="submit"
-									class="btn-icon btn-icon-sm text-text-muted hover:text-text-primary"
+									class="btn-icon btn-icon-sm -mt-1 -mr-1"
 									title={t('space.analysis.tile.dismiss')}
 									aria-label={t('space.analysis.tile.dismiss')}
 									data-testid="analysis-dismiss"
@@ -148,7 +155,7 @@
 					</p>
 					<div class="mt-auto flex items-center justify-between gap-2">
 						<AnalyzeButton {spaceSlug} variant="retry" />
-						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+						<AiBadge />
 					</div>
 				</div>
 			{/if}
@@ -157,39 +164,36 @@
 		{#each filtered as board, i (board.slug)}
 			<a
 				href="/{board.slug}"
-				class="{animate ? 'tile-enter' : ''} flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card p-5 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] {board.format === ANALYSIS_FORMAT
-					? 'ai-frame [--ai-frame-bg:var(--color-surface-card)]'
-					: 'border border-border hover:border-border-strong'}"
+				class="{animate ? 'tile-enter' : ''} flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] {board.format === ANALYSIS_FORMAT
+					? AI_FRAME
+					: 'border border-border p-5 hover:border-border-strong'}"
 				style={animate ? `animation-delay: ${Math.min(i, 8) * 70}ms` : undefined}
 				data-testid="space-tile"
 				data-format={board.format}
 			>
 				<!-- Название в две строки на всю ширину, дальше обрез; целиком — по наведению, и только если обрезано.
 				     Бейджи живут в нижнем ряду, чтобы не отъедать первую строку -->
-				<span class="font-heading min-w-0 line-clamp-2 text-base font-bold leading-snug text-text-primary" use:truncatedTitle={board.title}>{board.title}</span>
-				<div class="mt-auto flex flex-col gap-1.5">
-					{#if board.format === ANALYSIS_FORMAT}
-						<!-- У доски-анализа нет классических колонок — вместо полосы настроения её градиент -->
-						<div class="h-[5px] rounded-full bg-gradient-to-r from-ai-from to-ai-to"></div>
-					{:else}
-						<!-- Mood bar: card share per column, in column colors -->
-						<div class="flex h-[5px] gap-1 overflow-hidden rounded-full">
-							{#if board.cardCount > 0}
-								{#if board.wellCount > 0}<div class="rounded-full bg-well" style="flex: {board.wellCount}"></div>{/if}
-								{#if board.badCount > 0}<div class="rounded-full bg-bad" style="flex: {board.badCount}"></div>{/if}
-								{#if board.improveCount > 0}<div class="rounded-full bg-improve" style="flex: {board.improveCount}"></div>{/if}
-							{:else}
-								<div class="flex-1 rounded-full bg-surface-hover"></div>
-							{/if}
-						</div>
-					{/if}
+				<span class="font-heading min-w-0 line-clamp-2 text-[17px] font-bold leading-[1.3] text-text-primary" use:truncatedTitle={board.title}>{board.title}</span>
+				<div class="mt-auto flex flex-col gap-2">
+					<!-- Полоса настроения: доля карточек по тону колонки. Тон даёт формат доски,
+					     поэтому у доски-анализа и пресетов с четвёртой (сливовой) колонкой полоса тоже есть -->
+					<div class="flex h-[5px] gap-1 overflow-hidden rounded-full">
+						{#if board.cardCount > 0}
+							{#if board.wellCount > 0}<div class="rounded-full bg-well" style="flex: {board.wellCount}"></div>{/if}
+							{#if board.badCount > 0}<div class="rounded-full bg-bad" style="flex: {board.badCount}"></div>{/if}
+							{#if board.improveCount > 0}<div class="rounded-full bg-improve" style="flex: {board.improveCount}"></div>{/if}
+							{#if board.plumCount > 0}<div class="rounded-full bg-plum" style="flex: {board.plumCount}"></div>{/if}
+						{:else}
+							<div class="flex-1 rounded-full bg-surface-hover"></div>
+						{/if}
+					</div>
 					<div class="flex items-center justify-between gap-2 text-[13px] text-text-muted">
 						<span class="flex min-w-0 items-center gap-2">
 							{#if board.format === ANALYSIS_FORMAT}
-								<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+								<AiBadge />
 							{/if}
 							{#if isLive(board)}
-								<span class="shrink-0 rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
+								<span class="inline-flex h-[22px] shrink-0 items-center rounded-full bg-accent-bg px-[9px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
 							{/if}
 							<span class="truncate">{t('space.boards.cards', { n: board.cardCount })}</span>
 						</span>

@@ -64,13 +64,13 @@
 >
 	<!-- Column header — title underlined with the column color -->
 	<div class="flex items-baseline gap-2.5 border-b-[3px] pb-2.5 {tone.border}">
-		<h2 class="font-heading text-lg font-bold text-text-primary lg:text-[21px]">
+		<h2 class="font-heading text-[21px] font-bold leading-[1.2] text-text-primary">
 			{txt(def.title)}
 		</h2>
 		<span class="text-sm font-semibold tabular-nums {tone.text}">{columnCards.length}</span>
 		<button
 			onclick={() => (sortBy = sortBy === 'newest' ? 'votes' : 'newest')}
-			class="btn-icon btn-icon-sm ml-auto self-center {sortBy === 'votes' ? 'text-accent' : ''}"
+			class="btn-icon btn-icon-sm ml-auto self-center {sortBy === 'votes' ? 'text-text-primary' : ''}"
 			aria-label={sortBy === 'votes' ? t('column.sort.newest') : t('column.sort.votes')}
 			title={sortBy === 'votes' ? t('column.sort.newest') : t('column.sort.votes')}
 			aria-pressed={sortBy === 'votes'}
@@ -84,7 +84,7 @@
 		<CardForm {column} />
 	</div>
 
-	<div class="flex flex-col gap-2.5" role="list">
+	<div class="flex flex-col gap-3" role="list">
 		{#each columnCards as card, i (card.id)}
 			<div role="listitem" style="animation: cardEnter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) {i * 0.05}s both;">
 				<CardComponent {card} />

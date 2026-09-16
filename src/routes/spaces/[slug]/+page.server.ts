@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
+import { moodCounts, type ColumnCount } from '$lib/mood.js';
 import { normalizeTitle } from '$lib/titles.js';
 import { db } from '$lib/server/db/index.js';
 import { spaces, boards, cards, votes, spaceAnalyses } from '$lib/server/db/schema.js';
@@ -41,7 +42,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const adminParam = url.searchParams.get('admin') ?? '';
 	const creatorCookie = cookies.get(`retro_space_creator_${params.slug}`) ?? '';
 	let isCreator = false;
-	let showAdminBanner = false;
+	let showCreatedToast = false;
 
 	if (adminParam && adminParam === space.creatorToken) {
 		cookies.set(`retro_space_creator_${params.slug}`, adminParam, {
@@ -51,7 +52,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
 		});
 		isCreator = true;
-		showAdminBanner = true;
+		showCreatedToast = true;
 	} else if (creatorCookie && creatorCookie === space.creatorToken) {
 		isCreator = true;
 	}
@@ -65,7 +66,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			isCreator: false,
 			hasPassword: true,
 			boards: [],
-			showAdminBanner: false,
+			showCreatedToast: false,
 			adminLink: null,
 			analysisEnabled: false,
 			analysis: null,
@@ -79,18 +80,33 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			slug: boards.slug,
 			title: boards.title,
 			format: boards.format,
-			createdAt: boards.createdAt,
-			cardCount: sql<number>`cast(count(${cards.id}) as integer)`,
-			// Per-column counts feed the mood bar on board tiles
-			wellCount: sql<number>`cast(count(${cards.id}) filter (where ${cards.columnType} = 'went_well') as integer)`,
-			badCount: sql<number>`cast(count(${cards.id}) filter (where ${cards.columnType} = 'didnt_go_well') as integer)`,
-			improveCount: sql<number>`cast(count(${cards.id}) filter (where ${cards.columnType} = 'improve') as integer)`
+			createdAt: boards.createdAt
 		})
 		.from(boards)
-		.leftJoin(cards, eq(cards.boardId, boards.id))
 		.where(eq(boards.spaceId, space.id))
-		.groupBy(boards.id, boards.slug, boards.title, boards.format, boards.createdAt)
 		.orderBy(desc(boards.createdAt));
+
+	// Полоса настроения на плитках: карточки считаем по (доска, колонка), а в тон
+	// их переводит формат доски (mood.ts) — иначе у любой не-classic доски и у
+	// доски-анализа полоса была бы пустой
+	const boardIds = spaceBoards.map((b) => b.id);
+	const columnCounts = boardIds.length
+		? await db
+				.select({
+					boardId: cards.boardId,
+					columnType: cards.columnType,
+					count: sql<number>`cast(count(*) as integer)`
+				})
+				.from(cards)
+				.where(inArray(cards.boardId, boardIds))
+				.groupBy(cards.boardId, cards.columnType)
+		: [];
+	const countsByBoard = new Map<string, ColumnCount[]>();
+	for (const row of columnCounts) {
+		const list = countsByBoard.get(row.boardId) ?? [];
+		list.push({ columnType: row.columnType, count: Number(row.count) });
+		countsByBoard.set(row.boardId, list);
+	}
 
 	const analysisRows = await db
 		.select()
@@ -119,19 +135,24 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		authenticated: true,
 		isCreator,
 		hasPassword,
-		showAdminBanner,
+		showCreatedToast,
 		adminLink,
 		analysisEnabled: !!env.DEEPSEEK_API_KEY,
 		analysis: statePayload(analysisRows, new Date()),
 		animateTiles,
-		boards: spaceBoards.map(b => ({
-			...b,
-			createdAt: b.createdAt.toISOString(),
-			cardCount: Number(b.cardCount),
-			wellCount: Number(b.wellCount),
-			badCount: Number(b.badCount),
-			improveCount: Number(b.improveCount)
-		}))
+		boards: spaceBoards.map((b) => {
+			const rows = countsByBoard.get(b.id) ?? [];
+			const mood = moodCounts(b.format, rows);
+			return {
+				...b,
+				createdAt: b.createdAt.toISOString(),
+				cardCount: rows.reduce((sum, r) => sum + r.count, 0),
+				wellCount: mood.well,
+				badCount: mood.bad,
+				improveCount: mood.improve,
+				plumCount: mood.plum
+			};
+		})
 	};
 };
 

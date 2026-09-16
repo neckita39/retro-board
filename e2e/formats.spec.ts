@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { addCard, column, initStorage } from './helpers';
+import { addCard, column, dismissToast, initStorage } from './helpers';
 
 test('classic is preselected and marked as recommended', async ({ page }) => {
 	await initStorage(page);
 	await page.goto('/new');
 	await expect(page.getByRole('radio', { name: /Classic/ })).toBeChecked();
-	await expect(page.getByText('Recommended to start with')).toBeVisible();
+	await expect(page.getByText('Recommended', { exact: true })).toBeVisible();
 });
 
 test('a board created from a format link uses that format end to end', async ({ page }) => {
@@ -14,7 +14,7 @@ test('a board created from a format link uses that format end to end', async ({ 
 	await expect(page.getByRole('radio', { name: /Sailboat/ })).toBeChecked();
 	await page.locator('form[action="?/createBoard"] button[type="submit"]').click();
 	await page.waitForURL(/\/[A-Za-z0-9_-]{21}/);
-	await page.getByRole('button', { name: 'Close' }).click();
+	await dismissToast(page);
 
 	for (const name of ['Wind', 'Anchors', 'Rocks', 'Island']) {
 		await expect(page.getByRole('heading', { name })).toBeVisible();

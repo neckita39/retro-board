@@ -50,7 +50,7 @@
 	"new.space.note": "The space link will appear right away",
 	"new.format.title": "Format",
 	"new.format.more": "Learn more",
-	"format.recommended": "Recommended to start with",
+	"format.recommended": "Recommended",
 	"format.classic.name": "Classic",
 	"format.classic.desc": "Went well, didn't go well, to improve. Not sure where to start? Take this one.",
 
@@ -96,6 +96,7 @@
 	"summary.title": "Summary",
 	"summary.empty": "No cards yet. Add some cards to see the summary.",
 	"summary.photo": "Photo",
+	"summary.discussing": "Discussing · {n} of {total}",
 
 	"focus.start": "Discuss",
 	"focus.stop": "End discussion",
@@ -163,11 +164,8 @@
 	"board.delete": "Delete Board",
 	"board.delete.confirm": "Delete board?",
 
-	"admin.banner.title": "Board created — share it!",
-	"admin.banner.desc": "Save the link below — it's the only way to manage the timer and delete the board from another device or browser.",
-	"admin.banner.copy": "Copy share link",
-	"admin.banner.saved": "Saved? Then you can close this.",
-	"admin.banner.close": "Close",
+	"admin.banner.title": "Board created — share the link with your team.",
+	"admin.banner.copy": "Copy link",
 
 	"copy.title": "Link",
 	"copy.link": "Link",
@@ -213,6 +211,7 @@
 	"space.password.enable.placeholder": "New password",
 	"space.password.enabled": "Password enabled",
 	"space.password.disabled": "Password disabled",
+	"space.password.toggle": "Password",
 	"space.rename": "Rename space",
 	"space.rename.label": "Space name",
 	"space.delete": "Delete Space",
@@ -237,20 +236,16 @@
 	"space.analysis.tile.dismiss": "Hide",
 	"analysis.badge": "AI analysis",
 	"new.space.ai": "AI analysis of patterns across all your retros",
-	"space.admin.title": "You created this space",
-	"space.admin.desc": "Save the link below — it's the only way to delete the space from another device or browser.",
+	"space.admin.title": "Space created — share the link with your team.",
 	"space.admin.copy": "Copy link",
 	"space.board_count": "{n} board|{n} boards",
 
 	"name.title": "How should we call you?",
-	"name.desc": "Your name will appear on cards you create",
+	"name.desc": "Your name will appear on your cards. Next: share the link, add cards and vote for what matters.",
 	"name.placeholder": "Your name",
 	"name.save": "Save",
 	"name.skip": "Skip",
 	"name.greeting": "Hi, {name}!",
-
-	"onboarding.tip": "Share the board link, add cards to columns, and vote on what matters.",
-	"onboarding.done": "Got it",
 
 	"formats.seo.title": "Retrospective formats: 4 that actually work",
 	"formats.seo.description": "Start Stop Continue, Mad Sad Glad, 4L and Sailboat — how they differ, when to pick which, and how to facilitate each one. Free online retrospective board, no signup.",
@@ -332,6 +327,7 @@
 	"feedback.another": "Send another",
 	"feedback.error": "Something went wrong. Try again.",
 	"feedback.link": "Feedback",
+	"feedback.close": "Close",
 
 	"image.attach": "Attach image",
 	"image.remove": "Remove image",

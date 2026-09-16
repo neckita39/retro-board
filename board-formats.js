@@ -15,7 +15,10 @@ export const DEFAULT_FORMAT = 'classic';
 
 /**
  * @typedef {{ en: string, ru: string }} Localized
- * @typedef {'well' | 'bad' | 'improve' | 'accent'} Tone
+ * Тон колонки — только семантика цвета: well/bad/improve — зелёный/красный/синий,
+ * plum — сливовый для четвёртой колонки (4L, Sailboat). Терракота (accent) колонкам
+ * не достаётся: она за главным действием на экране.
+ * @typedef {'well' | 'bad' | 'improve' | 'plum'} Tone
  * @typedef {{ id: string, tone: Tone, title: Localized, short: Localized }} BoardColumn
  * @typedef {{ id: string, hidden?: boolean, columns: BoardColumn[] }} BoardFormat
  */
@@ -52,7 +55,7 @@ export const BOARD_FORMATS = [
 			{ id: 'liked', tone: 'well', title: { en: 'Liked', ru: 'Понравилось' }, short: { en: 'Liked', ru: 'Нравится' } },
 			{ id: 'learned', tone: 'improve', title: { en: 'Learned', ru: 'Узнали' }, short: { en: 'Learned', ru: 'Узнали' } },
 			{ id: 'lacked', tone: 'bad', title: { en: 'Lacked', ru: 'Не хватило' }, short: { en: 'Lacked', ru: 'Не хватило' } },
-			{ id: 'longed', tone: 'accent', title: { en: 'Longed for', ru: 'Хотелось бы' }, short: { en: 'Longed', ru: 'Хотелось' } }
+			{ id: 'longed', tone: 'plum', title: { en: 'Longed for', ru: 'Хотелось бы' }, short: { en: 'Longed', ru: 'Хотелось' } }
 		]
 	},
 	{
@@ -61,7 +64,7 @@ export const BOARD_FORMATS = [
 			{ id: 'wind', tone: 'well', title: { en: 'Wind', ru: 'Ветер' }, short: { en: 'Wind', ru: 'Ветер' } },
 			{ id: 'anchors', tone: 'bad', title: { en: 'Anchors', ru: 'Якоря' }, short: { en: 'Anchors', ru: 'Якоря' } },
 			{ id: 'rocks', tone: 'improve', title: { en: 'Rocks', ru: 'Рифы' }, short: { en: 'Rocks', ru: 'Рифы' } },
-			{ id: 'island', tone: 'accent', title: { en: 'Island', ru: 'Остров' }, short: { en: 'Island', ru: 'Остров' } }
+			{ id: 'island', tone: 'plum', title: { en: 'Island', ru: 'Остров' }, short: { en: 'Island', ru: 'Остров' } }
 		]
 	},
 	{

@@ -4,12 +4,13 @@
 	import { afterNavigate, invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import Header from '$lib/components/Header.svelte';
-	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
 	import SpaceBoardGrid from '$lib/components/SpaceBoardGrid.svelte';
+	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import NewBoardModal from '$lib/components/NewBoardModal.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
+	import { toastStore } from '$lib/stores/toast.svelte.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
@@ -19,6 +20,22 @@
 	let { data, form } = $props();
 
 	boardStore.board = null;
+
+	// «Пространство создано» — тост с «Скопировать ссылку», один раз при первом
+	// открытии по admin-ссылке. ?admin убираем из адреса сразу, чтобы в буфер
+	// и в историю попала публичная ссылка.
+	onMount(() => {
+		if (!data.showCreatedToast || !data.adminLink) return;
+		const clean = new URL(window.location.href);
+		clean.searchParams.delete('admin');
+		history.replaceState({}, '', clean.toString());
+		toastStore.push({
+			kind: 'success',
+			text: t('space.admin.title'),
+			action: { label: t('space.admin.copy'), onClick: () => navigator.clipboard.writeText(window.location.href) },
+			timeoutMs: 15000
+		});
+	});
 
 	// Комната пространства: статус AI-анализа для всех, кто здесь.
 	// Без пароля (authenticated=false) сокет не нужен — и сервер в комнату не пустит.
@@ -158,25 +175,21 @@
 
 <div class="flex min-h-screen flex-col">
 	<Header
-		spaceName={data.space.name}
-		spaceSlug={data.space.slug}
-		locked={data.hasPassword}
 		onNewBoard={data.authenticated ? () => (creating = true) : null}
 		analysis={data.authenticated && data.analysisEnabled ? { spaceSlug: data.space.slug } : null}
 	/>
 
-	{#if data.showAdminBanner && data.adminLink}
-		<AdminBanner adminLink={data.adminLink} titleKey="space.admin.title" copyKey="space.admin.copy" />
-	{/if}
-
 	{#if !data.authenticated}
 		<SpacePasswordForm spaceName={data.space.name} error={form?.error === 'wrong_password' ? t('space.password.error') : ''} />
 	{:else}
-		<main class="flex-1 px-4 pb-16 sm:px-8 lg:px-14">
-			<div class="mx-auto flex max-w-[1360px] flex-col gap-7 pt-9 sm:pt-11">
-				<!-- Space heading -->
+		<main class="flex-1 px-4 pb-16 sm:px-7">
+			<div class="mx-auto flex max-w-[1360px] flex-col gap-7 pt-9 sm:pt-10">
+				<!-- Заголовок и панель пароля — один блок: свёрнутая панель не должна
+				     занимать место и добавлять зазор сетки перед списком досок -->
+				<div class="flex flex-col">
+				<!-- Space heading: название живёт только здесь (в шапке — один бренд) -->
 				<div class="flex flex-wrap items-end justify-between gap-4">
-					<div class="flex min-w-0 flex-col gap-1.5">
+					<div class="flex min-w-0 flex-col gap-2">
 						<div class="flex items-center gap-3">
 							{#if renaming}
 								<form
@@ -201,22 +214,28 @@
 										onblur={onRenameBlur}
 										maxlength={TITLE_MAX}
 										aria-label={t('space.rename.label')}
-										class="input input-md font-heading w-full text-[24px] font-bold tracking-[-0.02em] sm:text-[30px]"
+										class="input font-heading h-auto w-full px-3 py-1 text-[26px] font-bold leading-[1.15] tracking-[-0.02em] sm:text-[32px]"
 									/>
 								</form>
 							{:else}
-								<h1 class="font-heading min-w-0 truncate text-[24px] font-bold tracking-[-0.02em] text-text-primary sm:text-[30px]" use:truncatedTitle={data.space.name}>{data.space.name}</h1>
-								{#if data.isCreator}
-									<!-- Размер как у корзины справа: без него рамка обтягивала иконку вплотную -->
-									<button
-										onclick={startRename}
-										class="btn-icon btn-icon-lg btn-icon-bordered shrink-0 text-text-muted hover:text-text-primary"
-										title={t('space.rename')}
-										aria-label={t('space.rename')}
-									>
-										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-									</button>
-								{/if}
+								<h1 class="font-heading min-w-0 truncate text-[26px] font-bold leading-[1.15] tracking-[-0.02em] text-text-primary sm:text-[32px]" use:truncatedTitle={data.space.name}>{data.space.name}</h1>
+							{/if}
+							{#if data.hasPassword}
+								<span class="badge badge-outline shrink-0">
+									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+									{t('space.locked')}
+								</span>
+							{/if}
+							{#if data.isCreator && !renaming}
+								<!-- Тот же карандаш, что у названия доски: 28px без рамки -->
+								<button
+									onclick={startRename}
+									class="btn-icon btn-icon-sm shrink-0"
+									title={t('space.rename')}
+									aria-label={t('space.rename')}
+								>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+								</button>
 							{/if}
 							{#if passwordSuccess}
 								<span class="badge badge-success badge-pop shrink-0">
@@ -231,48 +250,31 @@
 						{/if}
 					</div>
 					{#if data.isCreator}
-						<div class="flex items-center gap-2">
+						<div class="flex items-center gap-3">
 							{#if deleteConfirming}
-								<span class="text-xs text-text-secondary">{t('space.delete.confirm')}</span>
-								<button onclick={deleteSpace} class="btn btn-danger btn-sm">
+								<span class="text-[13px] text-text-secondary">{t('space.delete.confirm')}</span>
+								<button onclick={deleteSpace} class="btn btn-danger btn-md">
 									{t('space.delete')}
 								</button>
-								<button onclick={() => (deleteConfirming = false)} class="btn btn-secondary btn-sm">
+								<button onclick={() => (deleteConfirming = false)} class="btn btn-secondary btn-md">
 									{t('card.cancel')}
 								</button>
 							{:else}
-								<!-- Password toggle -->
-								<div class="flex items-center gap-2">
-									<label class="relative inline-flex cursor-pointer items-center" title={t(data.hasPassword ? 'space.password.disable' : 'space.password.enable')}>
-										<input
-											type="checkbox"
-											checked={passwordOpen}
-											onchange={() => { passwordOpen = !passwordOpen; deleteConfirming = false; }}
-											class="sr-only"
-										/>
-										<span class="inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 {passwordOpen ? 'bg-accent' : 'bg-border-strong'}">
-											<span class="top-0.5 left-0.5 mt-0.5 ml-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] {passwordOpen ? 'translate-x-4' : ''}"></span>
-										</span>
-									</label>
-									<span class="text-xs text-text-muted">
-										{#if data.hasPassword}
-											<svg class="inline h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-												<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-											</svg>
-										{:else}
-											<svg class="inline h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-												<rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />
-											</svg>
-										{/if}
-									</span>
-								</div>
+								<!-- Переключатель показывает то состояние, которое панель ниже собирается
+								     подтвердить: открыли панель — тумблер уже «после» смены -->
+								<ToggleSwitch
+									checked={passwordOpen ? !data.hasPassword : data.hasPassword}
+									label={t('space.password.toggle')}
+									onchange={() => (passwordOpen = !passwordOpen)}
+								/>
 								<!-- Delete button -->
 								<button
 									onclick={() => { deleteConfirming = true; passwordOpen = false; }}
 									class="btn-icon btn-icon-lg btn-icon-bordered hover:bg-bad-bg hover:text-bad"
 									title={t('space.delete')}
+									aria-label={t('space.delete')}
 								>
-									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
 										<path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
 									</svg>
@@ -285,7 +287,9 @@
 				<!-- Password management panel -->
 				{#if data.isCreator}
 					<div class="collapsible {passwordOpen ? 'open' : ''}">
-					<div class="rounded-2xl border border-border bg-surface-card p-4">
+					<!-- Рамка и отступ на внуке: у ребёнка с overflow:hidden они бы остались видны и при 0fr -->
+					<div>
+					<div class="mt-7 rounded-2xl border border-border bg-surface-card p-4">
 						{#if data.hasPassword}
 							<form method="POST" action="?/disablePassword" use:enhance={() => {
 								return async ({ result, update }) => {
@@ -304,17 +308,17 @@
 										required
 										maxlength="100"
 										placeholder={t('space.password.placeholder')}
-										class="input input-md h-10 flex-1 {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-bad' : ''} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
+										class="input input-md flex-1 {form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password' ? 'border-bad' : ''} {passwordShaking ? 'animate-[shake_0.5s_ease]' : ''}"
 									/>
-									<button type="submit" class="btn btn-danger btn-md h-10">
+									<button type="submit" class="btn btn-danger btn-md">
 										{t('space.password.disable')}
 									</button>
-									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-10">
+									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md">
 										{t('card.cancel')}
 									</button>
 								</div>
 								{#if form?.passwordAction === 'disable' && form?.passwordError === 'wrong_password'}
-									<p class="mt-1 text-xs text-bad">{t('space.password.error')}</p>
+									<p class="mt-1.5 text-[13px] text-bad">{t('space.password.error')}</p>
 								{/if}
 							</form>
 						{:else}
@@ -327,12 +331,12 @@
 										required
 										maxlength="100"
 										placeholder={t('space.password.enable.placeholder')}
-										class="input input-md h-10 flex-1"
+										class="input input-md flex-1"
 									/>
-									<button type="submit" class="btn btn-primary btn-md h-10">
+									<button type="submit" class="btn btn-primary btn-md">
 										{t('space.password.enable')}
 									</button>
-									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md h-10">
+									<button type="button" onclick={() => (passwordOpen = false)} class="btn btn-secondary btn-md">
 										{t('card.cancel')}
 									</button>
 								</div>
@@ -340,7 +344,9 @@
 						{/if}
 					</div>
 					</div>
+					</div>
 				{/if}
+				</div>
 
 				<SpaceBoardGrid
 					boards={data.boards}

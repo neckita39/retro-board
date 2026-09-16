@@ -7,7 +7,7 @@
 {#if !feedbackStore.open}
 	<button
 		onclick={() => feedbackStore.show()}
-		class="fixed right-5 z-[500] flex items-center gap-2 rounded-full bg-text-primary px-4 py-2.5 text-[13px] font-semibold text-surface shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 sm:px-5
+		class="fixed right-5 z-[500] flex h-[38px] items-center gap-2 rounded-full bg-text-primary px-4 text-sm font-semibold text-surface shadow-1 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 sm:px-[18px]
 			{boardStore.board ? 'bottom-24 md:bottom-5' : 'bottom-5'}"
 		title={t('feedback.link')}
 		style="animation: fadeUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1s both;"

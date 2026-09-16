@@ -87,7 +87,7 @@ export function collectCards(
 			used += text.length;
 			entries.push({
 				text,
-				tone: columns.find((col) => col.id === c.columnType)?.tone ?? 'accent',
+				tone: columns.find((col) => col.id === c.columnType)?.tone ?? 'plum',
 				boardTitle: b.title,
 				boardDate,
 				score: score.get(c.id) ?? 0
@@ -167,7 +167,7 @@ const MAX_ITEM_TEXT = 2000;
 export function buildPrompt(entries: AnalysisEntry[], locale: AnalysisLocale): ChatMessage[] {
 	const system = [
 		'You are an experienced agile facilitator. You are given cards from several retrospectives of one team, newest first.',
-		'Each card has a tone: well = went well, bad = went badly, improve = something to improve, accent = other.',
+		'Each card has a tone: well = went well, bad = went badly, improve = something to improve, plum = other.',
 		'The score is likes minus dislikes from the team.',
 		'Find patterns that REPEAT ACROSS DIFFERENT retrospectives, not things mentioned once. Weigh cards with higher scores more.',
 		'Respond with JSON only, exactly this shape:',

@@ -94,14 +94,14 @@ describe('collectCards — вход для модели', () => {
 		expect(entries.map((e) => e.text)).toEqual(['pairing helped', 'slow reviews']);
 	});
 
-	it('неизвестная колонка получает тон accent, пустой текст пропускается', () => {
+	it('неизвестная колонка получает тон plum, пустой текст пропускается', () => {
 		const odd = [
 			card('o1', 'b1', 'mystery', 'weird column', '2026-08-01T11:00:00Z'),
 			card('o2', 'b1', 'went_well', '   ', '2026-08-01T11:01:00Z')
 		];
 		const entries = collectCards([boards[0]], odd, []);
 		expect(entries).toHaveLength(1);
-		expect(entries[0]).toMatchObject({ text: 'weird column', tone: 'accent' });
+		expect(entries[0]).toMatchObject({ text: 'weird column', tone: 'plum' });
 	});
 
 	it('дефолты: 150 карточек и 60 000 символов', () => {

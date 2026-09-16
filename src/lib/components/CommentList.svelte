@@ -17,7 +17,7 @@
 	<div>
 		<div class="mt-3 space-y-2 border-t border-border pt-3">
 			{#each cardComments as comment (comment.id)}
-				<div class="rounded-[10px] bg-surface px-3 py-2 text-[13px] leading-relaxed">
+				<div class="rounded-xl bg-surface px-3 py-2 text-[13px] leading-relaxed">
 					{#if comment.authorName}
 						<span class="font-semibold text-text-secondary">{comment.authorName}</span>
 						<span class="text-text-muted mx-1">&middot;</span>

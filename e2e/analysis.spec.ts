@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { addCard, createBoard, createBoardInSpace, createLockedSpace, createSpace, initStorage } from './helpers';
+import { addCard, createBoard, createBoardInSpace, createLockedSpace, createSpace, dismissToast, initStorage } from './helpers';
 
 const MOCK = 'http://localhost:4778';
 
@@ -20,10 +20,18 @@ async function clearToasts(page: Page) {
 	while ((await closes.count()) > 0) await closes.first().click();
 }
 
+// Кнопка анализа: в шапке пространства — сразу, на странице доски — внутри меню «⋯»
+async function clickAnalyze(page: Page) {
+	const button = page.getByTestId('analyze-button');
+	const menu = page.getByRole('button', { name: 'Menu' });
+	if ((await menu.count()) > 0 && !(await button.isVisible())) await menu.click();
+	await button.click();
+}
+
 // Жмёт кнопку, ждёт «готов», возвращает pathname доски из кнопки «Открыть»
 async function runAnalysis(page: Page): Promise<string> {
 	await clearToasts(page);
-	await page.getByTestId('analyze-button').click();
+	await clickAnalyze(page);
 	const ready = toasts(page, 'success');
 	await expect(ready).toContainText('AI analysis is ready', { timeout: 20_000 });
 	const href = await ready.getByRole('link', { name: /Open/ }).getAttribute('href');
@@ -205,7 +213,7 @@ test('the space creator has creator rights on the analysis board', async ({ brow
 	const space = await seedSpace(pageA, 'Admin team');
 	await initStorage(pageB);
 	await pageB.goto(space.adminUrl);
-	await pageB.getByRole('button', { name: 'Close' }).click();
+	await dismissToast(pageB);
 
 	await pageA.goto(`/spaces/${space.slug}`);
 	const analysisPath = await runAnalysis(pageA);
@@ -221,6 +229,7 @@ test('the space creator has creator rights on the analysis board', async ({ brow
 
 test('a standalone board has no analysis button', async ({ page }) => {
 	await createBoard(page, 'Lonely board');
+	await page.getByRole('button', { name: 'Menu' }).click();
 	await expect(page.getByTestId('analyze-button')).toHaveCount(0);
 });
 
@@ -257,6 +266,8 @@ test('from a board page the button works and «Open» keeps realtime on the anal
 
 	const space = await seedSpace(pageA, 'Roaming team 2');
 	await pageA.goto(`/${space.boards[1]}`);
+	// На доске кнопка живёт в меню «⋯»
+	await pageA.getByRole('button', { name: 'Menu' }).click();
 	await expect(pageA.getByTestId('analyze-button')).toBeVisible();
 	const path = await runAnalysis(pageA);
 	await toasts(pageA, 'success').getByRole('link', { name: /Open/ }).click();
@@ -289,6 +300,7 @@ test('a locked space hides the analysis from viewers without the password', asyn
 	await initStorage(pageB);
 	await pageB.goto(`/${boardSlug}`);
 	await expect(pageB.getByRole('heading', { name: 'Went Well' })).toBeVisible();
+	await pageB.getByRole('button', { name: 'Menu' }).click();
 	await expect(pageB.getByTestId('analyze-button')).toHaveCount(0);
 	expect((await pageB.request.get(`/spaces/${space.slug}/analysis`)).status()).toBe(403);
 

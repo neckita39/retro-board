@@ -3,6 +3,7 @@
 	import LocaleToggle from './LocaleToggle.svelte';
 	import Timer from './Timer.svelte';
 	import AnalyzeButton from './AnalyzeButton.svelte';
+	import AiBadge from './AiBadge.svelte';
 	import { page } from '$app/state';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
@@ -20,7 +21,6 @@
 		adminLink = null,
 		spaceName = null,
 		spaceSlug = null,
-		locked = false,
 		creatorToken = null,
 		onNewBoard = null,
 		analysis = null
@@ -29,12 +29,14 @@
 		showCreate?: boolean;
 		showNav?: boolean;
 		adminLink?: string | null;
+		/** Пространство доски — ссылка в крошках на странице доски. На остальных
+		 *  страницах шапка показывает только марку, имя пространства живёт в H1 */
 		spaceName?: string | null;
 		spaceSlug?: string | null;
-		locked?: boolean;
 		creatorToken?: string | null;
 		onNewBoard?: (() => void) | null;
-		/** Пространство, для которого показать кнопку «Анализ пространства» */
+		/** Пространство, для которого показать «Анализ пространства»:
+		 *  на доске — пункт меню «⋯», на странице пространства — кнопка в шапке */
 		analysis?: { spaceSlug: string } | null;
 	} = $props();
 
@@ -165,12 +167,21 @@
 	/>
 {/snippet}
 
+{#snippet shareIcon(cls: string)}
+	{#if shared}
+		<svg class={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+	{:else}
+		<svg class={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+	{/if}
+{/snippet}
+
+<!-- Одна высота на всю строку: каждый контрол 38px, радиус 12 -->
 <header class="sticky top-0 z-50 border-b border-border bg-surface-card px-4 py-2.5 transition-colors sm:px-7 sm:py-3">
 	<div class="mx-auto flex max-w-[1360px] items-center justify-between gap-3">
 		<!-- Left: brand + breadcrumb / nav -->
 		{#if isBoard}
-			<!-- Desktop: brand + breadcrumbs -->
-			<div class="hidden min-w-0 items-baseline gap-3 md:flex">
+			<!-- Desktop: brand / space / board title + pencil -->
+			<div class="hidden min-w-0 items-center gap-3 md:flex">
 				<a href="/" class="font-heading shrink-0 text-[18px] font-extrabold tracking-[-0.01em] text-text-primary">
 					{t('header.brand')}
 				</a>
@@ -180,49 +191,48 @@
 				{/if}
 				<span class="text-sm text-border-strong">/</span>
 				{#if renaming}
-					{@render renameField('input input-sm h-8 min-w-0 flex-1 text-sm font-semibold')}
+					{@render renameField('input input-md min-w-0 flex-1 text-sm font-semibold')}
 				{:else}
 					<span class="min-w-0 truncate text-sm font-semibold text-text-primary" use:truncatedTitle={boardStore.board?.title ?? ''}>{boardStore.board?.title}</span>
 				{/if}
 				{#if boardStore.board?.format === ANALYSIS_FORMAT}
-					<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+					<AiBadge />
+				{/if}
+				{#if boardStore.isCreator && !renaming}
+					<!-- Подсказка — «Переименовать доску», но доступное имя другое: пункт меню
+					     с тем же именем остаётся, и e2e ищет его по роли и имени -->
+					<button
+						onclick={startRename}
+						class="btn-icon btn-icon-sm shrink-0"
+						title={t('board.rename')}
+						aria-label={t('board.rename.label')}
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+					</button>
 				{/if}
 			</div>
 			<!-- Mobile: board title + online -->
 			<div class="flex min-w-0 flex-col md:hidden">
 				{#if renaming}
-					{@render renameField('input input-sm font-heading h-9 min-w-0 text-[17px] font-extrabold')}
+					{@render renameField('input input-md font-heading min-w-0 text-[17px] font-extrabold')}
 				{:else}
-					<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[19px] font-extrabold text-text-primary" use:truncatedTitle={boardStore.board?.title ?? ''}>{boardStore.board?.title}</a>
+					<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[17px] font-extrabold text-text-primary" use:truncatedTitle={boardStore.board?.title ?? ''}>{boardStore.board?.title}</a>
 				{/if}
 				<span class="truncate text-[13px] text-text-muted">
-					{#if boardStore.board?.format === ANALYSIS_FORMAT}<span class="badge-sm badge-ai mr-1 align-middle">{t('analysis.badge')}</span>{/if}
+					{#if boardStore.board?.format === ANALYSIS_FORMAT}<span class="mr-1 inline-flex align-middle"><AiBadge /></span>{/if}
 					{spaceName ?? t('header.brand')} · {t('user.online', { n: socketStore.usersCount })}
 				</span>
 			</div>
 		{:else}
 			<div class="flex min-w-0 items-center gap-7">
-				<div class="flex min-w-0 items-baseline gap-3">
-					<!-- До sm полное имя не влезает рядом с иконками и кнопкой — оно наезжало
-					     на них. Показываем марку, а название прячем визуально: в разметке
-					     и в дереве доступности оно остаётся. -->
-					<a href="/" class="font-heading flex shrink-0 items-center text-[18px] font-extrabold tracking-[-0.01em] text-text-primary">
-						<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-text-primary text-[15px] text-surface sm:hidden" aria-hidden="true">
-							{t('header.brand').charAt(0)}
-						</span>
-						<span class="sr-only sm:not-sr-only">{t('header.brand')}</span>
-					</a>
-					{#if spaceName}
-						<span class="text-sm text-border-strong">/</span>
-						<span class="min-w-0 truncate text-sm font-semibold text-text-primary" use:truncatedTitle={spaceName}>{spaceName}</span>
-						{#if locked}
-							<span class="hidden shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary sm:inline-flex">
-								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-								{t('space.locked')}
-							</span>
-						{/if}
-					{/if}
-				</div>
+				<!-- До sm полное имя не влезает рядом с иконками и кнопкой. Показываем марку,
+				     а название прячем визуально: в разметке и в дереве доступности оно остаётся. -->
+				<a href="/" class="font-heading flex shrink-0 items-center text-[18px] font-extrabold tracking-[-0.01em] text-text-primary">
+					<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-text-primary text-[15px] text-surface sm:hidden" aria-hidden="true">
+						{t('header.brand').charAt(0)}
+					</span>
+					<span class="sr-only sm:not-sr-only">{t('header.brand')}</span>
+				</a>
 				{#if showNav}
 					<nav class="hidden items-center gap-[22px] text-sm font-medium lg:flex">
 						{#each navItems as item (item.key)}
@@ -257,8 +267,8 @@
 				<!-- Timer chip (visible to everyone while running, controls for creator) -->
 				<Timer {creatorToken} />
 
-				<!-- Participants: own avatar + others count -->
-				<div class="hidden items-center md:flex">
+				<!-- Participants: own ink avatar + others count -->
+				<div class="hidden items-center gap-1.5 md:flex">
 					{#if nameEditing}
 						<input
 							type="text"
@@ -266,20 +276,20 @@
 							onkeydown={(e) => e.key === 'Enter' && saveName()}
 							onblur={() => document.hasFocus() && saveName()}
 							placeholder={t('name.placeholder')}
-							class="input input-sm w-28"
+							class="input input-md w-32"
 						/>
 					{:else}
 						<button
 							onclick={() => (nameEditing = true)}
-							class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface-card text-[13px] font-bold transition-transform hover:scale-105
-								{userName ? 'bg-well text-white' : 'bg-surface-hover text-text-muted'}"
+							class="relative flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-bold transition-transform hover:scale-105
+								{userName ? 'bg-text-primary text-surface' : 'bg-surface-hover text-text-muted'}"
 							title={userName || t('name.placeholder')}
 							aria-label={userName || t('name.placeholder')}
 						>
 							{#if userName}
 								{userName[0].toUpperCase()}
 							{:else}
-								<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
 							{/if}
 							<span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface-card {socketStore.connected ? 'bg-well' : 'bg-bad'}"></span>
 						</button>
@@ -287,7 +297,7 @@
 							<!-- Счётчик, а не аватар: без нахлёста (иначе индикатор связи налезает)
 							     и с авторастущей шириной — фиксированный круг ломался на больших командах -->
 							<span
-								class="ml-1.5 flex h-8 min-w-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-surface-hover px-2 text-xs font-bold tabular-nums text-text-secondary"
+								class="flex h-8 min-w-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-surface-hover px-2 text-[13px] font-bold tabular-nums text-text-secondary"
 								title={t('user.online', { n: socketStore.usersCount })}
 								aria-label={t('user.online', { n: socketStore.usersCount })}
 							>
@@ -297,19 +307,10 @@
 					{/if}
 				</div>
 
-				{#if analysis}
-					<AnalyzeButton spaceSlug={analysis.spaceSlug} compact />
-				{/if}
-
-				<!-- Share: primary visible action -->
+				<!-- Share: the one dark action in the row -->
 				<button onclick={share} class="btn btn-dark btn-md hidden md:inline-flex">
-					{#if shared}
-						<svg class="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-						{t('header.share.copied')}
-					{:else}
-						<svg class="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-						{t('header.share')}
-					{/if}
+					{@render shareIcon('h-4 w-4')}
+					{shared ? t('header.share.copied') : t('header.share')}
 				</button>
 				<button
 					onclick={share}
@@ -317,18 +318,14 @@
 					aria-label={t('header.share')}
 					title={t('header.share')}
 				>
-					{#if shared}
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-					{:else}
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-					{/if}
+					{@render shareIcon('h-4 w-4')}
 				</button>
 
-				<!-- Overflow menu: export / delete / settings -->
+				<!-- Overflow menu: copy / export / analysis / settings / rename / delete -->
 				<div class="relative">
 					<button
 						onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
-						class="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-border bg-surface-card text-text-secondary transition-colors hover:bg-surface-hover {copied ? 'text-accent' : ''}"
+						class="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-border bg-surface-card text-text-secondary transition-colors hover:bg-surface-hover {copied ? 'text-well' : ''}"
 						aria-label={t('header.menu')}
 						title={t('header.menu')}
 					>
@@ -373,7 +370,7 @@
 								onclick={() => handleExport('md')}
 								class="dropdown-item"
 							>
-								<span class="flex h-4 w-4 items-center justify-center text-[10px] font-bold text-text-muted">MD</span>
+								<span class="flex h-4 w-4 items-center justify-center text-[11px] font-bold text-text-muted">MD</span>
 								{t('export.markdown')}
 							</button>
 							<a
@@ -384,6 +381,11 @@
 								<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
 								{t('export.api')}
 							</a>
+							{#if analysis}
+								<!-- «Анализ пространства» живёт в меню: в строке шапки одна тёмная кнопка -->
+								<hr class="my-1 border-border" />
+								<AnalyzeButton spaceSlug={analysis.spaceSlug} variant="menu" onSubmit={() => (menuOpen = false)} />
+							{/if}
 							<hr class="my-1 border-border" />
 							<!-- Language & theme live in the menu on the board — the header is for board actions -->
 							<div class="flex items-center gap-1.5 px-3 py-1.5">
@@ -398,7 +400,7 @@
 								</button>
 								{#if deleteConfirming}
 									<div class="flex flex-col gap-1.5 px-3 py-2">
-										<span class="text-[12px] text-text-secondary">{t('board.delete.confirm')}</span>
+										<span class="text-[13px] text-text-secondary">{t('board.delete.confirm')}</span>
 										<div class="flex gap-1.5">
 											<button onclick={deleteBoard} class="btn btn-danger btn-sm flex-1">{t('board.delete')}</button>
 											<button onclick={() => (deleteConfirming = false)} class="btn btn-secondary btn-sm flex-1">{t('card.cancel')}</button>
@@ -418,16 +420,19 @@
 					{/if}
 				</div>
 			{:else}
-				<a
-					href="https://github.com/neckita39/retro-board"
-					target="_blank"
-					rel="noopener"
-					class="btn-icon btn-icon-lg btn-icon-bordered"
-					title="GitHub"
-					aria-label="GitHub"
-				>
-					<svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.53-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11.05 11.05 0 0 1 5.78 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.24 2.75.12 3.04.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.67.41.36.77 1.05.77 2.13 0 1.53-.01 2.77-.01 3.15 0 .3.2.67.8.55A11.52 11.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
-				</a>
+				<!-- GitHub only on site pages; the space page keeps the row to its own actions -->
+				{#if showNav}
+					<a
+						href="https://github.com/neckita39/retro-board"
+						target="_blank"
+						rel="noopener"
+						class="btn-icon btn-icon-lg btn-icon-bordered"
+						title="GitHub"
+						aria-label="GitHub"
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.53-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11.05 11.05 0 0 1 5.78 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.24 2.75.12 3.04.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.67.41.36.77 1.05.77 2.13 0 1.53-.01 2.77-.01 3.15 0 .3.2.67.8.55A11.52 11.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+					</a>
+				{/if}
 				<LocaleToggle />
 				<ThemeToggle />
 
@@ -436,7 +441,7 @@
 				{/if}
 				{#if onNewBoard}
 					<button onclick={onNewBoard} class="btn btn-primary btn-md">
-						<svg class="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 						<span class="hidden sm:inline">{t('space.boards.create')}</span>
 					</button>
 				{:else if showCreate}

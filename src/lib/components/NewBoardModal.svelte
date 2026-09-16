@@ -42,18 +42,18 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="modal-overlay-enter fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(33,30,26,0.35)] p-4"
+	class="modal-overlay-enter fixed inset-0 z-[70] flex items-center justify-center bg-scrim p-4"
 	onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
 >
 	<div
-		class="modal-card-enter flex w-[480px] max-w-full flex-col gap-[18px] rounded-[20px] bg-surface-card p-6 shadow-[0_32px_80px_rgba(33,30,26,0.35)] sm:p-8"
+		class="modal-card-enter flex w-[480px] max-w-full flex-col gap-[18px] rounded-3xl bg-surface-card p-6 shadow-2 sm:p-8"
 		role="dialog"
 		aria-modal="true"
 		aria-label={t('space.boards.create')}
 	>
 		<div class="flex items-start justify-between gap-3">
 			<div class="flex flex-col gap-1.5">
-				<h3 class="font-heading text-[22px] font-bold text-text-primary">{t('space.boards.create')}</h3>
+				<h3 class="font-heading text-[21px] font-bold text-text-primary">{t('space.boards.create')}</h3>
 				<p class="text-sm text-text-secondary">{t('space.modal.context', { name: spaceName })}</p>
 			</div>
 			<button
@@ -61,7 +61,7 @@
 				class="btn-icon btn-icon-lg btn-icon-bordered shrink-0"
 				aria-label={t('card.cancel')}
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 			</button>
 		</div>
 
@@ -76,20 +76,20 @@
 					maxlength="100"
 					bind:value={title}
 					placeholder={t('space.boards.create.placeholder')}
-					class="input h-[50px] bg-surface px-4 text-base"
+					class="input input-lg bg-surface"
 				/>
 			</label>
 			<FormatPicker bind:value={format} compact />
 			{#if suggestedFrom && title === suggestedTitle && suggestedTitle}
-				<p class="text-[13px] leading-relaxed text-text-muted">{t('space.modal.hint.auto', { title: suggestedFrom })}</p>
+				<p class="text-[13px] leading-[1.5] text-text-muted">{t('space.modal.hint.auto', { title: suggestedFrom })}</p>
 			{:else}
-				<p class="text-[13px] leading-relaxed text-text-muted">{t('space.modal.hint')}</p>
+				<p class="text-[13px] leading-[1.5] text-text-muted">{t('space.modal.hint')}</p>
 			{/if}
 			<div class="flex gap-2.5">
-				<button type="button" onclick={onClose} class="btn btn-secondary h-[50px] flex-1 rounded-[14px] text-[15px]">
+				<button type="button" onclick={onClose} class="btn btn-secondary btn-lg flex-1">
 					{t('card.cancel')}
 				</button>
-				<button type="submit" class="btn btn-primary h-[50px] flex-[2] rounded-[14px] text-[15px]">
+				<button type="submit" class="btn btn-primary btn-lg flex-[2]">
 					{t('new.board.submit')}
 				</button>
 			</div>

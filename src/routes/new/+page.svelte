@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
+	import AiBadge from '$lib/components/AiBadge.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
@@ -49,17 +50,18 @@
 		const slug = raw.includes('/') ? raw.split('/').filter(Boolean).pop() : raw;
 		if (slug) window.location.href = `/spaces/${slug}`;
 	}
+
+	// Выбрано = рамка 2px терракотой: 1px граница + 1px внутренняя тень, чтобы карточка не прыгала.
+	// Тот же приём у выбранного формата и у фокус-строки в «Итогах».
+	const typeCard =
+		'flex flex-col gap-3 rounded-2xl border bg-surface-card p-6 text-left transition-colors';
+	const selected = 'border-accent shadow-[inset_0_0_0_1px_var(--color-accent)]';
+	const unselected = 'border-border hover:border-border-strong';
 </script>
 
 <svelte:head>
 	<title>{t('header.brand')}</title>
 </svelte:head>
-
-{#snippet checkBadge()}
-	<div class="absolute right-4 top-4 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-accent">
-		<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-	</div>
-{/snippet}
 
 <div class="flex min-h-screen flex-col">
 	<Header showNav />
@@ -70,7 +72,7 @@
 				<h1 class="font-heading text-[26px] font-bold tracking-[-0.02em] text-text-primary sm:text-[32px]">
 					{t('new.title')}
 				</h1>
-				<p class="text-base text-text-secondary">{t('new.subtitle')}</p>
+				<p class="text-[15px] text-text-secondary">{t('new.subtitle')}</p>
 			</div>
 
 			<!-- Type choice — two large cards instead of a switch -->
@@ -78,36 +80,30 @@
 				<button
 					onclick={() => (mode = 'board')}
 					aria-pressed={mode === 'board'}
-					class="relative flex flex-col gap-3 rounded-[18px] bg-surface-card p-6 text-left transition-all {mode === 'board'
-						? 'outline outline-2 outline-accent shadow-[0_8px_24px_rgba(196,85,43,0.15)]'
-						: 'border border-border hover:border-border-strong'}"
+					class="{typeCard} {mode === 'board' ? selected : unselected}"
 				>
-					{#if mode === 'board'}{@render checkBadge()}{/if}
 					<div class="flex gap-1.5" aria-hidden="true">
-						<div class="h-[34px] w-3.5 rounded bg-well-bg"></div>
-						<div class="h-[34px] w-3.5 rounded bg-bad-bg"></div>
-						<div class="h-[34px] w-3.5 rounded bg-improve-bg"></div>
+						<div class="h-[34px] w-3.5 rounded bg-well"></div>
+						<div class="h-[34px] w-3.5 rounded bg-bad"></div>
+						<div class="h-[34px] w-3.5 rounded bg-improve"></div>
 					</div>
-					<span class="font-heading text-xl font-bold text-text-primary">{t('new.board.title')}</span>
-					<p class="text-sm leading-relaxed text-text-secondary">{t('new.board.desc')}</p>
+					<span class="font-heading text-[21px] font-bold text-text-primary">{t('new.board.title')}</span>
+					<p class="text-sm leading-[1.5] text-text-secondary">{t('new.board.desc')}</p>
 				</button>
 				<button
 					onclick={() => (mode = 'space')}
 					aria-pressed={mode === 'space'}
-					class="relative flex flex-col gap-3 rounded-[18px] bg-surface-card p-6 text-left transition-all {mode === 'space'
-						? 'outline outline-2 outline-accent shadow-[0_8px_24px_rgba(196,85,43,0.15)]'
-						: 'border border-border hover:border-border-strong'}"
+					class="{typeCard} {mode === 'space' ? selected : unselected}"
 				>
-					{#if mode === 'space'}{@render checkBadge()}{/if}
 					<div class="flex gap-1.5" aria-hidden="true">
 						<div class="h-[34px] w-[34px] rounded-lg bg-surface-hover"></div>
 						<div class="h-[34px] w-[34px] rounded-lg bg-surface-hover"></div>
 						<div class="h-[34px] w-[34px] rounded-lg border-[1.5px] border-dashed border-border-strong"></div>
 					</div>
-					<span class="font-heading text-xl font-bold text-text-primary">{t('new.space.title')}</span>
-					<p class="text-sm leading-relaxed text-text-secondary">{t('new.space.desc')}</p>
+					<span class="font-heading text-[21px] font-bold text-text-primary">{t('new.space.title')}</span>
+					<p class="text-sm leading-[1.5] text-text-secondary">{t('new.space.desc')}</p>
 					<span class="mt-auto inline-flex items-center gap-2 text-[13px] font-semibold text-text-secondary">
-						<span class="badge-sm badge-ai">AI</span>
+						<AiBadge label="AI" />
 						{t('new.space.ai')}
 					</span>
 				</button>
@@ -129,7 +125,7 @@
 						/>
 					</label>
 					<FormatPicker bind:value={format} />
-					<button type="submit" class="btn btn-primary btn-lg h-[54px] w-full">
+					<button type="submit" class="btn btn-primary btn-lg w-full">
 						{t('new.board.submit')}
 					</button>
 					<p class="text-center text-[13px] text-text-muted">{t('new.board.note')}</p>
@@ -172,8 +168,10 @@
 						/>
 					</label>
 
-					<!-- Password toggle -->
-					<ToggleSwitch bind:checked={passwordEnabled} label={t('space.create.password.toggle')} />
+					<!-- Password toggle: переключатель строчный, поэтому не растягиваем его на всю ширину -->
+					<div class="self-start">
+						<ToggleSwitch bind:checked={passwordEnabled} label={t('space.create.password.toggle')} />
+					</div>
 
 					<div class="collapsible {passwordEnabled ? 'open' : ''}">
 						<div>
@@ -190,7 +188,7 @@
 						</div>
 					</div>
 
-					<button type="submit" class="btn btn-primary btn-lg h-[54px] w-full">
+					<button type="submit" class="btn btn-primary btn-lg w-full">
 						{t('new.space.submit')}
 					</button>
 					<p class="text-center text-[13px] text-text-muted">{t('new.space.note')}</p>

@@ -2,10 +2,16 @@
 // переходы между страницами: «AI-анализ готов» догонит, куда бы ни ушёл человек.
 export type ToastKind = 'info' | 'success' | 'error';
 
+// Действие — ссылка (href) или кнопка (onClick), хотя бы одно из двух.
+// После onClick подпись на 2 секунды сменяется на «Скопировано!» (см. Toasts.svelte).
+export type ToastAction =
+	| { label: string; href: string; onClick?: () => void | Promise<void> }
+	| { label: string; href?: string; onClick: () => void | Promise<void> };
+
 export interface ToastInput {
 	kind: ToastKind;
 	text: string;
-	action?: { label: string; href: string };
+	action?: ToastAction;
 	timeoutMs?: number;
 }
 

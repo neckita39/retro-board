@@ -20,14 +20,6 @@
 	--color-accent-hover: #a94620;
 	--color-accent-bg: #f7e7de;
 
-	/* AI-анализ: «сумерки» из цветов палитры — синий колонки improve уходит в
-	   пыльно-розовый. Той же приглушённости, что остальные тона, а не стоковый фиолетовый */
-	--color-ai-from: #5b72c0;
-	--color-ai-to: #b3607c;
-	/* Заливка бейджа и кнопки с белым текстом: в тёмной теме остаётся насыщенной */
-	--color-ai-fill-from: #5b72c0;
-	--color-ai-fill-to: #b3607c;
-
 	/* Column colors: green/red/blue are reserved for column semantics */
 	--color-well: #4c8c6a;
 	--color-well-bg: #edf4ef;
@@ -38,6 +30,29 @@
 	--color-improve: #5b72c0;
 	--color-improve-bg: #e9edf6;
 	--color-improve-strong: #3a4c87;
+	/* Четвёртая колонка (4L «Хотелось бы», Sailboat «Остров»): сливовый той же
+	   светлоты, что три остальных тона. Раньше была терракотовой и читалась как кнопка */
+	--color-plum: #9a5b8c;
+	--color-plum-bg: #f3e7ef;
+	--color-plum-strong: #6f3a63;
+
+	/* Затемнение под модалками и лайтбоксом: чернила с прозрачностью, а не black/N */
+	--color-scrim: rgba(33, 30, 26, 0.4);
+	--color-scrim-strong: rgba(33, 30, 26, 0.85);
+
+	/* Блок кода на странице API: чернильная плашка одинакова в обеих темах,
+	   поэтому у этих токенов нет .dark-варианта. Единственное место с «цветами
+	   подсветки» — сырые hex в разметке запрещены */
+	--color-code-bg: #211e1a;
+	--color-code-fg: #d8d2c4;
+	--color-code-key: #e0a470;
+	--color-code-string: #9cbf8e;
+	--color-code-number: #8fb6d9;
+
+	/* Тени: всего два уровня, обе чернильные. Нулевой уровень — просто граница 1px.
+	   1 — меню, тосты, FAB, подсказки; 2 — модалка, боковая панель */
+	--shadow-1: 0 4px 14px rgba(33, 30, 26, 0.08);
+	--shadow-2: 0 14px 34px rgba(33, 30, 26, 0.24);
 }
 
 html {
@@ -70,11 +85,6 @@ html {
 	--color-accent-hover: #e28b63;
 	--color-accent-bg: #3c2a20;
 
-	--color-ai-from: #7c90d6;
-	--color-ai-to: #d08aa0;
-	--color-ai-fill-from: #5b72c0;
-	--color-ai-fill-to: #b3607c;
-
 	--color-well: #5fa37d;
 	--color-well-bg: #1e2b23;
 	--color-well-strong: #85bf9f;
@@ -84,12 +94,20 @@ html {
 	--color-improve: #7c90d6;
 	--color-improve-bg: #21273a;
 	--color-improve-strong: #9dade4;
+	--color-plum: #b57aa6;
+	--color-plum-bg: #33222f;
+	--color-plum-strong: #d3a3c6;
 }
 
 /* ============================================================
    DESIGN SYSTEM — reusable utility classes
    Composable: .btn + .btn-primary + .btn-md
    Override-friendly: sits in @layer components (below utilities)
+
+   Шкалы (см. DESIGN-SYSTEM.md): радиус 8 — иконки-кнопки и бейджи, 12 — любой
+   контрол, 16 — карточки и меню. Высоты: 32 внутри карточек и строк, 38 — шапка
+   и тулбары, 54 — формы создания. Высота задаётся явно (h-*), а не паддингами,
+   чтобы в одной строке всё было одного роста.
    ============================================================ */
 @layer components {
 
@@ -100,10 +118,10 @@ html {
 		       transition-colors disabled:opacity-50 disabled:pointer-events-none;
 	}
 
-	/* Sizes */
-	.btn-sm  { @apply rounded-[10px] px-3.5 py-[7px] text-[13px]; }
-	.btn-md  { @apply rounded-xl px-[18px] py-2.5 text-sm; }
-	.btn-lg  { @apply rounded-[14px] px-[26px] py-3.5 text-base; }
+	/* Sizes: 32 — внутри карточек и строк, 38 — шапка/тулбары/инлайн-формы, 54 — формы создания */
+	.btn-sm  { @apply h-8 rounded-xl px-3 text-[13px]; }
+	.btn-md  { @apply h-[38px] rounded-xl px-4 text-sm; }
+	.btn-lg  { @apply h-[54px] rounded-xl px-[26px] text-base; }
 
 	/* Variants */
 	.btn-primary   { @apply bg-accent text-white font-bold hover:bg-accent-hover active:scale-[0.97]; }
@@ -112,31 +130,33 @@ html {
 	.btn-secondary { @apply border border-border bg-surface-card text-text-primary hover:bg-surface-hover active:scale-[0.97]; }
 	.btn-ghost     { @apply text-text-secondary hover:bg-surface-hover active:scale-[0.97]; }
 
-	/* Icon buttons */
+	/* Icon buttons: без рамки и приглушённые, пока на них не наведёшь */
 	.btn-icon {
-		@apply flex items-center justify-center rounded-[10px]
-		       text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary;
+		@apply flex items-center justify-center rounded-lg
+		       text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary;
 	}
 	.btn-icon-sm      { @apply h-7 w-7; }
 	.btn-icon-md      { @apply h-8 w-8; }
-	.btn-icon-lg      { @apply h-9 w-9; }
-	.btn-icon-bordered { @apply border border-border bg-surface-card; }
+	/* 38 и радиус 12 — иконки-кнопки в строке шапки, вровень с остальными контролами */
+	.btn-icon-lg      { @apply h-[38px] w-[38px] rounded-xl; }
+	.btn-icon-bordered { @apply border border-border bg-surface-card text-text-secondary; }
 
 
 	/* ---------- INPUTS ---------- */
 
 	.input {
-		@apply w-full rounded-[14px] border border-border bg-surface-card
+		@apply w-full rounded-xl border border-border bg-surface-card
 		       text-sm text-text-primary placeholder:text-text-muted
 		       transition-colors focus:border-text-primary focus:outline-none
 		       focus:shadow-[inset_0_0_0_0.5px_var(--color-text-primary)];
 	}
-	.input-sm { @apply rounded-[10px] px-2.5 py-1.5 text-[13px]; }
-	.input-md { @apply px-4 py-2.5; }
+	/* Те же три высоты, что у кнопок: поле и кнопка в одной строке — одного роста */
+	.input-sm { @apply h-8 px-2.5 text-[13px]; }
+	.input-md { @apply h-[38px] px-3 text-sm; }
 	.input-lg { @apply h-[54px] px-[18px] text-base; }
 
 	.textarea {
-		@apply w-full resize-none rounded-[14px] border border-border bg-surface-card
+		@apply w-full resize-none rounded-xl border border-border bg-surface-card
 		       text-[15px] leading-normal text-text-primary placeholder:text-text-muted
 		       transition-colors focus:border-text-primary focus:outline-none
 		       focus:shadow-[inset_0_0_0_0.5px_var(--color-text-primary)];
@@ -156,12 +176,13 @@ html {
 	.card-md { @apply p-5; }
 	.card-lg { @apply p-6; }
 
+	/* Карточка на доске: тот же радиус 16, что у всех карточек сайта */
 	.card-board {
-		@apply rounded-[14px] border border-border bg-surface-card p-4;
+		@apply rounded-2xl border border-border bg-surface-card p-4;
 	}
 
 	.dropdown {
-		@apply rounded-xl border border-border bg-surface-card py-1 shadow-lg;
+		@apply rounded-2xl border border-border bg-surface-card py-1 shadow-1;
 	}
 	.dropdown-item {
 		@apply flex w-full items-center gap-2.5 px-3 py-2
@@ -173,42 +194,34 @@ html {
 	/* ---------- PILLS (votes, comments — always visible) ---------- */
 
 	.pill {
-		@apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5
+		@apply inline-flex h-8 items-center gap-1.5 rounded-full px-3
 		       text-[13px] font-bold transition-colors;
 	}
 	.pill-outline { @apply border border-border bg-transparent text-text-muted hover:border-border-strong hover:text-text-secondary; }
 	.pill-well    { @apply bg-well-bg text-well-strong; }
 	.pill-bad     { @apply bg-bad-bg text-bad-strong; }
+	/* Нейтральная заливка для счётчиков: состояние, а не действие, поэтому не терракота */
+	.pill-neutral { @apply bg-surface-hover text-text-primary font-semibold; }
 
 
 	/* ---------- BADGES ---------- */
 
 	.badge {
-		@apply inline-flex items-center gap-1.5 rounded-full
-		       px-3 py-1 text-xs font-semibold;
+		@apply inline-flex h-7 items-center gap-1.5 rounded-full
+		       px-2.5 text-[13px] font-semibold;
 	}
+	/* Подпись колонки, «Рекомендуем», AI: 20px, радиус 8, капитель 11px */
 	.badge-sm {
-		@apply rounded-md px-1.5 py-0.5 text-[10px] font-semibold
-		       uppercase tracking-wide;
+		@apply inline-flex h-5 items-center gap-1 rounded-lg px-[7px]
+		       text-[11px] font-bold uppercase tracking-[0.04em];
 	}
-	.badge-outline  { @apply border border-border bg-surface-card/80 text-text-secondary; }
+	.badge-outline  { @apply border border-border bg-surface-card text-text-secondary; }
 	.badge-accent   { @apply bg-accent-bg text-accent; }
 	.badge-success  { @apply bg-well-bg text-well-strong; }
-	.badge-version  { @apply rounded-[10px] bg-text-primary px-3 py-1.5 text-[13px] font-extrabold text-surface; }
-	.badge-version-outline { @apply rounded-[10px] border border-border bg-surface-card px-3 py-1.5 text-[13px] font-extrabold text-text-secondary; }
-
-	/* ---------- AI-АНАЛИЗ ---------- */
-
-	.badge-ai {
-		background: linear-gradient(135deg, var(--color-ai-fill-from), var(--color-ai-fill-to));
-		color: #fff;
-	}
-	.btn-ai {
-		@apply font-bold text-white active:scale-[0.97];
-		background: linear-gradient(135deg, var(--color-ai-fill-from), var(--color-ai-fill-to));
-	}
-	.btn-ai:hover { filter: brightness(1.08); }
-	.btn-ai:disabled { opacity: 0.7; cursor: progress; }
+	/* AI — семейство improve, без градиента: единственный цвет вне палитры был именно здесь */
+	.badge-ai       { @apply bg-improve-bg text-improve-strong; }
+	.badge-version  { @apply rounded-lg bg-text-primary px-3 py-1.5 text-[13px] font-extrabold text-surface; }
+	.badge-version-outline { @apply rounded-lg border border-border bg-surface-card px-3 py-1.5 text-[13px] font-extrabold text-text-secondary; }
 
 
 	/* ---------- ERRORS ---------- */
@@ -218,7 +231,7 @@ html {
 		       bg-bad-bg px-3 py-2
 		       text-sm text-bad-strong;
 	}
-	.error-box-sm { @apply px-2.5 py-1.5 text-xs; }
+	.error-box-sm { @apply px-2.5 py-1.5 text-[13px]; }
 }
 
 body {
@@ -361,11 +374,3 @@ button, a, [role="button"], input[type="submit"] {
 	}
 }
 
-/* Градиентная обводка доски-анализа: фон в padding-box, градиент в border-box.
-   --ai-frame-bg задаёт цвет внутри рамки (у плитки — surface-card). */
-@utility ai-frame {
-	border: 2px solid transparent;
-	background:
-		linear-gradient(var(--ai-frame-bg, var(--color-surface)), var(--ai-frame-bg, var(--color-surface))) padding-box,
-		linear-gradient(135deg, var(--color-ai-from), var(--color-ai-to)) border-box;
-}

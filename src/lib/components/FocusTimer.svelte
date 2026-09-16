@@ -67,10 +67,10 @@
 				}
 			}}
 			aria-describedby="focus-maxim"
-			class="flex cursor-help items-center gap-2 rounded-xl border border-border bg-surface-card px-2.5 py-1.5 shadow-[0_4px_14px_rgba(33,30,26,0.08)] transition-colors hover:bg-surface-hover"
+			class="flex h-8 cursor-help items-center gap-2 rounded-xl border border-border bg-surface px-2.5 transition-colors hover:bg-surface-hover"
 		>
 			<svg
-				class="h-[13px] w-[13px] {expired ? 'text-bad' : 'text-text-secondary'}"
+				class="h-3.5 w-3.5 {expired ? 'text-bad' : 'text-text-secondary'}"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -100,7 +100,7 @@
 		<span
 			id="focus-maxim"
 			role="tooltip"
-			class="pointer-events-none absolute right-0 top-full z-30 mt-2 w-60 rounded-xl bg-text-primary px-3 py-2 text-[12px] leading-snug text-surface shadow-[0_10px_28px_rgba(33,30,26,0.28)] transition-opacity duration-150
+			class="pointer-events-none absolute right-0 top-full z-30 mt-2 w-60 rounded-xl bg-text-primary px-3 py-2 text-[13px] leading-snug text-surface shadow-1 transition-opacity duration-150
 				{pinned
 				? 'opacity-100'
 				: 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}"

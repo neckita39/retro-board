@@ -13,6 +13,21 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.13',
+			date: '2026-09-16',
+			title: { en: 'One consistent style', ru: 'Единый стиль' },
+			changes: [
+				{ en: 'The board header is tidier: the timer, participants, «Share» and the menu are now the same height and sit in one neat row', ru: 'Шапка доски стала аккуратнее: таймер, участники, «Поделиться» и меню теперь одного роста и стоят в одну ровную строку' },
+				{ en: 'The name prompt and the quick tip for newcomers are one card under the header instead of two separate blocks', ru: 'Вопрос про имя и подсказка для новичков объединены в одну карточку под шапкой вместо двух отдельных блоков' },
+				{ en: '«Add a card…» is now a dashed field at the top of each column, and your avatar is ink-black — green and red are left to the columns', ru: '«Добавить карточку…» стало пунктирным полем сверху колонки, а ваш аватар — чернильным: зелёный и красный остались колонкам' },
+				{ en: 'Comment counters on cards are neutral grey — terracotta now marks only what you can press, and the timer', ru: 'Счётчик комментариев на карточке стал нейтральным серым — терракотовым остаётся только то, что можно нажать, и таймер' },
+				{ en: 'The Summary is easier to read: the card being discussed has a clear frame, the others are dimmed, and «Discussing · 2 of 8» is visible to everyone', ru: '«Итоги» стало легче читать: обсуждаемая карточка в чёткой рамке, остальные приглушены, а ход обсуждения «2 из 8» виден всем' },
+				{ en: 'One notification style everywhere: «Board created» now appears top-right with a «Copy link» button instead of a banner at the bottom of the screen', ru: 'Уведомления теперь единого вида: «Доска создана» показывается справа сверху с кнопкой «Скопировать ссылку», а не баннером внизу экрана' },
+				{ en: 'Space page: the name is shown once, the password switch has a label, the analysis button is calmer, and the analysis tile has a blue frame instead of a purple gradient', ru: 'Страница пространства: название показывается один раз, у переключателя пароля появилась подпись, кнопка анализа стала спокойнее, а плитка анализа получила синюю рамку вместо фиолетового градиента' },
+				{ en: 'Creating a board: the selected option is framed in terracotta, the column stripes are solid, the fourth column of 4L and Sailboat is plum, and the AI feature has its own badge', ru: 'Создание доски: выбранный вариант обведён терракотовой рамкой, полоски колонок стали сплошными, четвёртая колонка в 4L и Sailboat — сливовая, а у AI-функции появился свой бейдж' }
+			]
+		},
+		{
 			version: '1.12',
 			date: '2026-09-16',
 			title: { en: 'Space analysis', ru: 'Анализ пространства' },
@@ -210,7 +225,7 @@
 							<span class="font-heading text-[17px] font-bold text-text-primary sm:text-[19px]">{txt(release.title)}</span>
 							<span class="text-[13px] text-text-muted">{formatDate(release.date)}</span>
 						</div>
-						<ul class="list-disc space-y-1 pl-[18px] text-[15px] leading-[1.7] text-text-primary/85 marker:text-text-muted">
+						<ul class="list-disc space-y-1 pl-[18px] text-[15px] leading-[1.7] text-text-primary marker:text-text-muted">
 							{#each release.changes as change (change.en)}
 								<li>{txt(change)}</li>
 							{/each}

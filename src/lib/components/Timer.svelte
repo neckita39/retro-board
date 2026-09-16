@@ -94,15 +94,17 @@
 	let barColor = $derived(expired || progress <= 0.2 ? 'bg-bad' : 'bg-accent');
 </script>
 
+<!-- Both chips are 38px like every header control; radius 12 -->
 {#if remaining !== null}
-	<!-- Running / Expired — header chip -->
-	<div class="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-2">
-		<svg class="hidden h-[15px] w-[15px] text-text-secondary sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
-		<span class="sm:hidden h-[7px] w-[7px] rounded-full {expired ? 'bg-bad' : 'bg-accent'}"></span>
+	<!-- Running / Expired — header chip. Right padding shrinks to 6px only when the
+	     28px stop button sits there, otherwise the bar would touch the edge -->
+	<div class="flex h-[38px] items-center gap-2.5 rounded-xl border border-border bg-surface pl-3.5 {boardStore.isCreator ? 'pr-1.5' : 'pr-3.5'}">
+		<svg class="hidden h-4 w-4 shrink-0 text-text-secondary sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+		<span class="h-[7px] w-[7px] shrink-0 rounded-full sm:hidden {expired ? 'bg-bad' : 'bg-accent'}"></span>
 		<span class="text-[15px] font-bold tabular-nums {expired ? 'text-bad timer-pulse' : 'text-text-primary'}">
 			{formatTime(expired ? 0 : remaining)}
 		</span>
-		<div class="hidden h-1 w-16 overflow-hidden rounded-full bg-border sm:block">
+		<div class="hidden h-1 w-16 shrink-0 overflow-hidden rounded-full bg-border sm:block">
 			<div
 				class="{barColor} h-full rounded-full transition-all duration-300 ease-linear"
 				style="transform: scaleX({progress}); transform-origin: left;"
@@ -111,7 +113,7 @@
 		{#if boardStore.isCreator}
 			<button
 				onclick={stop}
-				class="btn-icon btn-icon-sm -mr-1 hover:text-bad"
+				class="btn-icon btn-icon-sm shrink-0 hover:text-bad"
 				aria-label={t('timer.stop')}
 				title={t('timer.stop')}
 			>
@@ -123,12 +125,12 @@
 		{/if}
 	</div>
 {:else if boardStore.isCreator}
-	<!-- Idle — stepper + play in the same chip -->
-	<div class="flex items-center overflow-hidden rounded-xl border border-border bg-surface">
-		<svg class="ml-3 hidden h-[15px] w-[15px] shrink-0 text-text-secondary sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+	<!-- Idle — stepper + play in the same chip; the inner controls fill its height -->
+	<div class="flex h-[38px] items-center overflow-hidden rounded-xl border border-border bg-surface">
+		<svg class="ml-3 hidden h-4 w-4 shrink-0 text-text-secondary sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
 		<button
 			onclick={() => stepMinutes(-1)}
-			class="flex h-9 w-7 items-center justify-center text-base text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary active:scale-90 sm:w-8"
+			class="flex h-full w-7 items-center justify-center text-[15px] text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary active:scale-90 sm:w-8"
 			aria-label="−1"
 		>
 			−
@@ -141,18 +143,19 @@
 			onclick={(e) => (e.target as HTMLInputElement).select()}
 			onblur={clampMinutes}
 			onkeydown={(e) => { if (e.key === 'Enter') { clampMinutes(); start(); } }}
-			class="h-9 w-8 border-x border-border bg-transparent text-center text-sm font-bold tabular-nums text-text-primary focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:w-10"
+			class="h-full w-8 border-x border-border bg-transparent text-center text-sm font-bold tabular-nums text-text-primary focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:w-10"
 		/>
 		<button
 			onclick={() => stepMinutes(1)}
-			class="flex h-9 w-7 items-center justify-center text-base text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary active:scale-90 sm:w-8"
+			class="flex h-full w-7 items-center justify-center text-[15px] text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary active:scale-90 sm:w-8"
 			aria-label="+1"
 		>
 			+
 		</button>
+		<!-- Same fill as .btn-primary; the chip's overflow-hidden clips the outer corners -->
 		<button
 			onclick={start}
-			class="flex h-9 w-8 items-center justify-center bg-accent text-white transition-colors hover:bg-accent-hover active:scale-95 sm:w-9"
+			class="btn btn-primary h-full w-8 sm:w-9"
 			aria-label={t('timer.start')}
 			title={t('timer.start')}
 		>

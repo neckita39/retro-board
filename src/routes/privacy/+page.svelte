@@ -23,13 +23,13 @@
 			<span class="text-[13px] text-text-muted">{t('privacy.updated', { date: PRIVACY_UPDATED })}</span>
 		</header>
 
-		<p class="text-[17px] leading-[1.75] text-text-primary/90">{txt(PRIVACY_INTRO)}</p>
+		<p class="text-[17px] leading-[1.75] text-text-primary">{txt(PRIVACY_INTRO)}</p>
 
 		<div class="flex flex-col gap-6">
 			{#each PRIVACY_SECTIONS as section (section.title.en)}
 				<section class="flex flex-col gap-2">
 					<h2 class="font-heading text-[19px] font-bold text-text-primary">{txt(section.title)}</h2>
-					<p class="text-[16px] leading-[1.7] text-text-primary/85">{txt(section.body)}</p>
+					<p class="text-[16px] leading-[1.7] text-text-primary">{txt(section.body)}</p>
 				</section>
 			{/each}
 		</div>

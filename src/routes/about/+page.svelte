@@ -36,12 +36,12 @@
 			</h1>
 		</header>
 
-		<p class="text-[17px] leading-[1.75] text-text-primary/90">{txt(ABOUT_INTRO)}</p>
+		<p class="text-[17px] leading-[1.75] text-text-primary">{txt(ABOUT_INTRO)}</p>
 
 		<section class="flex flex-col gap-4">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('about.section.why')}</h2>
 			{#each ABOUT_STORY as paragraph (paragraph.en)}
-				<p class="text-[16px] leading-[1.7] text-text-primary/85">{txt(paragraph)}</p>
+				<p class="text-[16px] leading-[1.7] text-text-primary">{txt(paragraph)}</p>
 			{/each}
 		</section>
 
@@ -51,7 +51,7 @@
 				{#each ABOUT_PRINCIPLES as item (item.title.en)}
 					<div class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5">
 						<h3 class="font-heading text-[16px] font-bold text-text-primary">{txt(item.title)}</h3>
-						<p class="text-[15px] leading-[1.7] text-text-primary/85">{txt(item.body)}</p>
+						<p class="text-[15px] leading-[1.7] text-text-primary">{txt(item.body)}</p>
 					</div>
 				{/each}
 			</div>
@@ -59,10 +59,10 @@
 
 		<section class="flex flex-col gap-3">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('about.section.author')}</h2>
-			<p class="text-[16px] leading-[1.7] text-text-primary/85">
+			<p class="text-[16px] leading-[1.7] text-text-primary">
 				{t('about.author.desc', { name: txt(AUTHOR_NAME) })}
 			</p>
-			<p class="text-[16px] leading-[1.7] text-text-primary/85">
+			<p class="text-[16px] leading-[1.7] text-text-primary">
 				<a href="mailto:{AUTHOR_EMAIL}" class="font-semibold text-accent hover:underline">{AUTHOR_EMAIL}</a>
 				<span class="text-text-muted"> · </span>
 				<button onclick={() => feedbackStore.show()} class="font-semibold text-accent hover:underline">
