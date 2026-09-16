@@ -13,6 +13,17 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.12',
+			date: '2026-09-16',
+			title: { en: 'Space analysis', ru: 'Анализ пространства' },
+			changes: [
+				{ en: 'A «Space analysis» button on a space and on its boards: AI reads the recent cards from all retros of the space and shows what keeps going well, what keeps going badly and what the team keeps wanting to improve', ru: 'Кнопка «Анализ пространства» в пространстве и на его досках: AI читает последние карточки всех ретро пространства и показывает, что снова хорошо, что снова плохо и что команда снова хочет улучшить' },
+				{ en: 'The result is a regular board with a purple frame — walk through it with the team, vote and comment as usual', ru: 'Результат — обычная доска с фиолетовой рамкой: по ней можно пройтись с командой, голосовать и комментировать как обычно' },
+				{ en: 'The analysis is rerun only after a new board appears in the space, and no more than three times a day', ru: 'Анализ пересчитывается только после появления новой доски в пространстве и не чаще трёх раз в сутки' },
+				{ en: 'The space creator now has creator rights on every board in the space', ru: 'Создатель пространства теперь имеет права создателя на всех досках пространства' }
+			]
+		},
+		{
 			version: '1.11',
 			date: '2026-09-16',
 			title: { en: 'Rename anything', ru: 'Переименование' },

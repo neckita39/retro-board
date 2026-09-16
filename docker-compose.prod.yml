@@ -13,6 +13,8 @@ services:
       TG_CHAT_ID: ${TG_CHAT_ID:-}
       TG_API_BASE: ${TG_API_BASE:-https://api.telegram.org}
       TG_PROXY: ${TG_PROXY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_API_BASE: ${DEEPSEEK_API_BASE:-https://api.deepseek.com}
       STATSD_HOST: netdata
       STATSD_PORT: "8125"
     depends_on:
