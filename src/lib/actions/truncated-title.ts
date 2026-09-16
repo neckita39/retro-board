@@ -1,9 +1,15 @@
 // use:truncatedTitle={text} — подсказка с полным текстом только когда он
-// обрезан (truncate). Влезает целиком — title не ставим, чтобы не дублировать
-// видимое. Пересчёт при изменении ширины и после загрузки шрифтов: до неё
-// метрики другие.
-export function isOverflowing(el: { scrollWidth: number; clientWidth: number }): boolean {
-	return el.scrollWidth > el.clientWidth;
+// обрезан (truncate или line-clamp). Влезает целиком — title не ставим, чтобы
+// не дублировать видимое. Пересчёт при изменении ширины и после загрузки
+// шрифтов: до неё метрики другие.
+export function isOverflowing(el: {
+	scrollWidth: number;
+	clientWidth: number;
+	scrollHeight?: number;
+	clientHeight?: number;
+}): boolean {
+	if (el.scrollWidth > el.clientWidth) return true;
+	return (el.scrollHeight ?? 0) > (el.clientHeight ?? 0);
 }
 
 export function truncatedTitle(node: HTMLElement, text: string) {

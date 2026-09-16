@@ -9,4 +9,8 @@ describe('isOverflowing — подсказка только когда текс�
 		expect(isOverflowing({ scrollWidth: 280, clientWidth: 280 })).toBe(false);
 		expect(isOverflowing({ scrollWidth: 100, clientWidth: 280 })).toBe(false);
 	});
+	it('line-clamp: не влезает по высоте (третья строка) → подсказка', () => {
+		expect(isOverflowing({ scrollWidth: 280, clientWidth: 280, scrollHeight: 66, clientHeight: 44 })).toBe(true);
+		expect(isOverflowing({ scrollWidth: 280, clientWidth: 280, scrollHeight: 44, clientHeight: 44 })).toBe(false);
+	});
 });
