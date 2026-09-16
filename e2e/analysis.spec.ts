@@ -66,6 +66,9 @@ test('everyone in the space sees the loader tile, then the ready toast; nobody i
 		const tile = p.getByTestId('space-tile').filter({ has: p.getByText(/^Space analysis for/) });
 		await expect(tile).toHaveAttribute('data-format', 'analysis');
 		expect(new URL(p.url()).pathname).toBe(`/spaces/${space.slug}`);
+		// Подсказка с полным названием — только у обрезанного: длинное имя анализа да, «Sprint 2» нет
+		await expect(tile.locator('span[title]')).toHaveAttribute('title', /^Space analysis for \d{2}\.\d{2}\.\d{4}$/);
+		await expect(p.getByTestId('space-tile').filter({ hasText: 'Sprint 2' }).locator('span[title]')).toHaveCount(0);
 	}
 
 	// Переход только по кнопке «Открыть»

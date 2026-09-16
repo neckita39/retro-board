@@ -4,6 +4,7 @@
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
 	import AnalyzeButton from './AnalyzeButton.svelte';
+	import { truncatedTitle } from '$lib/actions/truncated-title.js';
 	import type { AnalysisState } from '$lib/analysis-state.js';
 
 	interface SpaceBoard {
@@ -103,7 +104,7 @@
 					aria-busy="true"
 					data-testid="analysis-pending"
 				>
-					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" title={analysis.title}>{analysis.title}</span>
+					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" use:truncatedTitle={analysis.title}>{analysis.title}</span>
 					<div class="mt-auto flex items-center justify-between gap-2 text-[13px] font-semibold text-text-secondary">
 						<span class="flex min-w-0 items-center gap-2">
 							<svg class="h-4 w-4 shrink-0 animate-spin text-ai-from" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
@@ -118,7 +119,7 @@
 					data-testid="analysis-failed"
 				>
 					<div class="flex items-start justify-between gap-2">
-						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" title={analysis.title}>{analysis.title}</span>
+						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" use:truncatedTitle={analysis.title}>{analysis.title}</span>
 						<span class="flex shrink-0 items-center gap-1.5">
 							<!-- Крестик: убирает упавшую попытку у всех в пространстве -->
 							<form method="POST" action="/spaces/{spaceSlug}?/dismissAnalysis" class="contents" use:enhance>
@@ -156,8 +157,8 @@
 				data-format={board.format}
 			>
 				<div class="flex items-start justify-between gap-2">
-					<!-- title: обрезанное название целиком видно по наведению -->
-					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" title={board.title}>{board.title}</span>
+					<!-- Обрезанное название целиком видно по наведению; влезает — подсказки нет -->
+					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" use:truncatedTitle={board.title}>{board.title}</span>
 					{#if isLive(board)}
 						<span class="shrink-0 rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
 					{/if}
