@@ -1,33 +1,32 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { isValidFormat, DEFAULT_FORMAT, ANALYSIS_FORMAT } from '$lib/formats.js';
+import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import { normalizeTitle } from '$lib/titles.js';
 import { db } from '$lib/server/db/index.js';
-import { spaces, boards, cards, votes } from '$lib/server/db/schema.js';
-import { eq, sql, desc, inArray } from 'drizzle-orm';
+import { spaces, boards, cards, votes, spaceAnalyses } from '$lib/server/db/schema.js';
+import { eq, sql, desc, inArray, and, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword, verifyPassword } from '$lib/server/password.js';
 import { metric } from '$lib/server/statsd.js';
-import { decrypt, encrypt } from '$lib/server/crypto.js';
+import { decrypt } from '$lib/server/crypto.js';
 import {
-	ANALYSIS_COLUMNS,
 	ANALYSIS_DAILY_LIMIT,
-	AnalysisFailure,
 	analysesInWindow,
-	analysisAuthor,
 	analysisTitle,
-	buildPrompt,
 	cacheState,
-	cardText,
 	collectCards,
 	isAnalysisBoard,
-	isEmptyAnalysis,
-	parseAnalysis,
+	latestReady,
+	limitRows,
+	livePending,
 	retryInHours,
-	runOnce,
+	rowToState,
+	statePayload,
 	type AnalysisLocale
 } from '$lib/server/analysis.js';
-import { chatCompletion, DeepSeekError } from '$lib/server/deepseek.js';
+import { emitSpace } from '$lib/server/bus.js';
+import { runAnalysisJob } from '$lib/server/analysis-job.js';
+import { canViewSpace } from '$lib/server/space-access.js';
 import type { PageServerLoad, Actions } from './$types.js';
 
 export const load: PageServerLoad = async ({ params, cookies, url }) => {
@@ -66,7 +65,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			boards: [],
 			showAdminBanner: false,
 			adminLink: null,
-			analysisEnabled: false
+			analysisEnabled: false,
+			analysis: null
 		};
 	}
 
@@ -89,6 +89,12 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		.groupBy(boards.id, boards.slug, boards.title, boards.format, boards.createdAt)
 		.orderBy(desc(boards.createdAt));
 
+	const analysisRows = await db
+		.select()
+		.from(spaceAnalyses)
+		.where(eq(spaceAnalyses.spaceId, space.id))
+		.orderBy(desc(spaceAnalyses.createdAt));
+
 	const adminLink = isCreator
 		? `${url.origin}/spaces/${params.slug}?admin=${space.creatorToken}`
 		: null;
@@ -107,6 +113,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		showAdminBanner,
 		adminLink,
 		analysisEnabled: !!env.DEEPSEEK_API_KEY,
+		analysis: statePayload(analysisRows, new Date()),
 		boards: spaceBoards.map(b => ({
 			...b,
 			createdAt: b.createdAt.toISOString(),
@@ -227,20 +234,14 @@ export const actions: Actions = {
 		throw redirect(303, `/${slug}?admin=${creatorToken}`);
 	},
 
-	// AI-анализ пространства. Доска-анализ — и результат, и запись кеша, и
-	// счётчик лимита: см. docs/superpowers/specs/2026-09-16-space-analysis-design.md
+	// AI-анализ пространства: только запускает фоновую задачу и сразу отвечает.
+	// О ходе дела всем в пространстве сообщает сокет (см. analysis-job.ts и bus.ts).
 	analyze: async ({ request, params, cookies }) => {
 		const space = await db.query.spaces.findFirst({
 			where: eq(spaces.slug, params.slug)
 		});
 		if (!space) throw error(404);
-
-		// Доступ как к самому пространству: пароль введён, пароля нет или это создатель
-		const creatorCookie = cookies.get(`retro_space_creator_${params.slug}`) ?? '';
-		const isCreator = !!space.creatorToken && creatorCookie === space.creatorToken;
-		if (space.passwordHash && !cookies.get(`retro_space_${params.slug}`) && !isCreator) {
-			throw error(403, 'Not authenticated');
-		}
+		if (!canViewSpace(space, cookies)) throw error(403, 'Not authenticated');
 
 		metric('retro.analysis.requested', 1);
 		const failWith = (status: number, kind: string, extra: Record<string, unknown> = {}) => {
@@ -253,23 +254,30 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const locale: AnalysisLocale = formData.get('locale') === 'ru' ? 'ru' : 'en';
+		const now = new Date();
 
-		const spaceBoards = await db
-			.select({ id: boards.id, slug: boards.slug, title: boards.title, format: boards.format, createdAt: boards.createdAt })
-			.from(boards)
-			.where(eq(boards.spaceId, space.id))
-			.orderBy(desc(boards.createdAt));
-		const regular = spaceBoards.filter((b) => !isAnalysisBoard(b));
-		const analyses = spaceBoards.filter(isAnalysisBoard);
+		const rows = await db
+			.select()
+			.from(spaceAnalyses)
+			.where(eq(spaceAnalyses.spaceId, space.id))
+			.orderBy(desc(spaceAnalyses.createdAt));
+		if (livePending(rows, now)) return failWith(409, 'running');
 
-		// Кеш: новых досок с последнего анализа не было — открываем его
-		if (cacheState(regular[0]?.createdAt ?? null, analyses[0]?.createdAt ?? null) === 'fresh') {
+		const regular = (
+			await db
+				.select({ id: boards.id, slug: boards.slug, title: boards.title, format: boards.format, createdAt: boards.createdAt })
+				.from(boards)
+				.where(eq(boards.spaceId, space.id))
+				.orderBy(desc(boards.createdAt))
+		).filter((b) => !isAnalysisBoard(b));
+
+		const ready = latestReady(rows);
+		if (ready && cacheState(regular[0]?.createdAt ?? null, ready.createdAt) === 'fresh') {
 			metric('retro.analysis.cached', 1);
-			throw redirect(303, `/${analyses[0].slug}`);
+			return { analysis: 'cached' as const, boardSlug: ready.boardSlug };
 		}
 
-		const now = new Date();
-		const window = analysesInWindow(analyses, now);
+		const window = analysesInWindow(limitRows(rows, now), now);
 		if (window.count >= ANALYSIS_DAILY_LIMIT && window.oldestAt) {
 			return failWith(429, 'limit', { retryInHours: retryInHours(window.oldestAt, now) });
 		}
@@ -285,7 +293,6 @@ export const actions: Actions = {
 		const spaceVotes = cardIds.length
 			? await db.select({ cardId: votes.cardId, type: votes.type }).from(votes).where(inArray(votes.cardId, cardIds))
 			: [];
-
 		const entries = collectCards(
 			regular,
 			spaceCards.map((c) => ({ ...c, content: decrypt(c.content) ?? '' })),
@@ -293,61 +300,35 @@ export const actions: Actions = {
 		);
 		if (entries.length === 0) return failWith(400, 'no_cards');
 
-		let slug: string;
-		try {
-			slug = await runOnce(space.id, async () => {
-				const started = Date.now();
-				const raw = await chatCompletion(buildPrompt(entries, locale), {
-					apiKey,
-					apiBase: env.DEEPSEEK_API_BASE || undefined
-				});
-				const result = parseAnalysis(raw);
-				if (!result) throw new AnalysisFailure('bad_response');
-				if (isEmptyAnalysis(result)) throw new AnalysisFailure('empty');
+		// Упавшие и брошенные попытки убираем: показывается только текущая.
+		// Живого pending нет (проверено выше), значит pending здесь — устаревшие.
+		await db
+			.delete(spaceAnalyses)
+			.where(and(eq(spaceAnalyses.spaceId, space.id), or(eq(spaceAnalyses.state, 'failed'), eq(spaceAnalyses.state, 'pending'))));
 
-				const boardSlug = nanoid(21);
-				const creatorToken = nanoid(32);
-				const author = encrypt(analysisAuthor(locale));
-				await db.transaction(async (tx) => {
-					const [created] = await tx
-						.insert(boards)
-						.values({ title: analysisTitle(now, locale), slug: boardSlug, creatorToken, spaceId: space.id, format: ANALYSIS_FORMAT })
-						.returning({ id: boards.id });
-					const rows = (['well', 'bad', 'improve'] as const).flatMap((key) =>
-						result[key].map((item) => ({
-							boardId: created.id,
-							columnType: ANALYSIS_COLUMNS[key],
-							content: encrypt(cardText(item, locale)) ?? '',
-							authorName: author
-						}))
-					);
-					if (rows.length) await tx.insert(cards).values(rows);
-				});
+		const boardSlug = nanoid(21);
+		const creatorToken = nanoid(32);
+		const [row] = await db
+			.insert(spaceAnalyses)
+			.values({ spaceId: space.id, state: 'pending', title: analysisTitle(now, locale), locale, boardSlug, creatorToken })
+			.returning();
 
-				// Cookie получает тот, чей запрос реально создал доску; кто ждал замок —
-				// просто редиректится на неё
-				cookies.set(`retro_creator_${boardSlug}`, creatorToken, {
-					path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
-				});
-				const ms = Date.now() - started;
-				metric('retro.analysis.created', 1);
-				metric('retro.analysis.duration_ms', ms, 'ms');
-				console.info(JSON.stringify({ event: 'analysis:created', space: params.slug, cards: entries.length, ms }));
-				return boardSlug;
-			});
-		} catch (err) {
-			if (err instanceof DeepSeekError) {
-				console.warn(JSON.stringify({ event: 'analysis:failed', space: params.slug, kind: err.kind, status: err.status ?? null }));
-				return failWith(502, err.kind === 'shape' ? 'bad_response' : err.kind);
-			}
-			if (err instanceof AnalysisFailure) {
-				console.warn(JSON.stringify({ event: 'analysis:failed', space: params.slug, kind: err.kind }));
-				return failWith(err.kind === 'empty' ? 422 : 502, err.kind);
-			}
-			console.error(JSON.stringify({ event: 'analysis:failed', space: params.slug, kind: 'unknown', message: (err as Error)?.message }));
-			return failWith(500, 'network');
-		}
+		// Нажавший — создатель будущей доски, cookie ставим сразу
+		cookies.set(`retro_creator_${boardSlug}`, creatorToken, {
+			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
+		});
+		metric('retro.analysis.started', 1);
+		emitSpace(params.slug, 'analysis:state', rowToState(row, now));
 
-		throw redirect(303, `/${slug}`);
+		void runAnalysisJob({
+			row,
+			spaceSlug: params.slug,
+			entries,
+			locale,
+			apiKey,
+			apiBase: env.DEEPSEEK_API_BASE || undefined
+		});
+
+		return { analysis: 'started' as const };
 	}
 };
