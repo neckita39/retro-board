@@ -2,6 +2,8 @@
 	import { t } from '$lib/i18n/index.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
+	import AnalyzeButton from './AnalyzeButton.svelte';
+	import type { AnalysisState } from '$lib/analysis-state.js';
 
 	interface SpaceBoard {
 		slug: string;
@@ -14,7 +16,20 @@
 		improveCount: number;
 	}
 
-	let { boards, onNewBoard }: { boards: SpaceBoard[]; onNewBoard: () => void } = $props();
+	let {
+		boards,
+		onNewBoard,
+		analysis = null,
+		spaceSlug
+	}: { boards: SpaceBoard[]; onNewBoard: () => void; analysis?: AnalysisState | null; spaceSlug: string } = $props();
+
+	// Заглушка держится и после ready, пока invalidateAll не принесёт доску в список
+	let showPending = $derived.by(() => {
+		const a = analysis;
+		if (!a) return false;
+		if (a.state === 'pending') return true;
+		return a.state === 'ready' && !boards.some((b) => b.slug === a.board.slug);
+	});
 
 	let search = $state('');
 	let sortOrder = $state<'newest' | 'oldest'>('newest');
@@ -80,6 +95,38 @@
 				</span>
 				<span class="text-sm font-bold">{t('space.boards.create')}</span>
 			</button>
+			{#if showPending && analysis && analysis.state !== 'idle'}
+				<div
+					class="tile-enter ai-frame flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card p-5 [--ai-frame-bg:var(--color-surface-card)]"
+					aria-busy="true"
+					data-testid="analysis-pending"
+				>
+					<div class="flex items-start justify-between gap-2">
+						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{analysis.title}</span>
+						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+					</div>
+					<div class="mt-auto flex items-center gap-2 text-[13px] font-semibold text-text-secondary">
+						<svg class="h-4 w-4 animate-spin text-ai-from" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
+						{t('space.analysis.tile.pending')}
+					</div>
+				</div>
+			{:else if analysis?.state === 'failed'}
+				<div
+					class="tile-enter ai-frame flex min-h-[150px] flex-col gap-3 rounded-2xl bg-surface-card p-5 opacity-90 [--ai-frame-bg:var(--color-surface-card)]"
+					data-testid="analysis-failed"
+				>
+					<div class="flex items-start justify-between gap-2">
+						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{analysis.title}</span>
+						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+					</div>
+					<p class="text-[13px] leading-snug text-bad">
+						{t('space.analysis.tile.failed')}: {t(`space.analysis.error.${analysis.error}`)}
+					</p>
+					<div class="mt-auto">
+						<AnalyzeButton {spaceSlug} variant="retry" />
+					</div>
+				</div>
+			{/if}
 		{/if}
 
 		{#each filtered as board, i (board.slug)}

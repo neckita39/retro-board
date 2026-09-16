@@ -16,9 +16,15 @@
 		boardStore.isCreator = data.isCreator;
 	});
 
+	// Уведомления об AI-анализе пространства приходят и сюда
+	$effect(() => {
+		socketStore.seedAnalysis(data.analysis);
+	});
+
 	onMount(() => {
 		socketStore.connect();
 		socketStore.joinBoard(data.board.slug, data.creatorToken);
+		if (data.space) socketStore.joinSpace(data.space.slug);
 	});
 
 	onDestroy(() => {

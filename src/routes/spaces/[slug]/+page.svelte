@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { afterNavigate, invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -8,6 +9,7 @@
 	import SpaceBoardGrid from '$lib/components/SpaceBoardGrid.svelte';
 	import NewBoardModal from '$lib/components/NewBoardModal.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
@@ -15,6 +17,27 @@
 	let { data, form } = $props();
 
 	boardStore.board = null;
+
+	// Комната пространства: статус AI-анализа для всех, кто здесь
+	onMount(() => {
+		socketStore.connect();
+		socketStore.joinSpace(data.space.slug);
+	});
+	onDestroy(() => socketStore.disconnect());
+
+	$effect(() => {
+		socketStore.seedAnalysis(data.analysis);
+	});
+
+	// Готовая доска должна появиться в списке со счётчиками — перечитываем данные
+	let refreshedFor = '';
+	$effect(() => {
+		const a = socketStore.analysis;
+		if (a?.state === 'ready' && refreshedFor !== a.id) {
+			refreshedFor = a.id;
+			if (!data.boards.some((b) => b.slug === a.board.slug)) invalidateAll();
+		}
+	});
 
 	// Reload boards on any navigation to this page (back button, link, etc.)
 	afterNavigate(({ from }) => {
@@ -308,7 +331,12 @@
 					</div>
 				{/if}
 
-				<SpaceBoardGrid boards={data.boards} onNewBoard={() => (creating = true)} />
+				<SpaceBoardGrid
+					boards={data.boards}
+					analysis={socketStore.analysis ?? data.analysis}
+					spaceSlug={data.space.slug}
+					onNewBoard={() => (creating = true)}
+				/>
 			</div>
 		</main>
 	{/if}
