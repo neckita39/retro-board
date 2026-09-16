@@ -13,6 +13,12 @@
 	// Mobile: columns become segment tabs, one column visible at a time
 	let active = $state(boardStore.columns[0].id);
 
+	// Формат доски известен только после setState — до этого колонки классические,
+	// и active указывал бы на несуществующую колонку: пустой экран на телефоне
+	$effect(() => {
+		if (!columns.some((c) => c.id === active)) active = columns[0].id;
+	});
+
 	// Четыре колонки в один ряд помещаются только на широких экранах
 	let gridCols = $derived(columns.length > 3 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3');
 

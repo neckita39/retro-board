@@ -122,3 +122,13 @@ test('a standalone board has no analysis button', async ({ page }) => {
 	await createBoard(page, 'Lonely board');
 	await expect(page.getByTestId('analyze-button')).toHaveCount(0);
 });
+
+test('on a phone the analysis board opens on its first column', async ({ page }) => {
+	// Наполняем на десктопе (композер и «New board» там другие), смотрим на телефоне
+	const space = await seedSpace(page, 'Mobile team');
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto(`/spaces/${space.slug}`);
+	await runAnalysis(page);
+	await expect(page.getByRole('button', { name: /^Good · 1$/ })).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.card-board', { hasText: 'Deploys keep going smoothly' })).toBeVisible();
+});
