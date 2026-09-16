@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import Board from '$lib/components/Board.svelte';
@@ -17,8 +17,11 @@
 	});
 
 	// Уведомления об AI-анализе пространства приходят и сюда
+	// untrack: seedAnalysis читает и пишет socketStore.analysis — без него
+	// эффект подписался бы на собственную запись и зациклился
 	$effect(() => {
-		socketStore.seedAnalysis(data.analysis);
+		const state = data.analysis;
+		untrack(() => socketStore.seedAnalysis(state));
 	});
 
 	onMount(() => {

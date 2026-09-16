@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { afterNavigate, invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -25,8 +25,11 @@
 	});
 	onDestroy(() => socketStore.disconnect());
 
+	// untrack: seedAnalysis читает и пишет socketStore.analysis — без него
+	// эффект подписался бы на собственную запись и зациклился
 	$effect(() => {
-		socketStore.seedAnalysis(data.analysis);
+		const state = data.analysis;
+		untrack(() => socketStore.seedAnalysis(state));
 	});
 
 	// Готовая доска должна появиться в списке со счётчиками — перечитываем данные

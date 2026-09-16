@@ -4,6 +4,8 @@ import { createServer } from 'http';
 
 const PORT = Number(process.env.MOCK_PORT || 4778);
 let mode = 'ok';
+// Задержка ответа — чтобы в e2e было видно состояние «идёт»
+let delayMs = 0;
 
 const ANSWER = {
 	well: [{ text: 'Deploys keep going smoothly', boards: 2 }],
@@ -27,11 +29,13 @@ createServer(async (req, res) => {
 	if (req.method === 'POST' && req.url === '/__mode') {
 		const body = JSON.parse((await readBody(req)) || '{}');
 		mode = body.mode === 'error' ? 'error' : 'ok';
-		res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ mode }));
+		delayMs = Number(body.delayMs) || 0;
+		res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ mode, delayMs }));
 		return;
 	}
 	if (req.method === 'POST' && req.url === '/chat/completions') {
 		await readBody(req);
+		if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
 		if (mode === 'error') {
 			res.writeHead(500, { 'content-type': 'application/json' }).end('{"error":"mock failure"}');
 			return;
