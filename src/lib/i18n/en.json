@@ -84,6 +84,7 @@
 	"card.delete.confirm": "Tap again to delete",
 	"card.placeholder": "What's on your mind?",
 	"card.cancel": "Cancel",
+	"toast.close": "Dismiss",
 	"card.add": "Add",
 	"card.addCard": "Add a card…",
 

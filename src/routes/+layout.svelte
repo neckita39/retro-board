@@ -6,6 +6,7 @@
 	import Lightbox from '$lib/components/Lightbox.svelte';
 	import FeedbackPanel from '$lib/components/FeedbackPanel.svelte';
 	import FeedbackFab from '$lib/components/FeedbackFab.svelte';
+	import Toasts from '$lib/components/Toasts.svelte';
 
 	let { children } = $props();
 
@@ -51,3 +52,4 @@
 <Lightbox />
 <FeedbackPanel />
 <FeedbackFab />
+<Toasts />
