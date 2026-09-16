@@ -45,9 +45,10 @@
 
 	const DAY = 24 * 60 * 60 * 1000;
 
-	// A board created within the last day is probably the retro happening right now
+	// A board created within the last day is probably the retro happening right now.
+	// Доска-анализ — не встреча, у неё «сейчас идёт» не бывает
 	function isLive(board: SpaceBoard): boolean {
-		return Date.now() - new Date(board.createdAt).getTime() < DAY;
+		return board.format !== ANALYSIS_FORMAT && Date.now() - new Date(board.createdAt).getTime() < DAY;
 	}
 
 	function relativeDate(iso: string): string {
@@ -102,13 +103,13 @@
 					aria-busy="true"
 					data-testid="analysis-pending"
 				>
-					<div class="flex items-start justify-between gap-2">
-						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{analysis.title}</span>
+					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" title={analysis.title}>{analysis.title}</span>
+					<div class="mt-auto flex items-center justify-between gap-2 text-[13px] font-semibold text-text-secondary">
+						<span class="flex min-w-0 items-center gap-2">
+							<svg class="h-4 w-4 shrink-0 animate-spin text-ai-from" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
+							{t('space.analysis.tile.pending')}
+						</span>
 						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
-					</div>
-					<div class="mt-auto flex items-center gap-2 text-[13px] font-semibold text-text-secondary">
-						<svg class="h-4 w-4 animate-spin text-ai-from" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
-						{t('space.analysis.tile.pending')}
 					</div>
 				</div>
 			{:else if analysis?.state === 'failed'}
@@ -117,9 +118,8 @@
 					data-testid="analysis-failed"
 				>
 					<div class="flex items-start justify-between gap-2">
-						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{analysis.title}</span>
+						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" title={analysis.title}>{analysis.title}</span>
 						<span class="flex shrink-0 items-center gap-1.5">
-							<span class="badge-sm badge-ai">{t('analysis.badge')}</span>
 							<!-- Крестик: убирает упавшую попытку у всех в пространстве -->
 							<form method="POST" action="/spaces/{spaceSlug}?/dismissAnalysis" class="contents" use:enhance>
 								<button
@@ -137,8 +137,9 @@
 					<p class="text-[13px] leading-snug text-bad">
 						{t('space.analysis.tile.failed')}: {t(`space.analysis.error.${analysis.error}`)}
 					</p>
-					<div class="mt-auto">
+					<div class="mt-auto flex items-center justify-between gap-2">
 						<AnalyzeButton {spaceSlug} variant="retry" />
+						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
 					</div>
 				</div>
 			{/if}
@@ -155,30 +156,36 @@
 				data-format={board.format}
 			>
 				<div class="flex items-start justify-between gap-2">
-					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{board.title}</span>
-					<span class="flex shrink-0 items-center gap-1.5">
-						{#if board.format === ANALYSIS_FORMAT}
-							<span class="badge-sm badge-ai">{t('analysis.badge')}</span>
-						{/if}
-						{#if isLive(board)}
-							<span class="rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
-						{/if}
-					</span>
+					<!-- title: обрезанное название целиком видно по наведению -->
+					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary" title={board.title}>{board.title}</span>
+					{#if isLive(board)}
+						<span class="shrink-0 rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
+					{/if}
 				</div>
 				<div class="mt-auto flex flex-col gap-1.5">
-					<!-- Mood bar: card share per column, in column colors -->
-					<div class="flex h-[5px] gap-1 overflow-hidden rounded-full">
-						{#if board.cardCount > 0}
-							{#if board.wellCount > 0}<div class="rounded-full bg-well" style="flex: {board.wellCount}"></div>{/if}
-							{#if board.badCount > 0}<div class="rounded-full bg-bad" style="flex: {board.badCount}"></div>{/if}
-							{#if board.improveCount > 0}<div class="rounded-full bg-improve" style="flex: {board.improveCount}"></div>{/if}
-						{:else}
-							<div class="flex-1 rounded-full bg-surface-hover"></div>
-						{/if}
-					</div>
-					<div class="flex items-center justify-between text-[13px] text-text-muted">
-						<span>{t('space.boards.cards', { n: board.cardCount })}</span>
-						<span>{relativeDate(board.createdAt)}</span>
+					{#if board.format === ANALYSIS_FORMAT}
+						<!-- У доски-анализа нет классических колонок — вместо полосы настроения её градиент -->
+						<div class="h-[5px] rounded-full bg-gradient-to-r from-ai-from to-ai-to"></div>
+					{:else}
+						<!-- Mood bar: card share per column, in column colors -->
+						<div class="flex h-[5px] gap-1 overflow-hidden rounded-full">
+							{#if board.cardCount > 0}
+								{#if board.wellCount > 0}<div class="rounded-full bg-well" style="flex: {board.wellCount}"></div>{/if}
+								{#if board.badCount > 0}<div class="rounded-full bg-bad" style="flex: {board.badCount}"></div>{/if}
+								{#if board.improveCount > 0}<div class="rounded-full bg-improve" style="flex: {board.improveCount}"></div>{/if}
+							{:else}
+								<div class="flex-1 rounded-full bg-surface-hover"></div>
+							{/if}
+						</div>
+					{/if}
+					<div class="flex items-center justify-between gap-2 text-[13px] text-text-muted">
+						<span class="flex min-w-0 items-center gap-2">
+							{#if board.format === ANALYSIS_FORMAT}
+								<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+							{/if}
+							<span class="truncate">{t('space.boards.cards', { n: board.cardCount })}</span>
+						</span>
+						<span class="shrink-0">{relativeDate(board.createdAt)}</span>
 					</div>
 				</div>
 			</a>

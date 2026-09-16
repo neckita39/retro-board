@@ -20,11 +20,13 @@
 	--color-accent-hover: #a94620;
 	--color-accent-bg: #f7e7de;
 
-	--color-ai-from: #7c3aed;
-	--color-ai-to: #c026d3;
+	/* AI-анализ: «сумерки» из цветов палитры — синий колонки improve уходит в
+	   пыльно-розовый. Той же приглушённости, что остальные тона, а не стоковый фиолетовый */
+	--color-ai-from: #5b72c0;
+	--color-ai-to: #b3607c;
 	/* Заливка бейджа и кнопки с белым текстом: в тёмной теме остаётся насыщенной */
-	--color-ai-fill-from: #7c3aed;
-	--color-ai-fill-to: #c026d3;
+	--color-ai-fill-from: #5b72c0;
+	--color-ai-fill-to: #b3607c;
 
 	/* Column colors: green/red/blue are reserved for column semantics */
 	--color-well: #4c8c6a;
@@ -68,10 +70,10 @@ html {
 	--color-accent-hover: #e28b63;
 	--color-accent-bg: #3c2a20;
 
-	--color-ai-from: #a78bfa;
-	--color-ai-to: #e879f9;
-	--color-ai-fill-from: #7c3aed;
-	--color-ai-fill-to: #c026d3;
+	--color-ai-from: #7c90d6;
+	--color-ai-to: #d08aa0;
+	--color-ai-fill-from: #5b72c0;
+	--color-ai-fill-to: #b3607c;
 
 	--color-well: #5fa37d;
 	--color-well-bg: #1e2b23;
