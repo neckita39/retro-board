@@ -3,7 +3,7 @@
 	import CardForm from './CardForm.svelte';
 	import Summary from './Summary.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
-	import { TONE } from '$lib/formats.js';
+	import { TONE, ANALYSIS_FORMAT } from '$lib/formats.js';
 	import { txt } from '$lib/content/localized.js';
 
 	let { creatorToken = null }: { creatorToken?: string | null } = $props();
@@ -15,6 +15,9 @@
 
 	// Четыре колонки в один ряд помещаются только на широких экранах
 	let gridCols = $derived(columns.length > 3 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3');
+
+	// Доска-анализ выделяется фиолетовой градиентной рамкой вокруг колонок
+	let isAnalysis = $derived(boardStore.board?.format === ANALYSIS_FORMAT);
 </script>
 
 <!-- Mobile segment tabs -->
@@ -32,7 +35,10 @@
 	{/each}
 </div>
 
-<div class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7 {gridCols}">
+<div
+	class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7 {gridCols} {isAnalysis ? 'ai-frame rounded-3xl md:mt-5' : ''}"
+	data-testid="board-columns"
+>
 	{#each columns as column (column.id)}
 		<div class="min-w-0 {column.id === active ? '' : 'hidden md:block'}">
 			<Column column={column.id} />

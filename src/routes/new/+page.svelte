@@ -106,6 +106,10 @@
 					</div>
 					<span class="font-heading text-xl font-bold text-text-primary">{t('new.space.title')}</span>
 					<p class="text-sm leading-relaxed text-text-secondary">{t('new.space.desc')}</p>
+					<span class="mt-auto inline-flex items-center gap-2 text-[13px] font-semibold text-text-secondary">
+						<span class="badge-sm badge-ai">AI</span>
+						{t('new.space.ai')}
+					</span>
 				</button>
 			</div>
 

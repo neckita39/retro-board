@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/index.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
+	import { ANALYSIS_FORMAT } from '$lib/formats.js';
 
 	interface SpaceBoard {
 		slug: string;
@@ -84,14 +85,23 @@
 		{#each filtered as board, i (board.slug)}
 			<a
 				href="/{board.slug}"
-				class="tile-enter flex min-h-[150px] flex-col gap-3.5 rounded-2xl border border-border bg-surface-card p-5 transition-all duration-300 hover:-translate-y-1 hover:border-border-strong active:scale-[0.98]"
+				class="tile-enter flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card p-5 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] {board.format === ANALYSIS_FORMAT
+					? 'ai-frame [--ai-frame-bg:var(--color-surface-card)]'
+					: 'border border-border hover:border-border-strong'}"
 				style="animation-delay: {Math.min(i, 8) * 70}ms"
+				data-testid="space-tile"
+				data-format={board.format}
 			>
 				<div class="flex items-start justify-between gap-2">
 					<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{board.title}</span>
-					{#if isLive(board)}
-						<span class="shrink-0 rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
-					{/if}
+					<span class="flex shrink-0 items-center gap-1.5">
+						{#if board.format === ANALYSIS_FORMAT}
+							<span class="badge-sm badge-ai">{t('analysis.badge')}</span>
+						{/if}
+						{#if isLive(board)}
+							<span class="rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
+						{/if}
+					</span>
 				</div>
 				<div class="mt-auto flex flex-col gap-1.5">
 					<!-- Mood bar: card share per column, in column colors -->
