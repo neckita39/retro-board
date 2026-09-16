@@ -346,6 +346,7 @@
 					boards={data.boards}
 					analysis={socketStore.analysis ?? data.analysis}
 					spaceSlug={data.space.slug}
+					animate={data.animateTiles}
 					onNewBoard={() => (creating = true)}
 				/>
 			</div>

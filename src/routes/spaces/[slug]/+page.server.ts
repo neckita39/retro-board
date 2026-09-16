@@ -68,7 +68,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			showAdminBanner: false,
 			adminLink: null,
 			analysisEnabled: false,
-			analysis: null
+			analysis: null,
+			animateTiles: false
 		};
 	}
 
@@ -97,6 +98,12 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		.where(eq(spaceAnalyses.spaceId, space.id))
 		.orderBy(desc(spaceAnalyses.createdAt));
 
+	// Плитки «влетают» только при первом показе списка за сессию браузера: при
+	// каждом следующем заходе или перезагрузке анимация уже раздражает.
+	// Решаем на сервере, чтобы HTML сразу пришёл без анимации и ничего не дёргалось.
+	const animateTiles = !cookies.get('retro_tiles_seen');
+	if (animateTiles) cookies.set('retro_tiles_seen', '1', { path: '/', httpOnly: true, sameSite: 'lax' });
+
 	const adminLink = isCreator
 		? `${url.origin}/spaces/${params.slug}?admin=${space.creatorToken}`
 		: null;
@@ -116,6 +123,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		adminLink,
 		analysisEnabled: !!env.DEEPSEEK_API_KEY,
 		analysis: statePayload(analysisRows, new Date()),
+		animateTiles,
 		boards: spaceBoards.map(b => ({
 			...b,
 			createdAt: b.createdAt.toISOString(),

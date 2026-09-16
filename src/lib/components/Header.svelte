@@ -183,17 +183,6 @@
 					{@render renameField('input input-sm h-8 min-w-0 flex-1 text-sm font-semibold')}
 				{:else}
 					<span class="min-w-0 truncate text-sm font-semibold text-text-primary" use:truncatedTitle={boardStore.board?.title ?? ''}>{boardStore.board?.title}</span>
-					{#if boardStore.isCreator}
-						<!-- Карандаш как на странице пространства: пункт в меню «⋯» находят не все -->
-						<button
-							onclick={startRename}
-							class="btn-icon btn-icon-sm shrink-0 self-center text-text-muted hover:text-text-primary"
-							title={t('board.rename')}
-							aria-label={t('board.rename')}
-						>
-							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-						</button>
-					{/if}
 				{/if}
 				{#if boardStore.board?.format === ANALYSIS_FORMAT}
 					<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>

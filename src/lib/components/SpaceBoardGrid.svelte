@@ -22,8 +22,16 @@
 		boards,
 		onNewBoard,
 		analysis = null,
-		spaceSlug
-	}: { boards: SpaceBoard[]; onNewBoard: () => void; analysis?: AnalysisState | null; spaceSlug: string } = $props();
+		spaceSlug,
+		animate = true
+	}: {
+		boards: SpaceBoard[];
+		onNewBoard: () => void;
+		analysis?: AnalysisState | null;
+		spaceSlug: string;
+		/** Анимация появления плиток — только при первом показе списка за сессию */
+		animate?: boolean;
+	} = $props();
 
 	// Заглушка держится и после ready, пока invalidateAll не принесёт доску в список
 	let showPending = $derived.by(() => {
@@ -91,7 +99,7 @@
 		{#if !search.trim()}
 			<button
 				onclick={onNewBoard}
-				class="tile-enter flex min-h-[150px] flex-col items-center justify-center gap-2.5 rounded-2xl border-[1.5px] border-dashed border-border-strong text-accent transition-all duration-300 hover:-translate-y-0.5 hover:border-accent"
+				class="{animate ? 'tile-enter' : ''} flex min-h-[150px] flex-col items-center justify-center gap-2.5 rounded-2xl border-[1.5px] border-dashed border-border-strong text-accent transition-all duration-300 hover:-translate-y-0.5 hover:border-accent"
 			>
 				<span class="flex h-10 w-10 items-center justify-center rounded-full bg-accent-bg">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -149,10 +157,10 @@
 		{#each filtered as board, i (board.slug)}
 			<a
 				href="/{board.slug}"
-				class="tile-enter flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card p-5 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] {board.format === ANALYSIS_FORMAT
+				class="{animate ? 'tile-enter' : ''} flex min-h-[150px] flex-col gap-3.5 rounded-2xl bg-surface-card p-5 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] {board.format === ANALYSIS_FORMAT
 					? 'ai-frame [--ai-frame-bg:var(--color-surface-card)]'
 					: 'border border-border hover:border-border-strong'}"
-				style="animation-delay: {Math.min(i, 8) * 70}ms"
+				style={animate ? `animation-delay: ${Math.min(i, 8) * 70}ms` : undefined}
 				data-testid="space-tile"
 				data-format={board.format}
 			>

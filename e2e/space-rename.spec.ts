@@ -46,3 +46,18 @@ test('a visitor has no rename button in the space', async ({ browser }) => {
 	await ctxA.close();
 	await ctxB.close();
 });
+
+test('board tiles animate only on the first visit of the session', async ({ page }) => {
+	const { slug } = await createSpace(page, 'Calm team');
+	// createSpace уже открыл страницу пространства один раз — это и был первый показ
+	await page.reload();
+	await expect(page.getByRole('heading', { level: 1, name: 'Calm team' })).toBeVisible();
+	await expect(page.locator('.tile-enter')).toHaveCount(0);
+
+	const fresh = await page.context().browser()!.newContext();
+	const first = await fresh.newPage();
+	await first.goto(`/spaces/${slug}`);
+	await expect(first.getByRole('heading', { level: 1, name: 'Calm team' })).toBeVisible();
+	await expect(first.locator('.tile-enter').first()).toBeAttached();
+	await fresh.close();
+});
