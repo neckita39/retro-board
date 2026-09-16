@@ -7,22 +7,21 @@ function isSupported(val: string): val is SupportedLocale {
 	return (SUPPORTED_LOCALES as readonly string[]).includes(val);
 }
 
+// ru по умолчанию: домен .ru, аудитория русская, и именно эту версию сервер
+// отдаёт поисковикам. Язык браузера намеренно не учитывается: рендерер Googlebot
+// живёт с en-US, и автопереключение заставляло Google индексировать английские
+// title/description у русских страниц. Английский включается кнопкой EN и
+// запоминается в localStorage.
+export function resolveInitialLocale(saved: string | null): SupportedLocale {
+	return saved && isSupported(saved) ? saved : 'ru';
+}
+
 class LocaleStore {
-	// ru по умолчанию: домен .ru, аудитория русская, и именно эту версию
-	// сервер отдаёт поисковикам. Англоязычные получат свой язык при загрузке.
 	locale = $state<SupportedLocale>('ru');
 
 	constructor() {
 		if (browser) {
-			const saved = localStorage.getItem('retro-locale');
-			if (saved && isSupported(saved)) {
-				this.locale = saved;
-			} else {
-				const lang = navigator.language.split('-')[0];
-				if (isSupported(lang)) {
-					this.locale = lang;
-				}
-			}
+			this.locale = resolveInitialLocale(localStorage.getItem('retro-locale'));
 		}
 	}
 
