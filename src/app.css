@@ -20,6 +20,9 @@
 	--color-accent-hover: #a94620;
 	--color-accent-bg: #f7e7de;
 
+	--color-ai-from: #7c3aed;
+	--color-ai-to: #c026d3;
+
 	/* Column colors: green/red/blue are reserved for column semantics */
 	--color-well: #4c8c6a;
 	--color-well-bg: #edf4ef;
@@ -61,6 +64,9 @@ html {
 	--color-accent: #d97a50;
 	--color-accent-hover: #e28b63;
 	--color-accent-bg: #3c2a20;
+
+	--color-ai-from: #a78bfa;
+	--color-ai-to: #e879f9;
 
 	--color-well: #5fa37d;
 	--color-well-bg: #1e2b23;
@@ -183,6 +189,19 @@ html {
 	.badge-success  { @apply bg-well-bg text-well-strong; }
 	.badge-version  { @apply rounded-[10px] bg-text-primary px-3 py-1.5 text-[13px] font-extrabold text-surface; }
 	.badge-version-outline { @apply rounded-[10px] border border-border bg-surface-card px-3 py-1.5 text-[13px] font-extrabold text-text-secondary; }
+
+	/* ---------- AI-АНАЛИЗ ---------- */
+
+	.badge-ai {
+		background: linear-gradient(135deg, var(--color-ai-from), var(--color-ai-to));
+		color: #fff;
+	}
+	.btn-ai {
+		@apply font-bold text-white active:scale-[0.97];
+		background: linear-gradient(135deg, var(--color-ai-from), var(--color-ai-to));
+	}
+	.btn-ai:hover { filter: brightness(1.08); }
+	.btn-ai:disabled { opacity: 0.7; cursor: progress; }
 
 
 	/* ---------- ERRORS ---------- */
@@ -333,4 +352,13 @@ button, a, [role="button"], input[type="submit"] {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 	}
+}
+
+/* Градиентная обводка доски-анализа: фон в padding-box, градиент в border-box.
+   --ai-frame-bg задаёт цвет внутри рамки (у плитки — surface-card). */
+@utility ai-frame {
+	border: 2px solid transparent;
+	background:
+		linear-gradient(var(--ai-frame-bg, var(--color-surface)), var(--ai-frame-bg, var(--color-surface))) padding-box,
+		linear-gradient(135deg, var(--color-ai-from), var(--color-ai-to)) border-box;
 }

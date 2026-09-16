@@ -2,12 +2,14 @@
 	import ThemeToggle from './ThemeToggle.svelte';
 	import LocaleToggle from './LocaleToggle.svelte';
 	import Timer from './Timer.svelte';
+	import AnalyzeButton from './AnalyzeButton.svelte';
 	import { page } from '$app/state';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
+	import { ANALYSIS_FORMAT } from '$lib/formats.js';
 	import { browser } from '$app/environment';
 
 	let {
@@ -19,7 +21,8 @@
 		spaceSlug = null,
 		locked = false,
 		creatorToken = null,
-		onNewBoard = null
+		onNewBoard = null,
+		analysis = null
 	}: {
 		showOnline?: boolean;
 		showCreate?: boolean;
@@ -30,6 +33,8 @@
 		locked?: boolean;
 		creatorToken?: string | null;
 		onNewBoard?: (() => void) | null;
+		/** Пространство, для которого показать кнопку «Анализ пространства» */
+		analysis?: { spaceSlug: string } | null;
 	} = $props();
 
 	let deleteConfirming = $state(false);
@@ -178,6 +183,9 @@
 				{:else}
 					<span class="min-w-0 truncate text-sm font-semibold text-text-primary">{boardStore.board?.title}</span>
 				{/if}
+				{#if boardStore.board?.format === ANALYSIS_FORMAT}
+					<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+				{/if}
 			</div>
 			<!-- Mobile: board title + online -->
 			<div class="flex min-w-0 flex-col md:hidden">
@@ -186,7 +194,10 @@
 				{:else}
 					<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[19px] font-extrabold text-text-primary">{boardStore.board?.title}</a>
 				{/if}
-				<span class="truncate text-[13px] text-text-muted">{spaceName ?? t('header.brand')} · {t('user.online', { n: socketStore.usersCount })}</span>
+				<span class="truncate text-[13px] text-text-muted">
+					{#if boardStore.board?.format === ANALYSIS_FORMAT}<span class="badge-sm badge-ai mr-1 align-middle">{t('analysis.badge')}</span>{/if}
+					{spaceName ?? t('header.brand')} · {t('user.online', { n: socketStore.usersCount })}
+				</span>
 			</div>
 		{:else}
 			<div class="flex min-w-0 items-center gap-7">
@@ -284,6 +295,10 @@
 						{/if}
 					{/if}
 				</div>
+
+				{#if analysis}
+					<AnalyzeButton spaceSlug={analysis.spaceSlug} compact />
+				{/if}
 
 				<!-- Share: primary visible action -->
 				<button onclick={share} class="btn btn-dark btn-md hidden md:inline-flex">
@@ -415,6 +430,9 @@
 				<LocaleToggle />
 				<ThemeToggle />
 
+				{#if analysis}
+					<AnalyzeButton spaceSlug={analysis.spaceSlug} compact />
+				{/if}
 				{#if onNewBoard}
 					<button onclick={onNewBoard} class="btn btn-primary btn-md">
 						<svg class="h-[15px] w-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

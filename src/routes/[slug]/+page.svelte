@@ -37,6 +37,7 @@
 		spaceName={data.space?.name}
 		spaceSlug={data.space?.slug}
 		creatorToken={data.creatorToken}
+		analysis={data.space && data.analysisEnabled ? { spaceSlug: data.space.slug } : null}
 	/>
 	{#if data.showAdminBanner && data.adminLink}
 		<AdminBanner adminLink={data.adminLink} />

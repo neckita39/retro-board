@@ -129,6 +129,7 @@
 		spaceSlug={data.space.slug}
 		locked={data.hasPassword}
 		onNewBoard={data.authenticated ? () => (creating = true) : null}
+		analysis={data.authenticated && data.analysisEnabled ? { spaceSlug: data.space.slug } : null}
 	/>
 
 	{#if data.showAdminBanner && data.adminLink}
