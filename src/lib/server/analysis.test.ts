@@ -7,8 +7,14 @@ import {
 	cacheState,
 	analysesInWindow,
 	retryInHours,
-	runOnce,
 	ANALYSIS_DAILY_LIMIT,
+	effectiveRow,
+	livePending,
+	latestReady,
+	limitRows,
+	statePayload,
+	PENDING_STALE_MS,
+	type AnalysisRow,
 	ANALYSIS_WINDOW_MS,
 	buildPrompt,
 	parseAnalysis,
@@ -144,31 +150,56 @@ describe('analysesInWindow / retryInHours — 3 в сутки на простр�
 	});
 });
 
-describe('runOnce — параллельные клики схлопываются', () => {
-	it('второй вызов с тем же ключом получает результат первого, fn запускается один раз', async () => {
-		let calls = 0;
-		let release!: (v: string) => void;
-		const fn = () => {
-			calls++;
-			return new Promise<string>((res) => (release = res));
-		};
-		const p1 = runOnce('space-1', fn);
-		const p2 = runOnce('space-1', fn);
-		release('slug-1');
-		expect(await p1).toBe('slug-1');
-		expect(await p2).toBe('slug-1');
-		expect(calls).toBe(1);
+describe('состояния анализа', () => {
+	const now = d('2026-09-16T12:00:00Z');
+	const row = (id: string, state: 'pending' | 'ready' | 'failed', createdAt: string, extra: Partial<AnalysisRow> = {}): AnalysisRow => ({
+		id, state, error: null, title: `Analysis ${id}`, boardSlug: `slug-${id}`, boardId: state === 'ready' ? `board-${id}` : null, createdAt: d(createdAt), ...extra
 	});
-	it('после завершения ключ свободен, ошибка тоже освобождает', async () => {
-		await expect(runOnce('space-2', () => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
-		expect(await runOnce('space-2', () => Promise.resolve('ok'))).toBe('ok');
+
+	it('pending моложе 5 минут живой, старше — failed/timeout', () => {
+		const fresh = row('p1', 'pending', '2026-09-16T11:58:00Z');
+		const stale = row('p2', 'pending', '2026-09-16T11:50:00Z');
+		expect(livePending([fresh], now)?.id).toBe('p1');
+		expect(livePending([stale], now)).toBeNull();
+		expect(effectiveRow(stale, now)).toMatchObject({ state: 'failed', error: 'timeout' });
+		expect(effectiveRow(fresh, now).state).toBe('pending');
+		expect(PENDING_STALE_MS).toBe(300_000);
 	});
-	it('разные ключи независимы', async () => {
-		const [a, b] = await Promise.all([
-			runOnce('x', () => Promise.resolve('a')),
-			runOnce('y', () => Promise.resolve('b'))
-		]);
-		expect([a, b]).toEqual(['a', 'b']);
+
+	it('latestReady — самая новая ready с доской; без доски не считается', () => {
+		const rows = [
+			row('r1', 'ready', '2026-09-10T10:00:00Z'),
+			row('r2', 'ready', '2026-09-12T10:00:00Z', { boardId: null }),
+			row('f1', 'failed', '2026-09-13T10:00:00Z')
+		];
+		expect(latestReady(rows)?.id).toBe('r1');
+		expect(latestReady([])).toBeNull();
+	});
+
+	it('limitRows — ready и живой pending, без failed и устаревших', () => {
+		const rows = [
+			row('r1', 'ready', '2026-09-16T09:00:00Z'),
+			row('p1', 'pending', '2026-09-16T11:59:00Z'),
+			row('p2', 'pending', '2026-09-16T11:00:00Z'),
+			row('f1', 'failed', '2026-09-16T10:00:00Z')
+		];
+		expect(limitRows(rows, now).map((r) => r.id).sort()).toEqual(['p1', 'r1']);
+	});
+
+	it('statePayload — живой pending важнее всего, иначе самая новая запись', () => {
+		expect(statePayload([], now)).toEqual({ state: 'idle' });
+		const p = row('p1', 'pending', '2026-09-16T11:59:00Z');
+		const r = row('r1', 'ready', '2026-09-16T11:00:00Z');
+		expect(statePayload([r, p], now)).toEqual({ state: 'pending', id: 'p1', title: 'Analysis p1', createdAt: '2026-09-16T11:59:00.000Z' });
+		expect(statePayload([r], now)).toEqual({
+			state: 'ready', id: 'r1', title: 'Analysis r1', createdAt: '2026-09-16T11:00:00.000Z', board: { slug: 'slug-r1', title: 'Analysis r1' }
+		});
+		const f = row('f1', 'failed', '2026-09-16T11:30:00Z', { error: 'http' });
+		expect(statePayload([r, f], now)).toEqual({ state: 'failed', id: 'f1', title: 'Analysis f1', createdAt: '2026-09-16T11:30:00.000Z', error: 'http' });
+		const staleP = row('p2', 'pending', '2026-09-16T11:40:00Z');
+		expect(statePayload([r, staleP], now)).toMatchObject({ state: 'failed', id: 'p2', error: 'timeout' });
+		const gone = row('r2', 'ready', '2026-09-16T11:45:00Z', { boardId: null });
+		expect(statePayload([gone], now)).toEqual({ state: 'idle' });
 	});
 });
 

@@ -2,6 +2,7 @@
 // актуален ли кеш, не исчерпан ли лимит, как разобрать ответ и во что его
 // превратить. Всё, что ходит наружу, живёт в deepseek.ts и в action.
 import { findBoardFormat, ANALYSIS_FORMAT, type Tone } from '$lib/formats.js';
+import type { AnalysisState } from '$lib/analysis-state.js';
 
 export interface SourceBoard {
 	id: string;
@@ -267,4 +268,61 @@ function ruBoards(n: number): string {
 export function cardText(item: AnalysisItem, locale: AnalysisLocale): string {
 	if (locale === 'ru') return `${item.text} (в ${item.boards} ${ruBoards(item.boards)})`;
 	return `${item.text} (in ${item.boards} ${item.boards === 1 ? 'board' : 'boards'})`;
+}
+
+// --- Состояние анализа: строки space_analyses и что из них следует ---
+
+export interface AnalysisRow {
+	id: string;
+	state: 'pending' | 'ready' | 'failed';
+	error: string | null;
+	title: string;
+	boardSlug: string;
+	boardId: string | null;
+	createdAt: Date;
+}
+
+/** pending старше этого — сервер перезапустился посреди работы, задача потеряна */
+export const PENDING_STALE_MS = 5 * 60_000;
+
+export function effectiveRow(row: AnalysisRow, now: Date): AnalysisRow {
+	if (row.state === 'pending' && now.getTime() - row.createdAt.getTime() > PENDING_STALE_MS) {
+		return { ...row, state: 'failed', error: 'timeout' };
+	}
+	return row;
+}
+
+export function livePending(rows: AnalysisRow[], now: Date): AnalysisRow | null {
+	return rows.map((r) => effectiveRow(r, now)).find((r) => r.state === 'pending') ?? null;
+}
+
+/** Самая новая ready-запись, у которой доска ещё существует */
+export function latestReady(rows: AnalysisRow[]): AnalysisRow | null {
+	return (
+		[...rows]
+			.filter((r) => r.state === 'ready' && r.boardId)
+			.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0] ?? null
+	);
+}
+
+/** Что считается в лимит «3 в сутки»: успешные и идущие; упавшие — нет */
+export function limitRows(rows: AnalysisRow[], now: Date): AnalysisRow[] {
+	return rows.map((r) => effectiveRow(r, now)).filter((r) => r.state === 'ready' || r.state === 'pending');
+}
+
+export function rowToState(row: AnalysisRow, now: Date): AnalysisState {
+	const r = effectiveRow(row, now);
+	const base = { id: r.id, title: r.title, createdAt: r.createdAt.toISOString() };
+	if (r.state === 'pending') return { state: 'pending', ...base };
+	if (r.state === 'failed') return { state: 'failed', ...base, error: r.error ?? 'network' };
+	if (!r.boardId) return { state: 'idle' };
+	return { state: 'ready', ...base, board: { slug: r.boardSlug, title: r.title } };
+}
+
+/** Живой pending важнее всего; иначе говорит самая новая запись */
+export function statePayload(rows: AnalysisRow[], now: Date): AnalysisState {
+	const pending = livePending(rows, now);
+	if (pending) return rowToState(pending, now);
+	const newest = [...rows].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+	return newest ? rowToState(newest, now) : { state: 'idle' };
 }

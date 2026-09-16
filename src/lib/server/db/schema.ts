@@ -30,6 +30,27 @@ export const boards = pgTable('boards', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export type AnalysisRowState = 'pending' | 'ready' | 'failed';
+
+// Ход AI-анализа пространства: pending → ready (доска создана) | failed.
+// Доска-анализ появляется только при успехе, поэтому состояние живёт отдельно.
+export const spaceAnalyses = pgTable('space_analyses', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	spaceId: uuid('space_id')
+		.notNull()
+		.references(() => spaces.id, { onDelete: 'cascade' }),
+	state: text('state').$type<AnalysisRowState>().notNull().default('pending'),
+	error: text('error'),
+	title: text('title').notNull(),
+	locale: text('locale').notNull().default('en'),
+	// slug и токен будущей доски генерируются при старте: нажавший сразу получает cookie
+	boardSlug: text('board_slug').notNull(),
+	creatorToken: text('creator_token').notNull(),
+	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+	finishedAt: timestamp('finished_at', { withTimezone: true })
+});
+
 export const images = pgTable('images', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	data: bytea('data').notNull(),
