@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
 	BOARD_FORMATS,
+	VISIBLE_FORMATS,
+	ANALYSIS_FORMAT,
 	DEFAULT_FORMAT,
 	findBoardFormat,
 	isValidFormat,
@@ -50,6 +52,21 @@ describe('реестр форматов', () => {
 		expect(well.title).toEqual({ en: 'Went Well', ru: 'Прошло хорошо' });
 		expect(bad.title).toEqual({ en: "Didn't Go Well", ru: 'Не получилось' });
 		expect(improve.title).toEqual({ en: 'To Improve', ru: 'Улучшить' });
+	});
+
+	it('формат analysis скрыт: пикеры его не видят, форма не принимает, доска рендерится', () => {
+		expect(ANALYSIS_FORMAT).toBe('analysis');
+		expect(isValidFormat('analysis')).toBe(false);
+		expect(VISIBLE_FORMATS.some((f) => f.id === 'analysis')).toBe(false);
+		expect(VISIBLE_FORMATS.length).toBe(BOARD_FORMATS.length - 1);
+		expect(findBoardFormat('analysis').id).toBe('analysis');
+		expect(findBoardFormat('analysis').columns.map((c) => c.id)).toEqual([
+			'again_well',
+			'again_bad',
+			'again_improve'
+		]);
+		expect(isValidColumn('analysis', 'again_bad')).toBe(true);
+		expect(isValidColumn('analysis', 'went_well')).toBe(false);
 	});
 
 	it('у каждого тона есть полный набор классов', () => {

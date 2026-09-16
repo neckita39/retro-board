@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BOARD_FORMATS, TONE } from '$lib/formats.js';
+	import { VISIBLE_FORMATS, TONE } from '$lib/formats.js';
 	import { FORMATS } from '$lib/content/formats.js';
 	import { txt } from '$lib/content/localized.js';
 	import { t } from '$lib/i18n/index.js';
@@ -21,7 +21,7 @@
 <fieldset class="flex flex-col gap-2">
 	<legend class="mb-2 text-sm font-semibold text-text-primary">{t('new.format.title')}</legend>
 	<div class="grid gap-2 {compact ? '' : 'sm:grid-cols-2'}">
-		{#each BOARD_FORMATS as format (format.id)}
+		{#each VISIBLE_FORMATS as format (format.id)}
 			{@const m = meta(format.id)}
 			<label
 				class="relative flex cursor-pointer flex-col gap-2 rounded-2xl bg-surface-card p-4 transition-all {value === format.id

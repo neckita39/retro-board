@@ -17,7 +17,7 @@ export const DEFAULT_FORMAT = 'classic';
  * @typedef {{ en: string, ru: string }} Localized
  * @typedef {'well' | 'bad' | 'improve' | 'accent'} Tone
  * @typedef {{ id: string, tone: Tone, title: Localized, short: Localized }} BoardColumn
- * @typedef {{ id: string, columns: BoardColumn[] }} BoardFormat
+ * @typedef {{ id: string, hidden?: boolean, columns: BoardColumn[] }} BoardFormat
  */
 
 /** @type {BoardFormat[]} */
@@ -63,8 +63,23 @@ export const BOARD_FORMATS = [
 			{ id: 'rocks', tone: 'improve', title: { en: 'Rocks', ru: 'Рифы' }, short: { en: 'Rocks', ru: 'Рифы' } },
 			{ id: 'island', tone: 'accent', title: { en: 'Island', ru: 'Остров' }, short: { en: 'Island', ru: 'Остров' } }
 		]
+	},
+	{
+		// Доска-анализ пространства: создаётся сервером, в пикерах не показывается
+		id: 'analysis',
+		hidden: true,
+		columns: [
+			{ id: 'again_well', tone: 'well', title: { en: 'Still good', ru: 'Снова хорошо' }, short: { en: 'Good', ru: 'Хорошо' } },
+			{ id: 'again_bad', tone: 'bad', title: { en: 'Still bad', ru: 'Снова плохо' }, short: { en: 'Bad', ru: 'Плохо' } },
+			{ id: 'again_improve', tone: 'improve', title: { en: 'Still to improve', ru: 'Снова стоит улучшить' }, short: { en: 'Improve', ru: 'Улучшить' } }
+		]
 	}
 ];
+
+export const ANALYSIS_FORMAT = 'analysis';
+
+/** Форматы, которые можно выбрать руками. Скрытые (analysis) создаёт только сервер. */
+export const VISIBLE_FORMATS = BOARD_FORMATS.filter((f) => !f.hidden);
 
 /**
  * Неизвестный или пустой id — classic: так старые доски и любой мусор
@@ -76,9 +91,9 @@ export function findBoardFormat(id) {
 	return BOARD_FORMATS.find((f) => f.id === id) ?? BOARD_FORMATS[0];
 }
 
-/** @param {unknown} id */
+/** Принимает только видимые форматы: скрытые нельзя создать через форму. @param {unknown} id */
 export function isValidFormat(id) {
-	return typeof id === 'string' && BOARD_FORMATS.some((f) => f.id === id);
+	return typeof id === 'string' && VISIBLE_FORMATS.some((f) => f.id === id);
 }
 
 /**

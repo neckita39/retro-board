@@ -3,6 +3,8 @@
 import type { Localized } from './content/localized.js';
 import {
 	BOARD_FORMATS as RAW_FORMATS,
+	VISIBLE_FORMATS as RAW_VISIBLE,
+	ANALYSIS_FORMAT,
 	DEFAULT_FORMAT,
 	findBoardFormat as rawFind,
 	isValidFormat,
@@ -20,11 +22,14 @@ export interface BoardColumn {
 
 export interface BoardFormat {
 	id: string;
+	/** Скрытый формат (analysis): не в пикерах, isValidFormat его не принимает */
+	hidden?: boolean;
 	columns: BoardColumn[];
 }
 
 export const BOARD_FORMATS = RAW_FORMATS as BoardFormat[];
-export { DEFAULT_FORMAT, isValidFormat, isValidColumn };
+export const VISIBLE_FORMATS = RAW_VISIBLE as BoardFormat[];
+export { DEFAULT_FORMAT, ANALYSIS_FORMAT, isValidFormat, isValidColumn };
 
 export function findBoardFormat(id: string | null | undefined): BoardFormat {
 	return rawFind(id) as BoardFormat;
