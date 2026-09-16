@@ -25,8 +25,41 @@
 			path: '/api/v1/boards/{boardId}/export.json',
 			titleKey: 'apiDocs.json.title',
 			descKey: 'apiDocs.json.desc'
+		},
+		{
+			id: 'space-boards-md',
+			method: 'GET',
+			path: '/api/v1/spaces/{spaceId}/boards.md',
+			titleKey: 'apiDocs.spaceBoards.md.title',
+			descKey: 'apiDocs.spaceBoards.md.desc'
+		},
+		{
+			id: 'space-boards-json',
+			method: 'GET',
+			path: '/api/v1/spaces/{spaceId}/boards.json',
+			titleKey: 'apiDocs.spaceBoards.json.title',
+			descKey: 'apiDocs.spaceBoards.json.desc'
+		},
+		{
+			id: 'space-analyses-md',
+			method: 'GET',
+			path: '/api/v1/spaces/{spaceId}/analyses.md',
+			titleKey: 'apiDocs.spaceAnalyses.md.title',
+			descKey: 'apiDocs.spaceAnalyses.md.desc'
+		},
+		{
+			id: 'space-analyses-json',
+			method: 'GET',
+			path: '/api/v1/spaces/{spaceId}/analyses.json',
+			titleKey: 'apiDocs.spaceAnalyses.json.title',
+			descKey: 'apiDocs.spaceAnalyses.json.desc'
 		}
 	];
+
+	// В списке слева: без префикса /api/v1/ и с «…» вместо id
+	const shortPath = (path: string) => path.replace('/api/v1/', '').replace(/\{[a-zA-Z]+\}/, '…');
+	const isMarkdown = (path: string) => path.endsWith('.md');
+	const isSpace = (path: string) => path.includes('/spaces/');
 
 	let selectedId = $state('md');
 	let selected = $derived(endpoints.find((e) => e.id === selectedId) ?? endpoints[0]);
@@ -61,7 +94,7 @@
 						: 'border border-transparent hover:bg-surface-hover'}"
 				>
 					<span class="rounded-md bg-well-bg px-[7px] py-[3px] text-[11px] font-extrabold text-well-strong">{endpoint.method}</span>
-					<span class="min-w-0 truncate font-mono text-[13px] {selectedId === endpoint.id ? 'font-semibold text-text-primary' : 'text-text-secondary'}">{endpoint.path.replace('/api/v1/boards/{boardId}', '…')}</span>
+					<span class="min-w-0 truncate font-mono text-[13px] {selectedId === endpoint.id ? 'font-semibold text-text-primary' : 'text-text-secondary'}">{shortPath(endpoint.path)}</span>
 				</button>
 			{/each}
 		</div>
@@ -91,6 +124,44 @@
 
 - CI is finally green — <span class="text-[#9CBF8E]">*Maria*</span> [<span class="text-[#8FB6D9]">3</span> likes]
   - Huge relief! — <span class="text-[#9CBF8E]">*Peter*</span></code></pre>
+				{:else if selected.id === 'space-boards-md'}
+					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code><span class="text-[#E0A470]"># Team Alpha</span>
+
+- [Sprint 42](https://retrospectrix.ru/V1StGXR8_Z5jdHi6B-myT) — 2026-09-16 · classic
+- [Space analysis for 16.09.2026](https://retrospectrix.ru/3fJ9…) — 2026-09-16 · analysis</code></pre>
+				{:else if selected.id === 'space-boards-json'}
+					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
+  <span class="text-[#E0A470]">"space"</span>: {'{'} <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"sP4c3…"</span>, <span class="text-[#E0A470]">"name"</span>: <span class="text-[#9CBF8E]">"Team Alpha"</span> {'}'},
+  <span class="text-[#E0A470]">"boards"</span>: [
+    {'{'}
+      <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"V1StGXR8_Z5jdHi6B-myT"</span>,
+      <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Sprint 42"</span>,
+      <span class="text-[#E0A470]">"format"</span>: <span class="text-[#9CBF8E]">"classic"</span>,
+      <span class="text-[#E0A470]">"createdAt"</span>: <span class="text-[#9CBF8E]">"2026-09-16T10:00:00.000Z"</span>,
+      <span class="text-[#E0A470]">"url"</span>: <span class="text-[#9CBF8E]">"https://retrospectrix.ru/V1StGXR8_Z5jdHi6B-myT"</span>
+    {'}'}
+  ]
+{'}'}</code></pre>
+				{:else if selected.id === 'space-analyses-md'}
+					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code><span class="text-[#E0A470]"># Team Alpha — AI analyses</span>
+
+<span class="text-[#E0A470]">## Space analysis for 16.09.2026</span>
+
+<span class="text-[#E0A470]">### Still bad</span>
+
+- Flaky tests keep blocking merges (in 3 boards) — <span class="text-[#9CBF8E]">*AI analysis*</span></code></pre>
+				{:else if selected.id === 'space-analyses-json'}
+					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
+  <span class="text-[#E0A470]">"space"</span>: {'{'} <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"sP4c3…"</span>, <span class="text-[#E0A470]">"name"</span>: <span class="text-[#9CBF8E]">"Team Alpha"</span> {'}'},
+  <span class="text-[#E0A470]">"analyses"</span>: [
+    {'{'}
+      <span class="text-[#E0A470]">"board"</span>: {'{'} <span class="text-[#E0A470]">"slug"</span>: <span class="text-[#9CBF8E]">"3fJ9…"</span>, <span class="text-[#E0A470]">"title"</span>: <span class="text-[#9CBF8E]">"Space analysis for 16.09.2026"</span>, <span class="text-[#E0A470]">"format"</span>: <span class="text-[#9CBF8E]">"analysis"</span> {'}'},
+      <span class="text-[#E0A470]">"columns"</span>: {'{'}
+        <span class="text-[#E0A470]">"again_bad"</span>: [ {'{'} <span class="text-[#E0A470]">"content"</span>: <span class="text-[#9CBF8E]">"Flaky tests keep blocking merges (in 3 boards)"</span>, <span class="text-[#E0A470]">"authorName"</span>: <span class="text-[#9CBF8E]">"AI analysis"</span> {'}'} ]
+      {'}'}
+    {'}'}
+  ]
+{'}'}</code></pre>
 				{:else}
 					<pre class="font-mono text-[13.5px] leading-[1.7] text-[#D8D2C4]"><code>{'{'}
   <span class="text-[#E0A470]">"board"</span>: {'{'}
@@ -121,13 +192,21 @@
 			<p class="text-sm leading-relaxed text-text-secondary">{t('apiDocs.format.note')}</p>
 
 			<!-- Parameters -->
-			{#if selected.id === 'md'}
+			{#if isMarkdown(selected.path) || isSpace(selected.path)}
 				<div class="flex flex-col gap-2">
 					<h2 class="font-heading text-base font-bold text-text-primary">{t('apiDocs.params.title')}</h2>
-					<p class="text-sm text-text-secondary">
-						<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">?lang=en|ru</code>
-						— {t('apiDocs.params.lang')}
-					</p>
+					{#if isMarkdown(selected.path)}
+						<p class="text-sm text-text-secondary">
+							<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">?lang=en|ru</code>
+							— {t('apiDocs.params.lang')}
+						</p>
+					{/if}
+					{#if isSpace(selected.path)}
+						<p class="text-sm text-text-secondary">
+							<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">X-Space-Password</code>
+							— {t('apiDocs.params.password')}
+						</p>
+					{/if}
 				</div>
 			{/if}
 
@@ -137,6 +216,7 @@
 				<ul class="list-disc space-y-1 pl-[18px] text-sm leading-relaxed text-text-secondary marker:text-text-muted">
 					<li>{t('apiDocs.limits.rate')}</li>
 					<li>{t('apiDocs.limits.notfound')}</li>
+					<li>{t('apiDocs.limits.password')}</li>
 				</ul>
 			</div>
 		</div>

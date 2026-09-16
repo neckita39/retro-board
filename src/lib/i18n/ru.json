@@ -121,6 +121,9 @@
 
 	"apiExport.exported": "Экспортировано",
 	"apiExport.noCards": "Нет карточек",
+	"apiExport.noBoards": "Досок пока нет",
+	"apiExport.noAnalyses": "Анализов пока нет",
+	"apiExport.analyses": "AI-анализы",
 	"apiExport.likes": "{n} лайк|{n} лайка|{n} лайков",
 	"apiExport.dislikes": "{n} дизлайк|{n} дизлайка|{n} дизлайков",
 
@@ -143,6 +146,16 @@
 	"apiDocs.limits.title": "Лимиты и ошибки",
 	"apiDocs.limits.rate": "30 запросов в минуту с одного IP — при превышении 429",
 	"apiDocs.limits.notfound": "Неизвестный код доски — 404",
+	"apiDocs.spaceBoards.md.title": "Доски пространства как Markdown",
+	"apiDocs.spaceBoards.md.desc": "Возвращает список всех досок пространства — включая AI-анализы — ссылками в Markdown, от новых к старым. Доступ по коду пространства.",
+	"apiDocs.spaceBoards.json.title": "Доски пространства как JSON",
+	"apiDocs.spaceBoards.json.desc": "Возвращает список всех досок пространства: slug, название, формат, дата создания и ссылка, от новых к старым. Доступ по коду пространства.",
+	"apiDocs.spaceAnalyses.md.title": "AI-анализы пространства как Markdown",
+	"apiDocs.spaceAnalyses.md.desc": "Возвращает все AI-анализы пространства в Markdown, от новых к старым — каждый в том же виде, что экспорт доски. Доступ по коду пространства.",
+	"apiDocs.spaceAnalyses.json.title": "AI-анализы пространства как JSON",
+	"apiDocs.spaceAnalyses.json.desc": "Возвращает все AI-анализы пространства в JSON, от новых к старым — каждый в том же виде, что экспорт доски. Доступ по коду пространства.",
+	"apiDocs.params.password": "для пространства с паролем: пароль в этом заголовке или в ?password=",
+	"apiDocs.limits.password": "Пространство с паролем без пароля — 401, неверный пароль — 403",
 	"apiDocs.back": "← Назад",
 
 	"board.rename": "Переименовать доску",
