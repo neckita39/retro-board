@@ -137,3 +137,134 @@ export function runOnce<T>(key: string, fn: () => Promise<T>): Promise<T> {
 	inFlight.set(key, p);
 	return p;
 }
+
+export type AnalysisLocale = 'en' | 'ru';
+
+export interface ChatMessage {
+	role: 'system' | 'user';
+	content: string;
+}
+
+export interface AnalysisItem {
+	text: string;
+	boards: number;
+}
+
+export interface AnalysisResult {
+	well: AnalysisItem[];
+	bad: AnalysisItem[];
+	improve: AnalysisItem[];
+}
+
+export const ANALYSIS_COLUMNS = {
+	well: 'again_well',
+	bad: 'again_bad',
+	improve: 'again_improve'
+} as const;
+
+export class AnalysisFailure extends Error {
+	constructor(public kind: 'bad_response' | 'empty') {
+		super(`analysis ${kind}`);
+	}
+}
+
+const LANGUAGE: Record<AnalysisLocale, string> = { en: 'English', ru: 'Russian' };
+
+const MAX_ITEMS_PER_COLUMN = 6;
+const MAX_ITEM_TEXT = 2000;
+
+export function buildPrompt(entries: AnalysisEntry[], locale: AnalysisLocale): ChatMessage[] {
+	const system = [
+		'You are an experienced agile facilitator. You are given cards from several retrospectives of one team, newest first.',
+		'Each card has a tone: well = went well, bad = went badly, improve = something to improve, accent = other.',
+		'The score is likes minus dislikes from the team.',
+		'Find patterns that REPEAT ACROSS DIFFERENT retrospectives, not things mentioned once. Weigh cards with higher scores more.',
+		'Respond with JSON only, exactly this shape:',
+		'{"well":[{"text":"...","boards":2}],"bad":[{"text":"...","boards":3}],"improve":[{"text":"...","boards":2}]}',
+		'well = what keeps going well, bad = what keeps going badly, improve = what the team keeps wanting to improve.',
+		'"boards" is the number of distinct retrospectives where the pattern appears (integer, at least 1).',
+		`At most ${MAX_ITEMS_PER_COLUMN} items per key, each "text" is 1-2 sentences in ${LANGUAGE[locale]}.`,
+		'Do not invent anything. If there is too little data, return fewer items or empty arrays.'
+	].join('\n');
+
+	const lines: string[] = [];
+	let current = '';
+	for (const e of entries) {
+		const header = `${e.boardTitle} (${e.boardDate})`;
+		if (header !== current) {
+			current = header;
+			lines.push('', `## ${header}`);
+		}
+		const score = e.score > 0 ? `+${e.score}` : String(e.score);
+		lines.push(`- [${e.tone}] (${score}) ${e.text}`);
+	}
+	const user = `Retrospective cards, newest first:${lines.join('\n')}`;
+
+	return [
+		{ role: 'system', content: system },
+		{ role: 'user', content: user }
+	];
+}
+
+function normalizeItems(value: unknown): AnalysisItem[] {
+	if (!Array.isArray(value)) return [];
+	const items: AnalysisItem[] = [];
+	for (const raw of value) {
+		if (!raw || typeof raw !== 'object') continue;
+		const text = typeof (raw as { text?: unknown }).text === 'string' ? (raw as { text: string }).text.trim() : '';
+		if (!text) continue;
+		const n = Math.floor(Number((raw as { boards?: unknown }).boards));
+		items.push({ text: text.slice(0, MAX_ITEM_TEXT), boards: Number.isFinite(n) && n >= 1 ? n : 1 });
+		if (items.length >= MAX_ITEMS_PER_COLUMN) break;
+	}
+	return items;
+}
+
+/** Разбирает ответ модели. Мусор или не-объект → null. Лишние поля отбрасываются. */
+export function parseAnalysis(raw: string): AnalysisResult | null {
+	const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(cleaned);
+	} catch {
+		return null;
+	}
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+	const obj = parsed as Record<string, unknown>;
+	return {
+		well: normalizeItems(obj.well),
+		bad: normalizeItems(obj.bad),
+		improve: normalizeItems(obj.improve)
+	};
+}
+
+export function isEmptyAnalysis(r: AnalysisResult): boolean {
+	return r.well.length === 0 && r.bad.length === 0 && r.improve.length === 0;
+}
+
+function dmy(date: Date): string {
+	const dd = String(date.getUTCDate()).padStart(2, '0');
+	const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+	return `${dd}.${mm}.${date.getUTCFullYear()}`;
+}
+
+export function analysisTitle(date: Date, locale: AnalysisLocale): string {
+	return locale === 'ru' ? `Анализ пространства за ${dmy(date)}` : `Space analysis for ${dmy(date)}`;
+}
+
+export function analysisAuthor(locale: AnalysisLocale): string {
+	return locale === 'ru' ? 'AI-анализ' : 'AI analysis';
+}
+
+// Формы «доска» вручную: t() живёт в клиентском словаре, на сервере его нет
+function ruBoards(n: number): string {
+	const m10 = n % 10;
+	const m100 = n % 100;
+	if (m10 === 1 && m100 !== 11) return 'доске';
+	return 'досках';
+}
+
+export function cardText(item: AnalysisItem, locale: AnalysisLocale): string {
+	if (locale === 'ru') return `${item.text} (в ${item.boards} ${ruBoards(item.boards)})`;
+	return `${item.text} (in ${item.boards} ${item.boards === 1 ? 'board' : 'boards'})`;
+}

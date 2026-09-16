@@ -10,6 +10,14 @@ import {
 	runOnce,
 	ANALYSIS_DAILY_LIMIT,
 	ANALYSIS_WINDOW_MS,
+	buildPrompt,
+	parseAnalysis,
+	isEmptyAnalysis,
+	analysisTitle,
+	analysisAuthor,
+	cardText,
+	ANALYSIS_COLUMNS,
+	AnalysisFailure,
 	type SourceBoard,
 	type SourceCard,
 	type SourceVote
@@ -161,5 +169,95 @@ describe('runOnce — параллельные клики схлопываютс
 			runOnce('y', () => Promise.resolve('b'))
 		]);
 		expect([a, b]).toEqual(['a', 'b']);
+	});
+});
+
+describe('buildPrompt', () => {
+	const entries = collectCards(
+		[board('b1', 'Sprint 7', '2026-09-01T10:00:00Z')],
+		[
+			card('c1', 'b1', 'didnt_go_well', 'flaky tests', '2026-09-01T10:01:00Z'),
+			card('c2', 'b1', 'went_well', 'ci is green', '2026-09-01T10:02:00Z')
+		],
+		[{ cardId: 'c1', type: 'like' }]
+	);
+	it('system просит JSON нужной формы и язык, user содержит все карточки с тоном, счётом и доской', () => {
+		const [system, user] = buildPrompt(entries, 'ru');
+		expect(system.role).toBe('system');
+		expect(system.content).toMatch(/json/i);
+		expect(system.content).toContain('"well"');
+		expect(system.content).toContain('"bad"');
+		expect(system.content).toContain('"improve"');
+		expect(system.content).toContain('Russian');
+		expect(user.role).toBe('user');
+		expect(user.content).toContain('Sprint 7 (2026-09-01)');
+		expect(user.content).toContain('[bad] (+1) flaky tests');
+		expect(user.content).toContain('[well] (0) ci is green');
+	});
+	it('локаль en просит английский', () => {
+		expect(buildPrompt(entries, 'en')[0].content).toContain('English');
+	});
+});
+
+describe('parseAnalysis', () => {
+	it('валидный JSON → результат, лишние поля отброшены, boards нормализован', () => {
+		const raw = JSON.stringify({
+			well: [{ text: 'CI stays green', boards: 3, extra: 1 }],
+			bad: [{ text: 'Flaky tests', boards: '2' }],
+			improve: [{ text: 'Write ADRs', boards: 0 }]
+		});
+		expect(parseAnalysis(raw)).toEqual({
+			well: [{ text: 'CI stays green', boards: 3 }],
+			bad: [{ text: 'Flaky tests', boards: 2 }],
+			improve: [{ text: 'Write ADRs', boards: 1 }]
+		});
+	});
+	it('терпит ```json-обёртку и отсутствующие колонки', () => {
+		const raw = '```json\n{"bad":[{"text":"x","boards":2}]}\n```';
+		expect(parseAnalysis(raw)).toEqual({ well: [], bad: [{ text: 'x', boards: 2 }], improve: [] });
+	});
+	it('мусор, не-объект, элементы без текста → null или пропуск', () => {
+		expect(parseAnalysis('not json')).toBeNull();
+		expect(parseAnalysis('[]')).toBeNull();
+		expect(parseAnalysis('"str"')).toBeNull();
+		expect(parseAnalysis(JSON.stringify({ well: [{ boards: 2 }, { text: '   ' }, 'nope'] }))).toEqual({
+			well: [],
+			bad: [],
+			improve: []
+		});
+	});
+	it('режет текст до 2000 символов и берёт не больше 6 элементов в колонке', () => {
+		const long = 'a'.repeat(2500);
+		const eight = Array.from({ length: 8 }, (_, i) => ({ text: `p${i}`, boards: 1 }));
+		const r = parseAnalysis(JSON.stringify({ well: [{ text: long, boards: 1 }], bad: eight }))!;
+		expect(r.well[0].text).toHaveLength(2000);
+		expect(r.bad).toHaveLength(6);
+	});
+	it('isEmptyAnalysis — все три массива пусты', () => {
+		expect(isEmptyAnalysis({ well: [], bad: [], improve: [] })).toBe(true);
+		expect(isEmptyAnalysis({ well: [{ text: 'x', boards: 1 }], bad: [], improve: [] })).toBe(false);
+	});
+});
+
+describe('тексты доски-анализа', () => {
+	const date = new Date(Date.UTC(2026, 8, 16, 12));
+	it('название по локали, дата d.m.Y', () => {
+		expect(analysisTitle(date, 'ru')).toBe('Анализ пространства за 16.09.2026');
+		expect(analysisTitle(date, 'en')).toBe('Space analysis for 16.09.2026');
+	});
+	it('автор', () => {
+		expect(analysisAuthor('ru')).toBe('AI-анализ');
+		expect(analysisAuthor('en')).toBe('AI analysis');
+	});
+	it('текст карточки с числом досок и русскими формами', () => {
+		expect(cardText({ text: 'Flaky tests', boards: 3 }, 'en')).toBe('Flaky tests (in 3 boards)');
+		expect(cardText({ text: 'Flaky tests', boards: 1 }, 'en')).toBe('Flaky tests (in 1 board)');
+		expect(cardText({ text: 'Тесты флапают', boards: 1 }, 'ru')).toBe('Тесты флапают (в 1 доске)');
+		expect(cardText({ text: 'Тесты флапают', boards: 3 }, 'ru')).toBe('Тесты флапают (в 3 досках)');
+		expect(cardText({ text: 'Тесты флапают', boards: 21 }, 'ru')).toBe('Тесты флапают (в 21 доске)');
+	});
+	it('колонки и ошибка', () => {
+		expect(ANALYSIS_COLUMNS).toEqual({ well: 'again_well', bad: 'again_bad', improve: 'again_improve' });
+		expect(new AnalysisFailure('empty').kind).toBe('empty');
 	});
 });
