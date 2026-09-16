@@ -27,7 +27,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.board.title} — {t('header.brand')}</title>
+	<title>{boardStore.board?.title ?? data.board.title} — {t('header.brand')}</title>
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">

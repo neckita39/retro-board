@@ -144,6 +144,8 @@
 	"apiDocs.limits.notfound": "Неизвестный код доски — 404",
 	"apiDocs.back": "← Назад",
 
+	"board.rename": "Переименовать доску",
+	"board.rename.label": "Название доски",
 	"board.delete": "Удалить доску",
 	"board.delete.confirm": "Удалить доску?",
 
@@ -197,6 +199,8 @@
 	"space.password.enable.placeholder": "Новый пароль",
 	"space.password.enabled": "Пароль включён",
 	"space.password.disabled": "Пароль отключён",
+	"space.rename": "Переименовать пространство",
+	"space.rename.label": "Название пространства",
 	"space.delete": "Удалить пространство",
 	"space.delete.confirm": "Удалить пространство?",
 	"space.admin.title": "Вы создали это пространство",

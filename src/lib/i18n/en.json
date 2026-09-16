@@ -144,6 +144,8 @@
 	"apiDocs.limits.notfound": "Unknown board code — 404",
 	"apiDocs.back": "← Back",
 
+	"board.rename": "Rename board",
+	"board.rename.label": "Board title",
 	"board.delete": "Delete Board",
 	"board.delete.confirm": "Delete board?",
 
@@ -197,6 +199,8 @@
 	"space.password.enable.placeholder": "New password",
 	"space.password.enabled": "Password enabled",
 	"space.password.disabled": "Password disabled",
+	"space.rename": "Rename space",
+	"space.rename.label": "Space name",
 	"space.delete": "Delete Space",
 	"space.delete.confirm": "Delete space?",
 	"space.admin.title": "You created this space",

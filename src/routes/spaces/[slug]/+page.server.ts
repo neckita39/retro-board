@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
+import { normalizeTitle } from '$lib/titles.js';
 import { db } from '$lib/server/db/index.js';
 import { spaces, boards, cards } from '$lib/server/db/schema.js';
 import { eq, sql, desc } from 'drizzle-orm';
@@ -94,6 +95,22 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 };
 
 export const actions: Actions = {
+	rename: async ({ request, params, cookies }) => {
+		const token = cookies.get(`retro_space_creator_${params.slug}`) ?? '';
+		const space = await db.query.spaces.findFirst({
+			where: eq(spaces.slug, params.slug)
+		});
+		if (!space) throw error(404);
+		if (!space.creatorToken || token !== space.creatorToken) throw error(403, 'Forbidden');
+
+		const formData = await request.formData();
+		const name = normalizeTitle(formData.get('name'));
+		if (!name) return fail(400, { renameError: 'empty_name' });
+
+		await db.update(spaces).set({ name }).where(eq(spaces.id, space.id));
+		return { renamed: true };
+	},
+
 	verify: async ({ request, params, cookies }) => {
 		const formData = await request.formData();
 		const password = formData.get('password') as string;

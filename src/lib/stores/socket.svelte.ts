@@ -42,6 +42,10 @@ class SocketStore {
 			boardStore.setState(data);
 		});
 
+		this.socket.on('board:renamed', ({ title }) => {
+			boardStore.setTitle(title);
+		});
+
 		this.socket.on('card:created', ({ card }) => {
 			boardStore.addCard(card);
 		});
@@ -104,6 +108,10 @@ class SocketStore {
 
 	deleteCard(cardId: string) {
 		this.socket?.emit('card:delete', { cardId });
+	}
+
+	renameBoard(title: string, creatorToken?: string | null) {
+		this.socket?.emit('board:rename', { title, creatorToken: creatorToken ?? '' });
 	}
 
 	startTimer(duration: number, creatorToken?: string | null) {

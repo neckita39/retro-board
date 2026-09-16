@@ -7,6 +7,7 @@
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
 	import { t } from '$lib/i18n/index.js';
+	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
 	import { browser } from '$app/environment';
 
 	let {
@@ -37,6 +38,8 @@
 	let shared = $state(false);
 	let nameEditing = $state(false);
 	let userName = $state('');
+	let renaming = $state(false);
+	let renameValue = $state('');
 
 	if (browser) {
 		userName = localStorage.getItem('retro_name') || '';
@@ -62,6 +65,49 @@
 			localStorage.setItem('retro_name', trimmed);
 		}
 		nameEditing = false;
+	}
+
+	function startRename() {
+		if (!boardStore.board) return;
+		renameValue = boardStore.board.title;
+		renaming = true;
+		menuOpen = false;
+	}
+
+	// Пустое имя не сохраняем и инпут не закрываем — пусть поправят или нажмут Esc.
+	// Проверка renaming нужна: после Esc инпут исчезает и на нём срабатывает blur.
+	function commitRename() {
+		if (!renaming) return;
+		const title = normalizeTitle(renameValue);
+		if (!title) return;
+		if (title !== boardStore.board?.title) socketStore.renameBoard(title, creatorToken);
+		renaming = false;
+	}
+
+	function cancelRename() {
+		renaming = false;
+	}
+
+	// Ушли из поля с пустым именем — считаем это отменой, а не зависшим инпутом
+	function onRenameBlur() {
+		if (!renaming) return;
+		if (normalizeTitle(renameValue)) commitRename();
+		else cancelRename();
+	}
+
+	function onRenameKey(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			commitRename();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			cancelRename();
+		}
+	}
+
+	function focusAndSelect(node: HTMLInputElement) {
+		node.focus();
+		node.select();
 	}
 
 	async function deleteBoard() {
@@ -99,6 +145,20 @@
 
 <svelte:window onclick={() => menuOpen && (menuOpen = false)} />
 
+<!-- Инпут переименования: один и тот же в десктопных крошках и мобильном заголовке -->
+{#snippet renameField(cls: string)}
+	<input
+		type="text"
+		bind:value={renameValue}
+		use:focusAndSelect
+		onkeydown={onRenameKey}
+		onblur={onRenameBlur}
+		maxlength={TITLE_MAX}
+		aria-label={t('board.rename.label')}
+		class={cls}
+	/>
+{/snippet}
+
 <header class="sticky top-0 z-50 border-b border-border bg-surface-card px-4 py-2.5 transition-colors sm:px-7 sm:py-3">
 	<div class="mx-auto flex max-w-[1360px] items-center justify-between gap-3">
 		<!-- Left: brand + breadcrumb / nav -->
@@ -113,11 +173,19 @@
 					<a href="/spaces/{spaceSlug}" class="min-w-0 truncate text-sm font-medium text-text-secondary transition-colors hover:text-text-primary">{spaceName}</a>
 				{/if}
 				<span class="text-sm text-border-strong">/</span>
-				<span class="min-w-0 truncate text-sm font-semibold text-text-primary">{boardStore.board?.title}</span>
+				{#if renaming}
+					{@render renameField('input input-sm h-8 min-w-0 flex-1 text-sm font-semibold')}
+				{:else}
+					<span class="min-w-0 truncate text-sm font-semibold text-text-primary">{boardStore.board?.title}</span>
+				{/if}
 			</div>
 			<!-- Mobile: board title + online -->
 			<div class="flex min-w-0 flex-col md:hidden">
-				<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[19px] font-extrabold text-text-primary">{boardStore.board?.title}</a>
+				{#if renaming}
+					{@render renameField('input input-sm font-heading h-9 min-w-0 text-[17px] font-extrabold')}
+				{:else}
+					<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[19px] font-extrabold text-text-primary">{boardStore.board?.title}</a>
+				{/if}
 				<span class="truncate text-[13px] text-text-muted">{spaceName ?? t('header.brand')} · {t('user.online', { n: socketStore.usersCount })}</span>
 			</div>
 		{:else}
@@ -308,6 +376,10 @@
 							</div>
 							{#if boardStore.isCreator}
 								<hr class="my-1 border-border" />
+								<button onclick={startRename} class="dropdown-item">
+									<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+									{t('board.rename')}
+								</button>
 								{#if deleteConfirming}
 									<div class="flex flex-col gap-1.5 px-3 py-2">
 										<span class="text-[12px] text-text-secondary">{t('board.delete.confirm')}</span>

@@ -13,6 +13,15 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.11',
+			date: '2026-09-16',
+			title: { en: 'Rename anything', ru: 'Переименование' },
+			changes: [
+				{ en: 'The board creator can rename it: pick «Rename board» in the menu, and everyone on the board sees the new title instantly', ru: 'Создатель доски может её переименовать: пункт «Переименовать доску» в меню — новое название сразу видят все участники' },
+				{ en: 'A space can be renamed too — the pencil next to its name', ru: 'Пространство тоже можно переименовать — карандаш рядом с названием' }
+			]
+		},
+		{
 			version: '1.10',
 			date: '2026-09-08',
 			title: { en: 'Pick a format', ru: 'Выбор формата' },

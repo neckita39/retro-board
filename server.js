@@ -1,6 +1,7 @@
 import { handler } from './build/handler.js';
 import { isIndexable } from './seo-paths.js';
 import { isValidColumn } from './board-formats.js';
+import { normalizeTitle } from './titles.js';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import crypto from 'crypto';
@@ -617,6 +618,24 @@ io.on('connection', (socket) => {
 		if (roomToken && creatorToken !== roomToken) return;
 		roomTimers.delete(currentRoom);
 		io.to(currentRoom).emit('timer:state', { endTime: null, duration: null });
+	});
+
+	// --- Переименование доски: только создатель, новое имя летит всей комнате ---
+
+	socket.on('board:rename', async (payload) => {
+		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
+		const title = normalizeTitle(payload?.title);
+		if (!title) return;
+		try {
+			const [board] = await db
+				.update(boards)
+				.set({ title })
+				.where(eq(boards.slug, currentRoom))
+				.returning({ title: boards.title });
+			if (board) io.to(currentRoom).emit('board:renamed', { title: board.title });
+		} catch (err) {
+			logger.error({ err, event: 'board:rename', slug: currentRoom }, 'Failed to rename board');
+		}
 	});
 
 	// --- Обсуждение: фокус на одной карточке, общий для всей комнаты ---

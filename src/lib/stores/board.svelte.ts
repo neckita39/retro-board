@@ -15,6 +15,10 @@ class BoardStore {
 		this.comments = data.comments;
 	}
 
+	setTitle(title: string) {
+		if (this.board) this.board = { ...this.board, title };
+	}
+
 	addCard(card: Card) {
 		this.cards = [...this.cards, card];
 	}

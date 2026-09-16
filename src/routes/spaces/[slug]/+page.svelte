@@ -10,6 +10,7 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
+	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
 
 	let { data, form } = $props();
 
@@ -32,6 +33,46 @@
 	let passwordOpen = $state(false);
 	let passwordShaking = $state(false);
 	let passwordSuccess = $state('');
+	let renaming = $state(false);
+	let renameValue = $state('');
+	let renameForm: HTMLFormElement | undefined = $state();
+	let renameBusy = $state(false);
+
+	function startRename() {
+		renameValue = data.space.name;
+		renaming = true;
+		deleteConfirming = false;
+	}
+
+	// Пустое имя не отправляем: инпут остаётся, пока не поправят или не нажмут Esc
+	function submitRename() {
+		if (!renaming || renameBusy) return;
+		if (!normalizeTitle(renameValue)) return;
+		renameBusy = true;
+		renameForm?.requestSubmit();
+	}
+
+	function onRenameKey(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			submitRename();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			renaming = false;
+		}
+	}
+
+	// Blur после Esc прилетает на уже убранный инпут — renaming уже false, игнорируем
+	function onRenameBlur() {
+		if (!renaming) return;
+		if (normalizeTitle(renameValue)) submitRename();
+		else renaming = false;
+	}
+
+	function focusAndSelect(node: HTMLInputElement) {
+		node.focus();
+		node.select();
+	}
 
 	// createdAt is only present once the space password has been entered
 	let spaceCreatedAt = $derived('createdAt' in data.space ? data.space.createdAt : null);
@@ -103,7 +144,45 @@
 				<div class="flex flex-wrap items-end justify-between gap-4">
 					<div class="flex min-w-0 flex-col gap-1.5">
 						<div class="flex items-center gap-3">
-							<h1 class="font-heading min-w-0 truncate text-[24px] font-bold tracking-[-0.02em] text-text-primary sm:text-[30px]">{data.space.name}</h1>
+							{#if renaming}
+								<form
+									method="POST"
+									action="?/rename"
+									bind:this={renameForm}
+									class="min-w-0 flex-1"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											renameBusy = false;
+											if (result.type === 'success') renaming = false;
+											await update();
+										};
+									}}
+								>
+									<input
+										type="text"
+										name="name"
+										bind:value={renameValue}
+										use:focusAndSelect
+										onkeydown={onRenameKey}
+										onblur={onRenameBlur}
+										maxlength={TITLE_MAX}
+										aria-label={t('space.rename.label')}
+										class="input input-md font-heading w-full text-[24px] font-bold tracking-[-0.02em] sm:text-[30px]"
+									/>
+								</form>
+							{:else}
+								<h1 class="font-heading min-w-0 truncate text-[24px] font-bold tracking-[-0.02em] text-text-primary sm:text-[30px]">{data.space.name}</h1>
+								{#if data.isCreator}
+									<button
+										onclick={startRename}
+										class="btn-icon btn-icon-bordered shrink-0 text-text-muted hover:text-text-primary"
+										title={t('space.rename')}
+										aria-label={t('space.rename')}
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+									</button>
+								{/if}
+							{/if}
 							{#if passwordSuccess}
 								<span class="badge badge-success badge-pop shrink-0">
 									{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
