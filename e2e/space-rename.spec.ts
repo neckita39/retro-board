@@ -1,20 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
-import { initStorage } from './helpers';
-
-// Создаёт пространство через UI, закрывает admin-баннер, возвращает slug
-async function createSpace(page: Page, name: string): Promise<string> {
-	await initStorage(page);
-	await page.goto('/new');
-	// Форма пространства скрыта за переключателем типа (вторая карточка — «Space»)
-	await page.locator('button[aria-pressed]').nth(1).click();
-	await page.getByPlaceholder('Space name').fill(name);
-	await page.locator('form[action="?/createSpace"] button[type="submit"]').click();
-	await page.waitForURL(/\/spaces\/[A-Za-z0-9_-]{21}/);
-	const closeBanner = page.getByRole('button', { name: 'Close' });
-	await closeBanner.click();
-	await expect(closeBanner).toBeHidden();
-	return new URL(page.url()).pathname.split('/')[2];
-}
+import { test, expect } from '@playwright/test';
+import { initStorage, createSpace } from './helpers';
 
 test('creator renames the space and the name survives a reload', async ({ page }) => {
 	await createSpace(page, 'Team Alpha');
@@ -52,7 +37,7 @@ test('a visitor has no rename button in the space', async ({ browser }) => {
 	const pageA = await ctxA.newPage();
 	const pageB = await ctxB.newPage();
 
-	const slug = await createSpace(pageA, 'Visitors');
+	const { slug } = await createSpace(pageA, 'Visitors');
 	await initStorage(pageB);
 	await pageB.goto(`/spaces/${slug}`);
 	await expect(pageB.getByRole('heading', { level: 1, name: 'Visitors' })).toBeVisible();
