@@ -5,6 +5,7 @@
 	interface SpaceBoard {
 		slug: string;
 		title: string;
+		format: string;
 		createdAt: string;
 		cardCount: number;
 		wellCount: number;

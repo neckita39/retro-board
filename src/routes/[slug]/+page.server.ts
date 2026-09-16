@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db/index.js';
 import { boards, cards, votes, comments, spaces, images } from '$lib/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
@@ -44,10 +45,25 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		imageMeta = Object.fromEntries(rows.map((r) => [r.id, { width: r.width, height: r.height }]));
 	}
 
+	// Родительское пространство и его админ: создатель пространства управляет
+	// всеми его досками (переименовать, удалить, вести обсуждение), включая доску-анализ
+	let space: { slug: string; name: string } | null = null;
+	let spaceCreator = false;
+	if (board.spaceId) {
+		const s = await db.query.spaces.findFirst({
+			where: eq(spaces.id, board.spaceId)
+		});
+		if (s) {
+			space = { slug: s.slug, name: s.name };
+			const spaceCookie = cookies.get(`retro_space_creator_${s.slug}`) ?? '';
+			spaceCreator = !!s.creatorToken && spaceCookie === s.creatorToken;
+		}
+	}
+
 	const adminParam = url.searchParams.get('admin') ?? '';
 	const cookieToken = cookies.get(`retro_creator_${params.slug}`) ?? '';
 
-	let isCreator = false;
+	let isCreator = spaceCreator;
 	let showAdminBanner = false;
 
 	if (adminParam && adminParam === board.creatorToken) {
@@ -65,15 +81,6 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 
 	const adminLink = isCreator ? `${url.origin}/${params.slug}?admin=${board.creatorToken}` : null;
 
-	// Load parent space if board belongs to one
-	let space: { slug: string; name: string } | null = null;
-	if (board.spaceId) {
-		const s = await db.query.spaces.findFirst({
-			where: eq(spaces.id, board.spaceId)
-		});
-		if (s) space = { slug: s.slug, name: s.name };
-	}
-
 	return {
 		board: {
 			id: board.id,
@@ -88,6 +95,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		isCreator,
 		showAdminBanner,
 		adminLink,
+		analysisEnabled: !!env.DEEPSEEK_API_KEY,
 		creatorToken: isCreator ? board.creatorToken : null,
 		cards: boardCards.map((c) => ({
 			...c,

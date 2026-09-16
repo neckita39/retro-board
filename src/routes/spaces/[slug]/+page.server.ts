@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import { normalizeTitle } from '$lib/titles.js';
 import { db } from '$lib/server/db/index.js';
@@ -44,7 +45,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			hasPassword: true,
 			boards: [],
 			showAdminBanner: false,
-			adminLink: null
+			adminLink: null,
+			analysisEnabled: false
 		};
 	}
 
@@ -53,6 +55,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			id: boards.id,
 			slug: boards.slug,
 			title: boards.title,
+			format: boards.format,
 			createdAt: boards.createdAt,
 			cardCount: sql<number>`cast(count(${cards.id}) as integer)`,
 			// Per-column counts feed the mood bar on board tiles
@@ -63,7 +66,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		.from(boards)
 		.leftJoin(cards, eq(cards.boardId, boards.id))
 		.where(eq(boards.spaceId, space.id))
-		.groupBy(boards.id, boards.slug, boards.title, boards.createdAt)
+		.groupBy(boards.id, boards.slug, boards.title, boards.format, boards.createdAt)
 		.orderBy(desc(boards.createdAt));
 
 	const adminLink = isCreator
@@ -83,6 +86,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		hasPassword,
 		showAdminBanner,
 		adminLink,
+		analysisEnabled: !!env.DEEPSEEK_API_KEY,
 		boards: spaceBoards.map(b => ({
 			...b,
 			createdAt: b.createdAt.toISOString(),
