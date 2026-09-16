@@ -234,6 +234,7 @@
 	"space.analysis.tile.pending": "Analysing…",
 	"space.analysis.tile.failed": "Analysis failed",
 	"space.analysis.tile.retry": "Retry",
+	"space.analysis.tile.dismiss": "Hide",
 	"analysis.badge": "AI analysis",
 	"new.space.ai": "AI analysis of patterns across all your retros",
 	"space.admin.title": "You created this space",

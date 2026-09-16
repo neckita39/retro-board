@@ -26,4 +26,11 @@ describe('analysisTransition — когда показывать уведомл�
 	it('переход в idle молчит', () => {
 		expect(analysisTransition(ready, { state: 'idle' })).toBeNull();
 	});
+	it('скрыли упавший анализ — показалась более старая готовая доска, без «готов»', () => {
+		const olderReady: AnalysisState = { ...ready, id: 'a0', createdAt: '2026-09-15T10:00:00Z' };
+		expect(analysisTransition(failed, olderReady)).toBeNull();
+		// а более новая готовая — это новая попытка, о ней сообщаем
+		const newerReady: AnalysisState = { ...ready, id: 'a2', createdAt: '2026-09-17T10:00:00Z' };
+		expect(analysisTransition(failed, newerReady)).toBe('ready');
+	});
 });

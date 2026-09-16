@@ -21,5 +21,8 @@ export function analysisTransition(prev: AnalysisState | null, next: AnalysisSta
 	if (next.state === 'idle') return null;
 	if (prev.state === next.state && 'id' in prev && prev.id === next.id) return null;
 	if (next.state === 'pending') return 'started';
+	// Готовая доска старше того, что знали, — не новая попытка, а то, что
+	// показалось после скрытия упавшей: «готов» тут не к месту
+	if (next.state === 'ready' && 'createdAt' in prev && next.createdAt < prev.createdAt) return null;
 	return next.state;
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { t } from '$lib/i18n/index.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
@@ -117,7 +118,21 @@
 				>
 					<div class="flex items-start justify-between gap-2">
 						<span class="font-heading min-w-0 truncate text-base font-bold text-text-primary">{analysis.title}</span>
-						<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+						<span class="flex shrink-0 items-center gap-1.5">
+							<span class="badge-sm badge-ai">{t('analysis.badge')}</span>
+							<!-- Крестик: убирает упавшую попытку у всех в пространстве -->
+							<form method="POST" action="/spaces/{spaceSlug}?/dismissAnalysis" class="contents" use:enhance>
+								<button
+									type="submit"
+									class="btn-icon text-text-muted hover:text-text-primary"
+									title={t('space.analysis.tile.dismiss')}
+									aria-label={t('space.analysis.tile.dismiss')}
+									data-testid="analysis-dismiss"
+								>
+									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+								</button>
+							</form>
+						</span>
 					</div>
 					<p class="text-[13px] leading-snug text-bad">
 						{t('space.analysis.tile.failed')}: {t(`space.analysis.error.${analysis.error}`)}

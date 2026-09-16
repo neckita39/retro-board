@@ -234,6 +234,7 @@
 	"space.analysis.tile.pending": "Анализируем…",
 	"space.analysis.tile.failed": "Анализ не удался",
 	"space.analysis.tile.retry": "Повторить",
+	"space.analysis.tile.dismiss": "Скрыть",
 	"analysis.badge": "AI-анализ",
 	"new.space.ai": "AI-анализ паттернов по всем ретро",
 	"space.admin.title": "Вы создали это пространство",

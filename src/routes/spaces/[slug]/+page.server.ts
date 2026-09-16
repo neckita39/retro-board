@@ -236,6 +236,34 @@ export const actions: Actions = {
 		throw redirect(303, `/${slug}?admin=${creatorToken}`);
 	},
 
+	// Крестик на плитке «Анализ не удался»: убираем упавшие (и брошенные) попытки,
+	// всем в пространстве уходит состояние без них
+	dismissAnalysis: async ({ params, cookies }) => {
+		const space = await db.query.spaces.findFirst({
+			where: eq(spaces.slug, params.slug)
+		});
+		if (!space) throw error(404);
+		if (!canViewSpace(space, cookies)) throw error(403, 'Not authenticated');
+
+		const now = new Date();
+		await db.delete(spaceAnalyses).where(
+			and(
+				eq(spaceAnalyses.spaceId, space.id),
+				or(
+					eq(spaceAnalyses.state, 'failed'),
+					and(eq(spaceAnalyses.state, 'pending'), lt(spaceAnalyses.createdAt, new Date(now.getTime() - PENDING_STALE_MS)))
+				)
+			)
+		);
+		const rows = await db
+			.select()
+			.from(spaceAnalyses)
+			.where(eq(spaceAnalyses.spaceId, space.id))
+			.orderBy(desc(spaceAnalyses.createdAt));
+		emitSpace(params.slug, 'analysis:state', statePayload(rows, now));
+		return { analysis: 'dismissed' as const };
+	},
+
 	// AI-анализ пространства: только запускает фоновую задачу и сразу отвечает.
 	// О ходе дела всем в пространстве сообщает сокет (см. analysis-job.ts и bus.ts).
 	analyze: async ({ request, params, cookies }) => {

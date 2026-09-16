@@ -128,6 +128,26 @@ test('a failure shows the failed tile with retry for everyone, and retry works',
 		await expect(p.getByTestId('analysis-failed')).toHaveCount(0);
 	}
 
+	// Ещё одна неудача после новой доски — и крестик убирает плитку у всех,
+	// показывая прежнюю готовую доску без уведомления «готов»
+	await createBoardInSpace(pageA, space.slug, 'Sprint 3');
+	await pageA.goto(`/spaces/${space.slug}`);
+	await clearToasts(pageA);
+	await clearToasts(pageB);
+	await setMock(pageA, 'error');
+	await pageA.getByTestId('analyze-button').click();
+	for (const p of [pageA, pageB]) await expect(p.getByTestId('analysis-failed')).toBeVisible({ timeout: 10_000 });
+	await clearToasts(pageA);
+	await clearToasts(pageB);
+	await pageA.getByTestId('analysis-dismiss').click();
+	for (const p of [pageA, pageB]) {
+		await expect(p.getByTestId('analysis-failed')).toHaveCount(0, { timeout: 10_000 });
+		await expect(p.getByTestId('analysis-pending')).toHaveCount(0);
+		await expect(p.getByTestId('toast')).toHaveCount(0);
+	}
+	const after = await (await pageA.request.get(`/spaces/${space.slug}/analysis`)).json();
+	expect(after.state).toBe('ready');
+
 	await ctxA.close();
 	await ctxB.close();
 });
