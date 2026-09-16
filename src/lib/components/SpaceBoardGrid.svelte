@@ -125,7 +125,7 @@
 							<form method="POST" action="/spaces/{spaceSlug}?/dismissAnalysis" class="contents" use:enhance>
 								<button
 									type="submit"
-									class="btn-icon text-text-muted hover:text-text-primary"
+									class="btn-icon btn-icon-sm text-text-muted hover:text-text-primary"
 									title={t('space.analysis.tile.dismiss')}
 									aria-label={t('space.analysis.tile.dismiss')}
 									data-testid="analysis-dismiss"

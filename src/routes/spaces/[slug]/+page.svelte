@@ -14,6 +14,7 @@
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
+	import { truncatedTitle } from '$lib/actions/truncated-title.js';
 
 	let { data, form } = $props();
 
@@ -204,11 +205,12 @@
 									/>
 								</form>
 							{:else}
-								<h1 class="font-heading min-w-0 truncate text-[24px] font-bold tracking-[-0.02em] text-text-primary sm:text-[30px]">{data.space.name}</h1>
+								<h1 class="font-heading min-w-0 truncate text-[24px] font-bold tracking-[-0.02em] text-text-primary sm:text-[30px]" use:truncatedTitle={data.space.name}>{data.space.name}</h1>
 								{#if data.isCreator}
+									<!-- Размер как у корзины справа: без него рамка обтягивала иконку вплотную -->
 									<button
 										onclick={startRename}
-										class="btn-icon btn-icon-bordered shrink-0 text-text-muted hover:text-text-primary"
+										class="btn-icon btn-icon-lg btn-icon-bordered shrink-0 text-text-muted hover:text-text-primary"
 										title={t('space.rename')}
 										aria-label={t('space.rename')}
 									>

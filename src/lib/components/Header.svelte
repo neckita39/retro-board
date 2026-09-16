@@ -10,6 +10,7 @@
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
+	import { truncatedTitle } from '$lib/actions/truncated-title.js';
 	import { browser } from '$app/environment';
 
 	let {
@@ -175,13 +176,24 @@
 				</a>
 				{#if spaceName}
 					<span class="text-sm text-border-strong">/</span>
-					<a href="/spaces/{spaceSlug}" class="min-w-0 truncate text-sm font-medium text-text-secondary transition-colors hover:text-text-primary">{spaceName}</a>
+					<a href="/spaces/{spaceSlug}" class="min-w-0 truncate text-sm font-medium text-text-secondary transition-colors hover:text-text-primary" use:truncatedTitle={spaceName}>{spaceName}</a>
 				{/if}
 				<span class="text-sm text-border-strong">/</span>
 				{#if renaming}
 					{@render renameField('input input-sm h-8 min-w-0 flex-1 text-sm font-semibold')}
 				{:else}
-					<span class="min-w-0 truncate text-sm font-semibold text-text-primary">{boardStore.board?.title}</span>
+					<span class="min-w-0 truncate text-sm font-semibold text-text-primary" use:truncatedTitle={boardStore.board?.title ?? ''}>{boardStore.board?.title}</span>
+					{#if boardStore.isCreator}
+						<!-- Карандаш как на странице пространства: пункт в меню «⋯» находят не все -->
+						<button
+							onclick={startRename}
+							class="btn-icon btn-icon-sm shrink-0 self-center text-text-muted hover:text-text-primary"
+							title={t('board.rename')}
+							aria-label={t('board.rename')}
+						>
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+						</button>
+					{/if}
 				{/if}
 				{#if boardStore.board?.format === ANALYSIS_FORMAT}
 					<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
@@ -192,7 +204,7 @@
 				{#if renaming}
 					{@render renameField('input input-sm font-heading h-9 min-w-0 text-[17px] font-extrabold')}
 				{:else}
-					<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[19px] font-extrabold text-text-primary">{boardStore.board?.title}</a>
+					<a href={spaceSlug ? `/spaces/${spaceSlug}` : '/'} class="font-heading truncate text-[19px] font-extrabold text-text-primary" use:truncatedTitle={boardStore.board?.title ?? ''}>{boardStore.board?.title}</a>
 				{/if}
 				<span class="truncate text-[13px] text-text-muted">
 					{#if boardStore.board?.format === ANALYSIS_FORMAT}<span class="badge-sm badge-ai mr-1 align-middle">{t('analysis.badge')}</span>{/if}
@@ -213,7 +225,7 @@
 					</a>
 					{#if spaceName}
 						<span class="text-sm text-border-strong">/</span>
-						<span class="min-w-0 truncate text-sm font-semibold text-text-primary">{spaceName}</span>
+						<span class="min-w-0 truncate text-sm font-semibold text-text-primary" use:truncatedTitle={spaceName}>{spaceName}</span>
 						{#if locked}
 							<span class="hidden shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary sm:inline-flex">
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>

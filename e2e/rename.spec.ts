@@ -20,7 +20,7 @@ test('creator renames the board and everyone sees the new title live', async ({ 
 	await expect(pageB.getByText('Sprint 41').first()).toBeVisible();
 
 	await openMenu(pageA);
-	await pageA.getByRole('button', { name: 'Rename board' }).click();
+	await pageA.getByRole('button', { name: 'Rename board' }).last().click();
 	const input = pageA.getByRole('textbox', { name: 'Board title' });
 	await expect(input).toBeFocused();
 	await input.fill('  Sprint   42  ');
@@ -46,7 +46,7 @@ test('Escape cancels the rename and an empty title is not saved', async ({ page 
 	await createBoard(page, 'Keep me');
 
 	await openMenu(page);
-	await page.getByRole('button', { name: 'Rename board' }).click();
+	await page.getByRole('button', { name: 'Rename board' }).last().click();
 	const input = page.getByRole('textbox', { name: 'Board title' });
 	await input.fill('Nope');
 	await input.press('Escape');
@@ -54,7 +54,7 @@ test('Escape cancels the rename and an empty title is not saved', async ({ page 
 	await expect(page.getByText('Keep me').first()).toBeVisible();
 
 	await openMenu(page);
-	await page.getByRole('button', { name: 'Rename board' }).click();
+	await page.getByRole('button', { name: 'Rename board' }).last().click();
 	await input.fill('   ');
 	await input.press('Enter');
 	// Пустое имя не принимается — инпут остаётся открытым, старое имя на месте
@@ -79,4 +79,17 @@ test('a visitor has no rename option', async ({ browser }) => {
 
 	await ctxA.close();
 	await ctxB.close();
+});
+
+test('the pencil next to the title renames without opening the menu', async ({ page }) => {
+	await createBoard(page, 'Pencil me');
+	// Карандаш в крошках — первый «Rename board», пункт меню — последний
+	await page.getByRole('button', { name: 'Rename board' }).first().click();
+	const input = page.getByRole('textbox', { name: 'Board title' });
+	await expect(input).toBeFocused();
+	await input.fill('Pencil done');
+	await input.press('Enter');
+	await expect(page.getByText('Pencil done').first()).toBeVisible();
+	await page.reload();
+	await expect(page.getByText('Pencil done').first()).toBeVisible();
 });
