@@ -93,3 +93,47 @@ export function collectCards(
 	}
 	return entries;
 }
+
+export const ANALYSIS_DAILY_LIMIT = 3;
+export const ANALYSIS_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Кеш актуален, пока после последней доски-анализа не появилось новой обычной доски. */
+export function cacheState(latestRegularAt: Date | null, latestAnalysisAt: Date | null): 'fresh' | 'stale' {
+	if (!latestAnalysisAt) return 'stale';
+	if (!latestRegularAt) return 'fresh';
+	return latestAnalysisAt.getTime() > latestRegularAt.getTime() ? 'fresh' : 'stale';
+}
+
+/** Сколько анализов сделано за окно и когда самый старый из них — от него считаем «через N ч». */
+export function analysesInWindow(
+	analysisBoards: { createdAt: Date }[],
+	now: Date,
+	windowMs = ANALYSIS_WINDOW_MS
+): { count: number; oldestAt: Date | null } {
+	const since = now.getTime() - windowMs;
+	let count = 0;
+	let oldestAt: Date | null = null;
+	for (const b of analysisBoards) {
+		if (b.createdAt.getTime() <= since) continue;
+		count++;
+		if (!oldestAt || b.createdAt < oldestAt) oldestAt = b.createdAt;
+	}
+	return { count, oldestAt };
+}
+
+export function retryInHours(oldestAt: Date, now: Date, windowMs = ANALYSIS_WINDOW_MS): number {
+	const left = oldestAt.getTime() + windowMs - now.getTime();
+	return Math.max(1, Math.ceil(left / 3_600_000));
+}
+
+// Один анализ на пространство в моменте: второй клик ждёт результат первого.
+// Процесс один, поэтому Map в памяти достаточно.
+const inFlight = new Map<string, Promise<unknown>>();
+
+export function runOnce<T>(key: string, fn: () => Promise<T>): Promise<T> {
+	const existing = inFlight.get(key);
+	if (existing) return existing as Promise<T>;
+	const p = fn().finally(() => inFlight.delete(key));
+	inFlight.set(key, p);
+	return p;
+}

@@ -4,6 +4,12 @@ import {
 	isAnalysisBoard,
 	ANALYSIS_MAX_CARDS,
 	ANALYSIS_CHAR_BUDGET,
+	cacheState,
+	analysesInWindow,
+	retryInHours,
+	runOnce,
+	ANALYSIS_DAILY_LIMIT,
+	ANALYSIS_WINDOW_MS,
 	type SourceBoard,
 	type SourceCard,
 	type SourceVote
@@ -88,5 +94,72 @@ describe('collectCards — вход для модели', () => {
 		expect(ANALYSIS_CHAR_BUDGET).toBe(60_000);
 		expect(isAnalysisBoard({ format: 'analysis' })).toBe(true);
 		expect(isAnalysisBoard({ format: 'classic' })).toBe(false);
+	});
+});
+
+describe('cacheState — новая доска сбрасывает кеш', () => {
+	it('анализа не было → stale', () => {
+		expect(cacheState(d('2026-09-01T00:00:00Z'), null)).toBe('stale');
+	});
+	it('анализ новее последней доски → fresh', () => {
+		expect(cacheState(d('2026-09-01T00:00:00Z'), d('2026-09-02T00:00:00Z'))).toBe('fresh');
+	});
+	it('после анализа появилась доска → stale', () => {
+		expect(cacheState(d('2026-09-03T00:00:00Z'), d('2026-09-02T00:00:00Z'))).toBe('stale');
+	});
+	it('обычных досок нет, анализ есть → fresh (нечего пересчитывать)', () => {
+		expect(cacheState(null, d('2026-09-02T00:00:00Z'))).toBe('fresh');
+	});
+});
+
+describe('analysesInWindow / retryInHours — 3 в сутки на пространство', () => {
+	const now = d('2026-09-16T12:00:00Z');
+	it('считает только доски внутри окна и находит самую старую из них', () => {
+		const list = [
+			{ createdAt: d('2026-09-15T11:00:00Z') }, // 25 ч назад — вне окна
+			{ createdAt: d('2026-09-16T09:00:00Z') },
+			{ createdAt: d('2026-09-15T14:00:00Z') }
+		];
+		expect(analysesInWindow(list, now)).toEqual({ count: 2, oldestAt: d('2026-09-15T14:00:00Z') });
+	});
+	it('пустой список → 0 и null', () => {
+		expect(analysesInWindow([], now)).toEqual({ count: 0, oldestAt: null });
+	});
+	it('часы до освобождения слота округляются вверх и не меньше 1', () => {
+		expect(retryInHours(d('2026-09-15T14:00:00Z'), now)).toBe(2); // 22 ч прошло → 2 ч осталось
+		expect(retryInHours(d('2026-09-15T12:30:00Z'), now)).toBe(1); // 30 мин осталось → 1
+		expect(retryInHours(d('2026-09-15T11:59:00Z'), now)).toBe(1); // уже свободно, но показываем 1
+	});
+	it('константы', () => {
+		expect(ANALYSIS_DAILY_LIMIT).toBe(3);
+		expect(ANALYSIS_WINDOW_MS).toBe(86_400_000);
+	});
+});
+
+describe('runOnce — параллельные клики схлопываются', () => {
+	it('второй вызов с тем же ключом получает результат первого, fn запускается один раз', async () => {
+		let calls = 0;
+		let release!: (v: string) => void;
+		const fn = () => {
+			calls++;
+			return new Promise<string>((res) => (release = res));
+		};
+		const p1 = runOnce('space-1', fn);
+		const p2 = runOnce('space-1', fn);
+		release('slug-1');
+		expect(await p1).toBe('slug-1');
+		expect(await p2).toBe('slug-1');
+		expect(calls).toBe(1);
+	});
+	it('после завершения ключ свободен, ошибка тоже освобождает', async () => {
+		await expect(runOnce('space-2', () => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
+		expect(await runOnce('space-2', () => Promise.resolve('ok'))).toBe('ok');
+	});
+	it('разные ключи независимы', async () => {
+		const [a, b] = await Promise.all([
+			runOnce('x', () => Promise.resolve('a')),
+			runOnce('y', () => Promise.resolve('b'))
+		]);
+		expect([a, b]).toEqual(['a', 'b']);
 	});
 });
