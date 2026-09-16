@@ -4,7 +4,7 @@
 </script>
 
 <!-- Стопка уведомлений: правый верхний угол под шапкой (иначе закрывает её кнопки), стиль карточек сайта -->
-<div class="pointer-events-none fixed right-4 top-[68px] z-[700] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2.5 sm:top-[76px]" aria-live="polite">
+<div class="pointer-events-none fixed right-4 top-[68px] z-[700] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2.5 sm:top-[76px]">
 	{#each toastStore.toasts as toast (toast.id)}
 		<div
 			role={toast.kind === 'error' ? 'alert' : 'status'}

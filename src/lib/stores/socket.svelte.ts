@@ -2,7 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { boardStore } from './board.svelte.js';
 import { toastStore } from './toast.svelte.js';
 import { t } from '$lib/i18n/index.js';
-import { analysisTransition, type AnalysisState } from '$lib/analysis-state.js';
+import { analysisTransition, PENDING_STALE_MS, type AnalysisState } from '$lib/analysis-state.js';
 
 class SocketStore {
 	socket = $state<Socket | null>(null);
@@ -19,6 +19,10 @@ class SocketStore {
 
 	private currentSlug: string | null = null;
 	private currentSpace: string | null = null;
+	// Растёт на каждом сокет-событии статуса: ответ HTTP, стартовавший раньше
+	// события, уже устарел и не должен затирать новое состояние
+	private analysisSeq = 0;
+	private staleTimer: ReturnType<typeof setTimeout> | undefined;
 	private currentCreatorToken = '';
 	private everConnected = false;
 
@@ -37,10 +41,7 @@ class SocketStore {
 					creatorToken: this.currentCreatorToken
 				});
 			}
-			if (this.everConnected && this.currentSpace) {
-				this.socket?.emit('space:join', { slug: this.currentSpace });
-				void this.refreshAnalysis();
-			}
+			if (this.everConnected && this.currentSpace) this.emitSpaceJoin(this.currentSpace);
 			this.everConnected = true;
 		});
 
@@ -93,29 +94,46 @@ class SocketStore {
 		});
 
 		this.socket.on('analysis:state', (state: AnalysisState) => {
+			this.analysisSeq++;
 			this.applyAnalysis(state);
 		});
 	}
 
 	/** Комната пространства — статус анализа для всех, кто в нём. Первый статус
-	 *  добираем по HTTP: задача могла закончиться, пока сокет подключался. */
+	 *  добираем по HTTP, но только после подтверждения входа в комнату (ack):
+	 *  событие между fetch и join иначе терялось бы. */
 	joinSpace(slug: string) {
 		this.currentSpace = slug;
-		this.socket?.emit('space:join', { slug });
-		void this.refreshAnalysis();
+		this.emitSpaceJoin(slug);
+	}
+
+	private emitSpaceJoin(slug: string) {
+		this.socket?.emit('space:join', { slug }, () => {
+			if (this.currentSpace === slug) void this.refreshAnalysis();
+		});
 	}
 
 	async refreshAnalysis() {
 		const slug = this.currentSpace;
 		if (!slug) return;
+		const seq = this.analysisSeq;
 		try {
 			const res = await fetch(`/spaces/${slug}/analysis`);
 			if (!res.ok) return;
 			const state = (await res.json()) as AnalysisState;
-			if (this.currentSpace === slug) this.applyAnalysis(state);
+			// Пока ждали ответ, по сокету могло прийти более свежее состояние
+			if (this.currentSpace === slug && this.analysisSeq === seq) this.applyAnalysis(state);
 		} catch {
 			// сеть моргнула — следующий сокет-ивент или реконнект всё поправят
 		}
+	}
+
+	/** pending старше 5 минут сервер считает упавшим, но события об этом не будет:
+	 *  задача потеряна вместе с процессом. Один отложенный fetch покажет плитку с «Повторить». */
+	private scheduleStaleCheck(createdAt: string) {
+		clearTimeout(this.staleTimer);
+		const delay = new Date(createdAt).getTime() + PENDING_STALE_MS + 1_000 - Date.now();
+		this.staleTimer = setTimeout(() => void this.refreshAnalysis(), Math.max(1_000, delay));
 	}
 
 	/** Состояние из данных страницы: молча, если ещё ничего не знали */
@@ -126,8 +144,20 @@ class SocketStore {
 	}
 
 	applyAnalysis(next: AnalysisState) {
-		const transition = analysisTransition(this.analysis, next);
+		const prev = this.analysis;
+		// Завершённая попытка не возвращается в pending: это запоздавший ответ HTTP
+		if (
+			next.state === 'pending' &&
+			prev &&
+			(prev.state === 'ready' || prev.state === 'failed') &&
+			prev.id === next.id
+		) {
+			return;
+		}
+		const transition = analysisTransition(prev, next);
 		this.analysis = next;
+		clearTimeout(this.staleTimer);
+		if (next.state === 'pending') this.scheduleStaleCheck(next.createdAt);
 		if (!transition || next.state === 'idle') return;
 		if (transition === 'started') {
 			toastStore.push({ kind: 'info', text: t('space.analysis.toast.started', { title: next.title }) });
@@ -143,6 +173,17 @@ class SocketStore {
 	}
 
 	joinBoard(slug: string, creatorToken?: string | null) {
+		// Переход с доски на доску не перемонтирует страницу: сбрасываем состояние
+		// прошлой комнаты, сервер пришлёт свежее сразу после входа
+		if (this.currentSlug && this.currentSlug !== slug) {
+			this.usersCount = 0;
+			this.timerEnd = null;
+			this.timerDuration = null;
+			this.focusCardId = null;
+			this.focusEndTime = null;
+			this.focusDuration = null;
+			this.focusDiscussed = [];
+		}
 		this.currentSlug = slug;
 		this.currentCreatorToken = creatorToken ?? '';
 		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '' });
@@ -209,6 +250,7 @@ class SocketStore {
 		this.currentCreatorToken = '';
 		this.currentSpace = null;
 		this.analysis = null;
+		clearTimeout(this.staleTimer);
 		this.everConnected = false;
 		this.timerEnd = null;
 		this.timerDuration = null;

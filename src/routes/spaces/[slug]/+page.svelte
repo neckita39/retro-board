@@ -13,13 +13,16 @@
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
+	import { ANALYSIS_FORMAT } from '$lib/formats.js';
 
 	let { data, form } = $props();
 
 	boardStore.board = null;
 
-	// Комната пространства: статус AI-анализа для всех, кто здесь
+	// Комната пространства: статус AI-анализа для всех, кто здесь.
+	// Без пароля (authenticated=false) сокет не нужен — и сервер в комнату не пустит.
 	onMount(() => {
+		if (!data.authenticated) return;
 		socketStore.connect();
 		socketStore.joinSpace(data.space.slug);
 	});
@@ -103,8 +106,11 @@
 	// createdAt is only present once the space password has been entered
 	let spaceCreatedAt = $derived('createdAt' in data.space ? data.space.createdAt : null);
 
+	// Доски-анализы — не ретро: их не считаем и не берём за образец названия
+	let regularBoards = $derived(data.boards.filter((b) => b.format !== ANALYSIS_FORMAT));
+
 	// Prefill the next sprint name: increment the trailing number of the latest board title
-	let latestTitle = $derived(data.boards[0]?.title ?? null);
+	let latestTitle = $derived(regularBoards[0]?.title ?? null);
 	let suggestedTitle = $derived.by(() => {
 		if (!latestTitle) return '';
 		const match = latestTitle.match(/(\d+)(?=\D*$)/);
@@ -218,7 +224,7 @@
 						</div>
 						{#if spaceCreatedAt}
 							<p class="text-[15px] text-text-secondary">
-								{t('space.meta.count', { n: data.boards.length })} · {t('space.meta.since', { date: sinceDate(spaceCreatedAt) })}
+								{t('space.meta.count', { n: regularBoards.length })} · {t('space.meta.since', { date: sinceDate(spaceCreatedAt) })}
 							</p>
 						{/if}
 					</div>

@@ -20,6 +20,7 @@ import {
 	parseAnalysis,
 	isEmptyAnalysis,
 	analysisTitle,
+	parseClientDate,
 	analysisAuthor,
 	cardText,
 	ANALYSIS_COLUMNS,
@@ -276,6 +277,17 @@ describe('тексты доски-анализа', () => {
 		expect(analysisTitle(date, 'ru')).toBe('Анализ пространства за 16.09.2026');
 		expect(analysisTitle(date, 'en')).toBe('Space analysis for 16.09.2026');
 	});
+	it('parseClientDate — календарный день нажавшего, в пределах двух суток', () => {
+		const now = new Date('2026-09-16T21:30:00Z'); // в Москве уже 17-е
+		expect(analysisTitle(parseClientDate('2026-09-17', now), 'ru')).toBe('Анализ пространства за 17.09.2026');
+		expect(parseClientDate('2026-09-16', now).toISOString()).toBe('2026-09-16T12:00:00.000Z');
+		// Мусор, невалидная дата и слишком далёкая — серверное «сейчас»
+		expect(parseClientDate(undefined, now)).toBe(now);
+		expect(parseClientDate('17.09.2026', now)).toBe(now);
+		expect(parseClientDate('2026-02-30', now)).toBe(now);
+		expect(parseClientDate('2026-09-01', now)).toBe(now);
+	});
+
 	it('автор', () => {
 		expect(analysisAuthor('ru')).toBe('AI-анализ');
 		expect(analysisAuthor('en')).toBe('AI analysis');

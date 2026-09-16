@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy, untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import AdminBanner from '$lib/components/AdminBanner.svelte';
 	import Board from '$lib/components/Board.svelte';
@@ -24,10 +24,19 @@
 		untrack(() => socketStore.seedAnalysis(state));
 	});
 
-	onMount(() => {
-		socketStore.connect();
-		socketStore.joinBoard(data.board.slug, data.creatorToken);
-		if (data.space) socketStore.joinSpace(data.space.slug);
+	// Вход в комнаты — эффект, а не onMount: переход с доски на доску (кнопка
+	// «Открыть» в уведомлении) не перемонтирует страницу, а сокет должен
+	// переехать в новую комнату. В комнату пространства идём только с доступом
+	// к нему (analysis === null — пароль не введён).
+	$effect(() => {
+		const slug = data.board.slug;
+		const token = data.creatorToken;
+		const spaceSlug = data.analysis !== null ? (data.space?.slug ?? null) : null;
+		untrack(() => {
+			socketStore.connect();
+			socketStore.joinBoard(slug, token);
+			if (spaceSlug) socketStore.joinSpace(spaceSlug);
+		});
 	});
 
 	onDestroy(() => {

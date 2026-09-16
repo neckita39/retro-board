@@ -36,6 +36,8 @@ export default defineConfig({
 				PORT: String(PORT),
 				ORIGIN: BASE_URL,
 				BODY_SIZE_LIMIT: '20971520',
+				// Как в проде: карточки шифруются, и доска-анализ (пишет SvelteKit) должна читаться сокет-сервером
+				ENCRYPTION_KEY: '0123456789abcdef'.repeat(4),
 				DEEPSEEK_API_KEY: 'test-key',
 				DEEPSEEK_API_BASE: 'http://localhost:4778'
 			}

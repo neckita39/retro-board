@@ -4,7 +4,7 @@ import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import { normalizeTitle } from '$lib/titles.js';
 import { db } from '$lib/server/db/index.js';
 import { spaces, boards, cards, votes, spaceAnalyses } from '$lib/server/db/schema.js';
-import { eq, sql, desc, inArray, and, or } from 'drizzle-orm';
+import { eq, sql, desc, inArray, and, or, lt } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword, verifyPassword } from '$lib/server/password.js';
 import { metric } from '$lib/server/statsd.js';
@@ -19,6 +19,8 @@ import {
 	latestReady,
 	limitRows,
 	livePending,
+	parseClientDate,
+	PENDING_STALE_MS,
 	retryInHours,
 	rowToState,
 	statePayload,
@@ -300,18 +302,34 @@ export const actions: Actions = {
 		);
 		if (entries.length === 0) return failWith(400, 'no_cards');
 
-		// Упавшие и брошенные попытки убираем: показывается только текущая.
-		// Живого pending нет (проверено выше), значит pending здесь — устаревшие.
-		await db
-			.delete(spaceAnalyses)
-			.where(and(eq(spaceAnalyses.spaceId, space.id), or(eq(spaceAnalyses.state, 'failed'), eq(spaceAnalyses.state, 'pending'))));
+		// Упавшие и брошенные (устаревшие pending) попытки убираем: показывается
+		// только текущая. Живой pending не трогаем — его мог только что вставить
+		// параллельный клик; тогда наш insert упрётся в частичный уникальный индекс.
+		await db.delete(spaceAnalyses).where(
+			and(
+				eq(spaceAnalyses.spaceId, space.id),
+				or(
+					eq(spaceAnalyses.state, 'failed'),
+					and(eq(spaceAnalyses.state, 'pending'), lt(spaceAnalyses.createdAt, new Date(now.getTime() - PENDING_STALE_MS)))
+				)
+			)
+		);
 
 		const boardSlug = nanoid(21);
 		const creatorToken = nanoid(32);
-		const [row] = await db
-			.insert(spaceAnalyses)
-			.values({ spaceId: space.id, state: 'pending', title: analysisTitle(now, locale), locale, boardSlug, creatorToken })
-			.returning();
+		const title = analysisTitle(parseClientDate(formData.get('localDate'), now), locale);
+		let row: typeof spaceAnalyses.$inferSelect;
+		try {
+			// createdAt = момент чтения досок: кеш сравнивает его с датой последней доски
+			[row] = await db
+				.insert(spaceAnalyses)
+				.values({ spaceId: space.id, state: 'pending', title, locale, boardSlug, creatorToken, createdAt: now })
+				.returning();
+		} catch (err) {
+			// 23505 — space_analyses_one_pending: кто-то нажал одновременно с нами
+			if ((err as { code?: string })?.code === '23505') return failWith(409, 'running');
+			throw err;
+		}
 
 		// Нажавший — создатель будущей доски, cookie ставим сразу
 		cookies.set(`retro_creator_${boardSlug}`, creatorToken, {

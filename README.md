@@ -191,7 +191,7 @@ GET /api/v1/boards/{slug}/export.md?lang=en|ru    # Markdown; lang — язык 
 GET /api/v1/spaces/{slug}/boards.json             # space, boards → slug, title, format, createdAt, url (новые первыми)
 GET /api/v1/spaces/{slug}/boards.md?lang=en|ru     # то же списком ссылок в Markdown
 GET /api/v1/spaces/{slug}/analyses.json            # все AI-анализы пространства в формате экспорта доски
-GET /api/v1/spaces/{slug}/analyses.md?lang=en|ru   # то же в Markdown; пространство с паролем — заголовок X-Space-Password
+GET /api/v1/spaces/{slug}/analyses.md?lang=en|ru   # то же в Markdown; пространство с паролем — заголовок X-Space-Password (401 без него, 403 неверный)
 ```
 
 Лимит 30 запросов в минуту с IP. Документация — [retrospectrix.ru/api](https://retrospectrix.ru/api).

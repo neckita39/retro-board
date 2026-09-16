@@ -154,7 +154,7 @@
 	"apiDocs.spaceAnalyses.md.desc": "Returns every AI analysis of the space as Markdown, newest first — each in the same shape as a board export. Access by space code.",
 	"apiDocs.spaceAnalyses.json.title": "Space AI analyses as JSON",
 	"apiDocs.spaceAnalyses.json.desc": "Returns every AI analysis of the space as JSON, newest first — each in the same shape as a board export. Access by space code.",
-	"apiDocs.params.password": "for a password-protected space: the password, in this header or as ?password=",
+	"apiDocs.params.password": "for a password-protected space: the password, in this header",
 	"apiDocs.limits.password": "Password-protected space without a password — 401, wrong password — 403",
 	"apiDocs.back": "← Back",
 

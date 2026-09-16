@@ -71,3 +71,20 @@ export async function createBoardInSpace(page: Page, spaceSlug: string, title: s
 	await expect(closeBanner).toBeHidden();
 	return new URL(page.url()).pathname.slice(1);
 }
+
+// Пространство с паролем. Создатель получает cookie доступа сразу.
+export async function createLockedSpace(page: Page, name: string, password: string): Promise<{ slug: string; adminUrl: string }> {
+	await initStorage(page);
+	await page.goto('/new');
+	await page.locator('button[aria-pressed]').nth(1).click();
+	await page.getByPlaceholder('Space name').fill(name);
+	await page.getByText('Set a password').click();
+	await page.getByPlaceholder('Password').fill(password);
+	await page.locator('form[action="?/createSpace"] button[type="submit"]').click();
+	await page.waitForURL(/\/spaces\/[A-Za-z0-9_-]{21}/);
+	const adminUrl = page.url();
+	const closeBanner = page.getByRole('button', { name: 'Close' });
+	await closeBanner.click();
+	await expect(closeBanner).toBeHidden();
+	return { slug: new URL(adminUrl).pathname.split('/')[2], adminUrl };
+}

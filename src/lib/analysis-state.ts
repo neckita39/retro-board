@@ -9,6 +9,9 @@ export type AnalysisState =
 
 export type AnalysisTransition = 'started' | 'ready' | 'failed';
 
+/** pending старше этого — сервер перезапустился посреди работы, задача потеряна */
+export const PENDING_STALE_MS = 5 * 60_000;
+
 /**
  * null — молчим: первое применение (страница только загрузилась), то же
  * состояние повторно, или переход в idle. Иначе — какое уведомление показать.

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createBoard, addCard, createSpace, createBoardInSpace, initStorage } from './helpers';
+import { createBoard, addCard, createSpace, createBoardInSpace, createLockedSpace } from './helpers';
 
 test('board is fetchable as markdown and json; unknown slug is 404', async ({ page }) => {
 	const slug = await createBoard(page, 'Export board');
@@ -60,19 +60,12 @@ test('space boards and AI analyses are fetchable as json and markdown', async ({
 });
 
 test('a password-protected space needs the password in the API', async ({ page }) => {
-	await initStorage(page);
-	await page.goto('/new');
-	await page.locator('button[aria-pressed]').nth(1).click();
-	await page.getByPlaceholder('Space name').fill('Locked space');
-	await page.getByText('Set a password').click();
-	await page.getByPlaceholder('Password').fill('s3cret');
-	await page.locator('form[action="?/createSpace"] button[type="submit"]').click();
-	await page.waitForURL(/\/spaces\/[A-Za-z0-9_-]{21}/);
-	const slug = new URL(page.url()).pathname.split('/')[2];
+	const { slug } = await createLockedSpace(page, 'Locked space', 's3cret');
 
-	// Cookie создателя API не читает — только заголовок или ?password=
+	// Cookie создателя API не читает — только заголовок; query string не принимается
 	expect((await page.request.get(`/api/v1/spaces/${slug}/boards.json`)).status()).toBe(401);
-	expect((await page.request.get(`/api/v1/spaces/${slug}/boards.json?password=wrong`)).status()).toBe(403);
+	expect((await page.request.get(`/api/v1/spaces/${slug}/boards.json?password=s3cret`)).status()).toBe(401);
+	expect((await page.request.get(`/api/v1/spaces/${slug}/boards.json`, { headers: { 'X-Space-Password': 'wrong' } })).status()).toBe(403);
 	const ok = await page.request.get(`/api/v1/spaces/${slug}/analyses.md`, { headers: { 'X-Space-Password': 's3cret' } });
 	expect(ok.status()).toBe(200);
 	expect(await ok.text()).toContain('# Locked space — AI analyses');

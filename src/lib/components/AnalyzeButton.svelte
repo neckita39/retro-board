@@ -15,14 +15,23 @@
 	}: { spaceSlug: string; compact?: boolean; variant?: 'header' | 'retry' } = $props();
 
 	let busy = $state(false);
+
+	// Календарная дата нажавшего для названия «Анализ пространства за …»:
+	// вечером в Москве по UTC ещё вчера
+	function localDate(): string {
+		const d = new Date();
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	}
 </script>
 
 <form
 	method="POST"
 	action="/spaces/{spaceSlug}?/analyze"
 	class="contents"
-	use:enhance={() => {
+	use:enhance={({ formData }) => {
 		busy = true;
+		formData.set('localDate', localDate());
 		return async ({ result }) => {
 			busy = false;
 			if (result.type === 'success') {

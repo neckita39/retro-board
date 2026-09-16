@@ -336,6 +336,23 @@ const FOCUS_STALE_MS = 30 * 60 * 1000;
 // пейлоад focus:state рассылается всей комнате на каждом переходе.
 const FOCUS_DISCUSSED_MAX = 500;
 
+/** Cookie из рукопожатия сокета: name=value; ... → объект. Битые пары пропускаем. */
+function parseCookies(header) {
+	const jar = {};
+	for (const part of String(header || '').split(';')) {
+		const idx = part.indexOf('=');
+		if (idx <= 0) continue;
+		const name = part.slice(0, idx).trim();
+		if (!name) continue;
+		try {
+			jar[name] = decodeURIComponent(part.slice(idx + 1).trim());
+		} catch {
+			// значение с кривым percent-encoding — пропускаем
+		}
+	}
+	return jar;
+}
+
 function roomIsEmpty(slug) {
 	return (roomUsers.get(slug)?.size ?? 0) === 0;
 }
@@ -362,12 +379,29 @@ io.on('connection', (socket) => {
 	// поэтому проверок доступа не делаем — slug пространства и так неугадываем
 	let currentSpace = null;
 
-	socket.on('space:join', (payload) => {
+	// Пространство с паролем: в комнату пускаем только с cookie доступа или
+	// cookie создателя (те же правила, что у страницы). Статус анализа несёт
+	// slug доски-анализа, а он должен быть виден лишь тем, кто прошёл пароль.
+	// ack: клиент запрашивает состояние по HTTP только после входа в комнату,
+	// иначе событие между fetch и join терялось бы.
+	socket.on('space:join', async (payload, ack) => {
 		const slug = payload?.slug;
 		if (typeof slug !== 'string' || !slug || slug.length > 64) return;
-		if (currentSpace) socket.leave(`space:${currentSpace}`);
-		currentSpace = slug;
-		socket.join(`space:${slug}`);
+		try {
+			const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, slug) });
+			if (!space) return;
+			if (space.passwordHash) {
+				const jar = parseCookies(socket.handshake?.headers?.cookie);
+				const creator = !!space.creatorToken && jar[`retro_space_creator_${slug}`] === space.creatorToken;
+				if (!creator && !jar[`retro_space_${slug}`]) return;
+			}
+			if (currentSpace) socket.leave(`space:${currentSpace}`);
+			currentSpace = slug;
+			socket.join(`space:${slug}`);
+			if (typeof ack === 'function') ack();
+		} catch (err) {
+			logger.error({ err, event: 'space:join', slug }, 'Failed to join space room');
+		}
 	});
 
 	socket.on('board:join', async ({ slug, creatorToken: joinToken }) => {

@@ -68,6 +68,25 @@ describe('chatCompletion', () => {
 		).rejects.toMatchObject({ kind: 'timeout' });
 	});
 
+	it('заголовки пришли, а тело не приходит → тоже timeout, а не зависание', async () => {
+		// DeepSeek под нагрузкой отдаёт 200 сразу, а потом долго шлёт пустые строки
+		const fetchFn = vi.fn((_url: string, init?: RequestInit) =>
+			Promise.resolve(
+				new Response(
+					new ReadableStream({
+						start(ctrl) {
+							init?.signal?.addEventListener('abort', () => ctrl.error(new DOMException('aborted', 'AbortError')));
+						}
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } }
+				)
+			)
+		);
+		await expect(
+			chatCompletion(messages, { apiKey: 'k', fetchFn: fetchFn as unknown as typeof fetch, timeoutMs: 20 })
+		).rejects.toMatchObject({ kind: 'timeout' });
+	});
+
 	it('DeepSeekError — это Error с kind', () => {
 		const e = new DeepSeekError('http', 'bad', 502);
 		expect(e).toBeInstanceOf(Error);

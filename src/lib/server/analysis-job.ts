@@ -75,8 +75,18 @@ export async function runAnalysisJob(input: AnalysisJobInput): Promise<void> {
 		emitSpace(spaceSlug, 'analysis:state', rowToState({ ...row, state: 'ready', boardId }, finishedAt));
 	} catch (err) {
 		const kind = failureKind(err);
+		const known = err instanceof DeepSeekError || err instanceof AnalysisFailure;
 		metric(`retro.analysis.failed.${kind}`, 1);
-		console.warn(JSON.stringify({ event: 'analysis:failed', space: spaceSlug, kind, status: (err as DeepSeekError)?.status ?? null }));
+		console.warn(
+			JSON.stringify({
+				event: 'analysis:failed',
+				space: spaceSlug,
+				kind,
+				status: (err as DeepSeekError)?.status ?? null,
+				// Неизвестная ошибка (БД, шифрование) — без текста её не найти
+				message: known ? undefined : (err as Error)?.message
+			})
+		);
 		const finishedAt = new Date();
 		try {
 			await db.update(spaceAnalyses).set({ state: 'failed', error: kind, finishedAt }).where(eq(spaceAnalyses.id, row.id));

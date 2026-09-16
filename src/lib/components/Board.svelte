@@ -22,7 +22,8 @@
 	// Четыре колонки в один ряд помещаются только на широких экранах
 	let gridCols = $derived(columns.length > 3 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3');
 
-	// Доска-анализ выделяется фиолетовой градиентной рамкой вокруг колонок
+	// Доска-анализ выделяется фиолетовой градиентной рамкой вокруг колонок.
+	// На телефоне рамки нет: колонки идут во всю ширину и упираются в композер
 	let isAnalysis = $derived(boardStore.board?.format === ANALYSIS_FORMAT);
 </script>
 
@@ -42,7 +43,7 @@
 </div>
 
 <div
-	class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7 {gridCols} {isAnalysis ? 'ai-frame rounded-3xl md:mt-5' : ''}"
+	class="mx-auto grid w-full max-w-[1360px] grid-cols-1 gap-5 p-4 pb-32 sm:p-6 md:pb-10 lg:px-7 {gridCols} {isAnalysis ? 'md:ai-frame md:rounded-3xl md:mt-5' : ''}"
 	data-testid="board-columns"
 >
 	{#each columns as column (column.id)}

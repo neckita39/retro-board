@@ -88,19 +88,19 @@ export function spaceAnalysesToMarkdown(data: SpaceAnalysesExport, lang: Locale 
 
 /**
  * Пространство для API: лимит запросов, 404, и пароль там, где он есть.
- * Пароль — заголовок X-Space-Password или ?password=; без него 401, неверный — 403.
+ * Пароль — только заголовок X-Space-Password (query string попадает в логи);
+ * без него 401, неверный — 403.
  */
 export async function spaceForApi(opts: {
 	slug: string;
 	request: Request;
-	url: URL;
 	ip: string;
 }): Promise<typeof spaces.$inferSelect> {
 	if (!exportRateLimiter.check(opts.ip)) throw error(429, 'Too many requests');
 	const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, opts.slug) });
 	if (!space) throw error(404, 'Space not found');
 	if (space.passwordHash) {
-		const password = opts.request.headers.get('x-space-password') ?? opts.url.searchParams.get('password') ?? '';
+		const password = opts.request.headers.get('x-space-password') ?? '';
 		if (!password) throw error(401, 'Password required');
 		if (!(await verifyPassword(password, space.passwordHash))) throw error(403, 'Wrong password');
 	}

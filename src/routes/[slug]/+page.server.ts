@@ -5,6 +5,7 @@ import { boards, cards, votes, comments, spaces, images, spaceAnalyses } from '$
 import { eq, inArray, desc } from 'drizzle-orm';
 import { statePayload } from '$lib/server/analysis.js';
 import type { AnalysisState } from '$lib/analysis-state.js';
+import { canViewSpace } from '$lib/server/space-access.js';
 import { decrypt } from '$lib/server/crypto.js';
 import type { PageServerLoad } from './$types.js';
 
@@ -52,6 +53,9 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	let space: { slug: string; name: string } | null = null;
 	let spaceCreator = false;
 	let analysis: AnalysisState | null = null;
+	// Кнопка анализа и его статус — только тем, кто имеет доступ к пространству:
+	// доска открыта по ссылке всем, а пароль пространства защищает именно его содержимое
+	let spaceViewable = false;
 	if (board.spaceId) {
 		const s = await db.query.spaces.findFirst({
 			where: eq(spaces.id, board.spaceId)
@@ -60,13 +64,16 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			space = { slug: s.slug, name: s.name };
 			const spaceCookie = cookies.get(`retro_space_creator_${s.slug}`) ?? '';
 			spaceCreator = !!s.creatorToken && spaceCookie === s.creatorToken;
-			// Статус AI-анализа пространства: уведомления должны приходить и на досках
-			const rows = await db
-				.select()
-				.from(spaceAnalyses)
-				.where(eq(spaceAnalyses.spaceId, s.id))
-				.orderBy(desc(spaceAnalyses.createdAt));
-			analysis = statePayload(rows, new Date());
+			spaceViewable = canViewSpace(s, cookies);
+			if (spaceViewable) {
+				// Статус AI-анализа пространства: уведомления должны приходить и на досках
+				const rows = await db
+					.select()
+					.from(spaceAnalyses)
+					.where(eq(spaceAnalyses.spaceId, s.id))
+					.orderBy(desc(spaceAnalyses.createdAt));
+				analysis = statePayload(rows, new Date());
+			}
 		}
 	}
 
@@ -105,7 +112,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		isCreator,
 		showAdminBanner,
 		adminLink,
-		analysisEnabled: !!env.DEEPSEEK_API_KEY,
+		analysisEnabled: spaceViewable && !!env.DEEPSEEK_API_KEY,
 		analysis,
 		creatorToken: isCreator ? board.creatorToken : null,
 		cards: boardCards.map((c) => ({

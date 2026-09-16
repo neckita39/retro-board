@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { addCard, createBoard, createBoardInSpace, createSpace, initStorage } from './helpers';
+import { addCard, createBoard, createBoardInSpace, createLockedSpace, createSpace, initStorage } from './helpers';
 
 const MOCK = 'http://localhost:4778';
 
@@ -207,4 +207,75 @@ test('on a phone the analysis board opens on its first column', async ({ page })
 	await page.goto(path);
 	await expect(page.getByRole('button', { name: /^Good · 1$/ })).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.locator('.card-board', { hasText: 'Deploys keep going smoothly' })).toBeVisible();
+});
+
+test('a second click while the analysis runs is refused as already running', async ({ page }) => {
+	const space = await seedSpace(page, 'Impatient team');
+	await page.goto(`/spaces/${space.slug}`);
+	await setMock(page, 'ok', 3_000);
+	await page.getByTestId('analyze-button').click();
+	await expect(page.getByTestId('analysis-pending')).toBeVisible();
+	const before = await (await page.request.get(`/spaces/${space.slug}/analysis`)).json();
+
+	await page.getByTestId('analyze-button').click();
+	await expect(toasts(page, 'error')).toContainText('already running');
+	const after = await (await page.request.get(`/spaces/${space.slug}/analysis`)).json();
+	expect(after.id).toBe(before.id);
+	await expect(toasts(page, 'success')).toContainText('AI analysis is ready', { timeout: 20_000 });
+});
+
+test('from a board page the button works and «Open» keeps realtime on the analysis board', async ({ browser }) => {
+	const ctxA = await browser.newContext();
+	const ctxB = await browser.newContext();
+	const pageA = await ctxA.newPage();
+	const pageB = await ctxB.newPage();
+
+	const space = await seedSpace(pageA, 'Roaming team 2');
+	await pageA.goto(`/${space.boards[1]}`);
+	await expect(pageA.getByTestId('analyze-button')).toBeVisible();
+	const path = await runAnalysis(pageA);
+	await toasts(pageA, 'success').getByRole('link', { name: /Open/ }).click();
+	await expect(pageA).toHaveTitle(/^Space analysis for/);
+	expect(new URL(pageA.url()).pathname).toBe(path);
+
+	// Сокет переехал в комнату новой доски: карточка из B приходит в A без перезагрузки
+	await initStorage(pageB);
+	await pageB.goto(path);
+	await addCard(pageB, 'Still good', 'live on the analysis board');
+	await expect(pageA.locator('.card-board', { hasText: 'live on the analysis board' })).toBeVisible({ timeout: 10_000 });
+
+	await ctxA.close();
+	await ctxB.close();
+});
+
+test('a locked space hides the analysis from viewers without the password', async ({ browser }) => {
+	const ctxA = await browser.newContext();
+	const ctxB = await browser.newContext();
+	const pageA = await ctxA.newPage();
+	const pageB = await ctxB.newPage();
+
+	const space = await createLockedSpace(pageA, 'Locked team', 's3cret');
+	const boardSlug = await createBoardInSpace(pageA, space.slug, 'Sprint 1');
+	await addCard(pageA, "Didn't Go Well", 'flaky tests');
+	await createBoardInSpace(pageA, space.slug, 'Sprint 2');
+	await addCard(pageA, "Didn't Go Well", 'flaky tests again');
+
+	// B знает ссылку на доску, но не пароль пространства
+	await initStorage(pageB);
+	await pageB.goto(`/${boardSlug}`);
+	await expect(pageB.getByRole('heading', { name: 'Went Well' })).toBeVisible();
+	await expect(pageB.getByTestId('analyze-button')).toHaveCount(0);
+	expect((await pageB.request.get(`/spaces/${space.slug}/analysis`)).status()).toBe(403);
+
+	await pageA.goto(`/spaces/${space.slug}`);
+	await setMock(pageA, 'ok', 1_500);
+	await pageA.getByTestId('analyze-button').click();
+	await expect(toasts(pageA, 'success')).toContainText('AI analysis is ready', { timeout: 20_000 });
+
+	// Ни «запущен», ни «готов» до B не дошли
+	await pageB.waitForTimeout(1_000);
+	await expect(pageB.getByTestId('toast')).toHaveCount(0);
+
+	await ctxA.close();
+	await ctxB.close();
 });

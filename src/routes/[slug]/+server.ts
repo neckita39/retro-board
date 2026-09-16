@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { boards } from '$lib/server/db/schema.js';
+import { boards, spaces } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types.js';
 
@@ -12,9 +12,14 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	if (!board) throw error(404, 'Board not found');
 
 	const token = cookies.get(`retro_creator_${params.slug}`) ?? '';
-	if (!board.creatorToken || token !== board.creatorToken) {
-		throw error(403, 'Forbidden');
+	let allowed = !!board.creatorToken && token === board.creatorToken;
+	// Создатель пространства — создатель всех его досок (как и на странице доски)
+	if (!allowed && board.spaceId) {
+		const space = await db.query.spaces.findFirst({ where: eq(spaces.id, board.spaceId) });
+		const spaceToken = space ? (cookies.get(`retro_space_creator_${space.slug}`) ?? '') : '';
+		allowed = !!space?.creatorToken && spaceToken === space.creatorToken;
 	}
+	if (!allowed) throw error(403, 'Forbidden');
 
 	await db.delete(boards).where(eq(boards.id, board.id));
 

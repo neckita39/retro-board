@@ -2,7 +2,9 @@
 // актуален ли кеш, не исчерпан ли лимит, как разобрать ответ и во что его
 // превратить. Всё, что ходит наружу, живёт в deepseek.ts и в action.
 import { findBoardFormat, ANALYSIS_FORMAT, type Tone } from '$lib/formats.js';
-import type { AnalysisState } from '$lib/analysis-state.js';
+import { PENDING_STALE_MS, type AnalysisState } from '$lib/analysis-state.js';
+
+export { PENDING_STALE_MS };
 
 export interface SourceBoard {
 	id: string;
@@ -127,18 +129,6 @@ export function retryInHours(oldestAt: Date, now: Date, windowMs = ANALYSIS_WIND
 	return Math.max(1, Math.ceil(left / 3_600_000));
 }
 
-// Один анализ на пространство в моменте: второй клик ждёт результат первого.
-// Процесс один, поэтому Map в памяти достаточно.
-const inFlight = new Map<string, Promise<unknown>>();
-
-export function runOnce<T>(key: string, fn: () => Promise<T>): Promise<T> {
-	const existing = inFlight.get(key);
-	if (existing) return existing as Promise<T>;
-	const p = fn().finally(() => inFlight.delete(key));
-	inFlight.set(key, p);
-	return p;
-}
-
 export type AnalysisLocale = 'en' | 'ru';
 
 export interface ChatMessage {
@@ -249,6 +239,19 @@ function dmy(date: Date): string {
 	return `${dd}.${mm}.${date.getUTCFullYear()}`;
 }
 
+/**
+ * Дата для названия — календарный день того, кто нажал: вечером в Москве
+ * по UTC ещё «вчера». Принимаем YYYY-MM-DD не дальше двух суток от серверного
+ * «сейчас», иначе берём серверную дату. Возвращает полдень UTC этого дня.
+ */
+export function parseClientDate(input: unknown, now: Date): Date {
+	if (typeof input !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(input)) return now;
+	const date = new Date(`${input}T12:00:00Z`);
+	if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== input) return now;
+	if (Math.abs(date.getTime() - now.getTime()) > 2 * 24 * 60 * 60 * 1000) return now;
+	return date;
+}
+
 export function analysisTitle(date: Date, locale: AnalysisLocale): string {
 	return locale === 'ru' ? `Анализ пространства за ${dmy(date)}` : `Space analysis for ${dmy(date)}`;
 }
@@ -281,9 +284,6 @@ export interface AnalysisRow {
 	boardId: string | null;
 	createdAt: Date;
 }
-
-/** pending старше этого — сервер перезапустился посреди работы, задача потеряна */
-export const PENDING_STALE_MS = 5 * 60_000;
 
 export function effectiveRow(row: AnalysisRow, now: Date): AnalysisRow {
 	if (row.state === 'pending' && now.getTime() - row.createdAt.getTime() > PENDING_STALE_MS) {
