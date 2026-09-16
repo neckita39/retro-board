@@ -3,8 +3,8 @@
 	import { t } from '$lib/i18n/index.js';
 </script>
 
-<!-- Стопка уведомлений: правый верхний угол, стиль карточек сайта -->
-<div class="pointer-events-none fixed right-4 top-4 z-[700] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2.5" aria-live="polite">
+<!-- Стопка уведомлений: правый верхний угол под шапкой (иначе закрывает её кнопки), стиль карточек сайта -->
+<div class="pointer-events-none fixed right-4 top-[68px] z-[700] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2.5 sm:top-[76px]" aria-live="polite">
 	{#each toastStore.toasts as toast (toast.id)}
 		<div
 			role={toast.kind === 'error' ? 'alert' : 'status'}
