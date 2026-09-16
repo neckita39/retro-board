@@ -156,13 +156,9 @@
 				data-testid="space-tile"
 				data-format={board.format}
 			>
-				<div class="flex items-start justify-between gap-2">
-					<!-- Название в две строки, дальше обрез; целиком — по наведению, и только если обрезано -->
-					<span class="font-heading min-w-0 line-clamp-2 text-base font-bold leading-snug text-text-primary" use:truncatedTitle={board.title}>{board.title}</span>
-					{#if isLive(board)}
-						<span class="shrink-0 rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
-					{/if}
-				</div>
+				<!-- Название в две строки на всю ширину, дальше обрез; целиком — по наведению, и только если обрезано.
+				     Бейджи живут в нижнем ряду, чтобы не отъедать первую строку -->
+				<span class="font-heading min-w-0 line-clamp-2 text-base font-bold leading-snug text-text-primary" use:truncatedTitle={board.title}>{board.title}</span>
 				<div class="mt-auto flex flex-col gap-1.5">
 					{#if board.format === ANALYSIS_FORMAT}
 						<!-- У доски-анализа нет классических колонок — вместо полосы настроения её градиент -->
@@ -183,6 +179,9 @@
 						<span class="flex min-w-0 items-center gap-2">
 							{#if board.format === ANALYSIS_FORMAT}
 								<span class="badge-sm badge-ai shrink-0">{t('analysis.badge')}</span>
+							{/if}
+							{#if isLive(board)}
+								<span class="shrink-0 rounded-full bg-accent-bg px-[9px] py-[3px] text-[11px] font-bold text-accent">{t('space.tile.live')}</span>
 							{/if}
 							<span class="truncate">{t('space.boards.cards', { n: board.cardCount })}</span>
 						</span>
