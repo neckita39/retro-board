@@ -7,7 +7,18 @@ import {
 	classifyBitrixError,
 	isBlockedHost,
 	parseWebhookUrl,
+	verifyWebhook,
+	checkTasksScope,
+	resolveGroup,
+	deadlineIso,
+	idempotencyKey,
+	createTask,
+	tagTask,
+	IMAGE_MAX_BYTES,
+	withUploadSlot,
+	attachImage,
 	type BitrixErrorKind,
+	type TaskFields,
 	type Webhook
 } from './bitrix.js';
 
@@ -452,5 +463,536 @@ describe('BitrixError', () => {
 		expect(err.name).toBe('BitrixError');
 		expect(err).toMatchObject({ kind: 'rejected', code: 'ERROR_CORE', status: 400, field: 'title', message: 'Портал отклонил' });
 		expect(new BitrixError('network', 'нет связи').code).toBeUndefined();
+	});
+});
+
+describe('Битрикс24: функции портала', () => {
+	const hook: Webhook = { url: 'https://bitrix24.team/rest/1/abc123secret/', portal: 'bitrix24.team', userId: 1 };
+	const time = { start: 1, finish: 2, duration: 1, date_start: '2026-09-17T12:36:12+03:00', date_finish: '2026-09-17T12:36:12+03:00' };
+
+	interface PortalCall {
+		url: string;
+		body: Record<string, any>;
+		headers: Headers;
+	}
+
+	function reply(body: unknown, status = 200) {
+		return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+	}
+
+	// Подменный fetch: пишет вызовы и отвечает по имени метода (последний сегмент адреса).
+	// init передаётся обработчику, чтобы тест мог дождаться обрыва по signal
+	function portal(
+		handler: (method: string, body: Record<string, any>, init?: RequestInit) => Response | Promise<Response>
+	) {
+		const calls: PortalCall[] = [];
+		const fetchFn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+			const url = String(input);
+			const body = JSON.parse(String(init?.body ?? '{}'));
+			calls.push({ url, body, headers: new Headers(init?.headers) });
+			return handler(url.slice(url.lastIndexOf('/') + 1), body, init);
+		});
+		return { calls, opts: { fetchFn: fetchFn as unknown as typeof fetch } };
+	}
+
+	const fields = (over: Partial<TaskFields> = {}): TaskFields => ({
+		title: 'Починить деплой',
+		description: 'Деплой падает по пятницам\n\nИз ретро «Спринт 42»',
+		groupId: null,
+		deadline: null,
+		important: false,
+		...over
+	});
+
+	describe('verifyWebhook', () => {
+		it('берёт владельца, зону и смещение портала из profile старым REST', async () => {
+			const { calls, opts } = portal(() =>
+				reply({ result: { ID: '1', NAME: 'Анна', LAST_NAME: 'Петрова', TIME_ZONE: 'Europe/Kaliningrad' }, time })
+			);
+			await expect(verifyWebhook(hook, opts)).resolves.toEqual({
+				userId: 1,
+				userName: 'Анна Петрова',
+				timeZone: 'Europe/Kaliningrad',
+				portalOffset: '+03:00'
+			});
+			expect(calls).toHaveLength(1);
+			expect(calls[0].url).toBe('https://bitrix24.team/rest/1/abc123secret/profile');
+		});
+
+		it('пустая зона → null, нет time → portalOffset null, имя без фамилии', async () => {
+			const { opts } = portal(() => reply({ result: { ID: '7', NAME: 'Анна', LAST_NAME: '', TIME_ZONE: '' } }));
+			await expect(verifyWebhook(hook, opts)).resolves.toEqual({
+				userId: 7,
+				userName: 'Анна',
+				timeZone: null,
+				portalOffset: null
+			});
+		});
+
+		it('date_finish в UTC с Z → +00:00', async () => {
+			const { opts } = portal(() =>
+				reply({ result: { ID: '1', NAME: 'Анна', TIME_ZONE: '' }, time: { date_finish: '2026-09-17T09:36:12Z' } })
+			);
+			expect((await verifyWebhook(hook, opts)).portalOffset).toBe('+00:00');
+		});
+
+		it.each([[{}], [[]], [{ NAME: 'Анна' }]])('profile %j без ID → invalid_webhook, секрета в сообщении нет', async (result) => {
+			const { opts } = portal(() => reply({ result, time }));
+			const err = await verifyWebhook(hook, opts).catch((e) => e);
+			expect(err).toBeInstanceOf(BitrixError);
+			expect(err.kind).toBe('invalid_webhook');
+			expect(err.message).not.toContain('abc123secret');
+		});
+	});
+
+	describe('checkTasksScope', () => {
+		it('пробует tasks.task.field.list через REST 3.0', async () => {
+			const { calls, opts } = portal(() => reply({ result: { items: [{ name: 'title' }] }, time }));
+			await expect(checkTasksScope(hook, opts)).resolves.toBeUndefined();
+			expect(calls[0].url).toBe('https://bitrix24.team/rest/api/1/abc123secret/tasks.task.field.list');
+			expect(calls[0].body).toEqual({ select: ['name'] });
+		});
+
+		it('без права «Задачи» → scope', async () => {
+			const { opts } = portal(() =>
+				reply({ error: 'insufficient_scope', error_description: 'The request requires higher privileges' }, 401)
+			);
+			await expect(checkTasksScope(hook, opts)).rejects.toMatchObject({ kind: 'scope' });
+		});
+	});
+
+	describe('resolveGroup', () => {
+		it('находит название группы старым REST', async () => {
+			const { calls, opts } = portal(() => reply({ result: [{ ID: '2014', NAME: 'Платформа' }], time }));
+			await expect(resolveGroup(hook, 2014, opts)).resolves.toEqual({ status: 'ok', name: 'Платформа' });
+			expect(calls[0].url).toBe('https://bitrix24.team/rest/1/abc123secret/sonet_group.get');
+			expect(calls[0].body).toEqual({ FILTER: { ID: 2014 } });
+		});
+
+		it('пустой массив → notFound', async () => {
+			const { opts } = portal(() => reply({ result: [], time }));
+			await expect(resolveGroup(hook, 99, opts)).resolves.toEqual({ status: 'notFound' });
+		});
+
+		it('нет права «Рабочие группы соцсети» → noScope, а не ошибка', async () => {
+			const { opts } = portal(() =>
+				reply({ error: 'insufficient_scope', error_description: 'The request requires higher privileges' }, 401)
+			);
+			await expect(resolveGroup(hook, 2014, opts)).resolves.toEqual({ status: 'noScope' });
+		});
+
+		it('прочие ошибки пробрасываются', async () => {
+			const { opts } = portal(() => reply({ error: 'INVALID_CREDENTIALS', error_description: 'Invalid' }, 401));
+			await expect(resolveGroup(hook, 2014, opts)).rejects.toMatchObject({ kind: 'invalid_webhook' });
+		});
+
+		it('не массив → shape', async () => {
+			const { opts } = portal(() => reply({ result: { ID: '2014' }, time }));
+			await expect(resolveGroup(hook, 2014, opts)).rejects.toMatchObject({ kind: 'shape' });
+		});
+	});
+
+	describe('deadlineIso', () => {
+		it.each([
+			['2026-10-01', 'Europe/Kaliningrad', '2026-10-01T19:00:00+02:00'],
+			['2026-10-01', 'Europe/Moscow', '2026-10-01T19:00:00+03:00'],
+			['2026-07-15', 'America/New_York', '2026-07-15T19:00:00-04:00'],
+			['2026-01-15', 'America/New_York', '2026-01-15T19:00:00-05:00'],
+			['2026-01-15', 'UTC', '2026-01-15T19:00:00+00:00'],
+			['2026-01-15', 'Asia/Kolkata', '2026-01-15T19:00:00+05:30'],
+			// накануне перехода на летнее время (4 октября) вечер ещё +10:00
+			['2026-10-03', 'Australia/Sydney', '2026-10-03T19:00:00+10:00'],
+			['2026-10-04', 'Australia/Sydney', '2026-10-04T19:00:00+11:00']
+		])('%s в зоне %s → %s', (date, zone, expected) => {
+			expect(deadlineIso(date, zone, '+09:00')).toBe(expected);
+		});
+
+		it('пустая или неизвестная зона → смещение портала', () => {
+			expect(deadlineIso('2026-10-01', '', '+05:00')).toBe('2026-10-01T19:00:00+05:00');
+			expect(deadlineIso('2026-10-01', null, '+05:00')).toBe('2026-10-01T19:00:00+05:00');
+			expect(deadlineIso('2026-10-01', 'Mars/Olympus', '+05:00')).toBe('2026-10-01T19:00:00+05:00');
+		});
+
+		it('нет ни зоны, ни смещения портала → +03:00', () => {
+			expect(deadlineIso('2026-10-01', '', null)).toBe('2026-10-01T19:00:00+03:00');
+			expect(deadlineIso('2026-10-01', null, null)).toBe('2026-10-01T19:00:00+03:00');
+		});
+	});
+
+	describe('idempotencyKey', () => {
+		it('sha256 в hex, не зависит от порядка ключей объекта', () => {
+			const a = fields({ groupId: 2014, deadline: '2026-10-01', important: true });
+			const b: TaskFields = { important: true, deadline: '2026-10-01', groupId: 2014, description: a.description, title: a.title };
+			const key = idempotencyKey('card-1', a);
+			expect(key).toMatch(/^[0-9a-f]{64}$/);
+			expect(idempotencyKey('card-1', b)).toBe(key);
+		});
+
+		it.each([
+			['title', { title: 'Другое название' }],
+			['description', { description: 'Другое описание' }],
+			['groupId', { groupId: 2014 }],
+			['deadline', { deadline: '2026-10-01' }],
+			['important', { important: true }]
+		] as [string, Partial<TaskFields>][])('меняется при правке %s', (_name, over) => {
+			expect(idempotencyKey('card-1', fields(over))).not.toBe(idempotencyKey('card-1', fields()));
+		});
+
+		it('меняется при другой карточке', () => {
+			expect(idempotencyKey('card-2', fields())).not.toBe(idempotencyKey('card-1', fields()));
+		});
+	});
+
+	describe('createTask', () => {
+		const item = (over: Record<string, unknown> = {}) => ({
+			result: { item: { id: 745181, link: '/workgroups/group/2014/tasks/task/view/745181/', ...over } },
+			time
+		});
+
+		it('шлёт поля v3 с ключом идемпотентности и склеивает ссылку с порталом', async () => {
+			const { calls, opts } = portal(() => reply(item()));
+			const f = fields({ groupId: 2014, deadline: '2026-10-01', important: true });
+			const task = await createTask(hook, f, { timeZone: 'Europe/Kaliningrad', portalOffset: '+03:00' }, 'key-1', opts);
+			expect(task).toEqual({ id: 745181, url: 'https://bitrix24.team/workgroups/group/2014/tasks/task/view/745181/' });
+			expect(calls).toHaveLength(1);
+			expect(calls[0].url).toBe('https://bitrix24.team/rest/api/1/abc123secret/tasks.task.add');
+			expect(calls[0].headers.get('Idempotency-Key')).toBe('key-1');
+			expect(calls[0].body).toEqual({
+				fields: {
+					title: 'Починить деплой',
+					description: 'Деплой падает по пятницам\n\nИз ретро «Спринт 42»',
+					creatorId: 1,
+					responsibleId: 1,
+					groupId: 2014,
+					deadline: '2026-10-01T19:00:00+02:00',
+					priority: 'high'
+				}
+			});
+		});
+
+		it('без группы, срока и важности эти поля не передаёт', async () => {
+			const { calls, opts } = portal(() => reply(item({ link: '/company/personal/user/1/tasks/task/view/745181/' })));
+			await createTask(hook, fields(), { timeZone: null, portalOffset: null }, 'key-2', opts);
+			expect(Object.keys(calls[0].body.fields).sort()).toEqual(['creatorId', 'description', 'responsibleId', 'title']);
+		});
+
+		it('в тестовом http-режиме ссылка берёт протокол и порт вебхука', async () => {
+			const local: Webhook = { url: 'http://localhost:4779/rest/1/testcode/', portal: 'localhost:4779', userId: 1 };
+			const { opts } = portal(() => reply(item()));
+			const task = await createTask(local, fields(), { timeZone: null, portalOffset: null }, 'k', opts);
+			expect(task.url).toBe('http://localhost:4779/workgroups/group/2014/tasks/task/view/745181/');
+		});
+
+		it.each([
+			['ссылка на чужой хост через @', { link: '@evil.com/tasks/1/' }],
+			['protocol-relative ссылка', { link: '//evil.com/tasks/1/' }],
+			['ссылки нет', { link: undefined }],
+			['ссылка не строка', { link: 42 }],
+			['id не число', { id: '745181' }],
+			['id ноль', { id: 0 }]
+		])('%s → shape, секрета в сообщении нет', async (_name, over) => {
+			const { opts } = portal(() => reply(item(over)));
+			const err = await createTask(hook, fields(), { timeZone: null, portalOffset: null }, 'k', opts).catch((e) => e);
+			expect(err).toBeInstanceOf(BitrixError);
+			expect(err.kind).toBe('shape');
+			expect(err.message).not.toContain('abc123secret');
+		});
+
+		it('ответ без item → shape', async () => {
+			const { opts } = portal(() => reply({ result: {}, time }));
+			await expect(
+				createTask(hook, fields(), { timeZone: null, portalOffset: null }, 'k', opts)
+			).rejects.toMatchObject({ kind: 'shape' });
+		});
+
+		const accessDenied = { error: { code: 'BITRIX_REST_V3_EXCEPTION_ACCESSDENIEDEXCEPTION', message: 'Доступ запрещен' } };
+
+		it('ACCESSDENIEDEXCEPTION при выставленной группе → group с полем groupId', async () => {
+			const { opts } = portal(() => reply(accessDenied, 403));
+			await expect(
+				createTask(hook, fields({ groupId: 999 }), { timeZone: null, portalOffset: null }, 'k', opts)
+			).rejects.toMatchObject({ kind: 'group', field: 'groupId' });
+		});
+
+		it('ACCESSDENIEDEXCEPTION без группы остаётся access', async () => {
+			const { opts } = portal(() => reply(accessDenied, 403));
+			await expect(
+				createTask(hook, fields(), { timeZone: null, portalOffset: null }, 'k', opts)
+			).rejects.toMatchObject({ kind: 'access' });
+		});
+
+		it('OVERLOAD_LIMIT при выставленной группе остаётся access', async () => {
+			const { opts } = portal(() => reply({ error: 'OVERLOAD_LIMIT', error_description: 'Blocked' }, 401));
+			await expect(
+				createTask(hook, fields({ groupId: 2014 }), { timeZone: null, portalOffset: null }, 'k', opts)
+			).rejects.toMatchObject({ kind: 'access' });
+		});
+
+		it('валидация поля groupId при выставленной группе → group', async () => {
+			const { opts } = portal(() =>
+				reply(
+					{
+						error: {
+							code: 'BITRIX_REST_V3_EXCEPTION_VALIDATION_REQUESTVALIDATIONEXCEPTION',
+							message: 'Неверное значение',
+							validation: [{ field: 'groupId', message: 'Неверное значение' }]
+						}
+					},
+					400
+				)
+			);
+			await expect(
+				createTask(hook, fields({ groupId: 2014 }), { timeZone: null, portalOffset: null }, 'k', opts)
+			).rejects.toMatchObject({ kind: 'group', field: 'groupId' });
+		});
+	});
+
+	describe('tagTask', () => {
+		it('ставит тег retro старым REST', async () => {
+			const { calls, opts } = portal(() => reply({ result: { task: { id: '745181' } }, time }));
+			await tagTask(hook, 745181, opts);
+			expect(calls[0].url).toBe('https://bitrix24.team/rest/1/abc123secret/tasks.task.update');
+			expect(calls[0].body).toEqual({ taskId: 745181, fields: { TAGS: ['retro'] } });
+		});
+	});
+
+	describe('IMAGE_MAX_BYTES', () => {
+		afterEach(() => vi.unstubAllEnvs());
+
+		// Модуль читает BITRIX_IMAGE_MAX_BYTES при импорте — грузим его заново под каждым окружением
+		async function load(value: string) {
+			vi.resetModules();
+			vi.stubEnv('BITRIX_IMAGE_MAX_BYTES', value);
+			return (await import('./bitrix.js')).IMAGE_MAX_BYTES;
+		}
+
+		it('по умолчанию 4 МБ', () => {
+			expect(IMAGE_MAX_BYTES).toBe(4 * 1024 * 1024);
+		});
+
+		it('берёт целое > 0 из окружения', async () => {
+			expect(await load('1048576')).toBe(1048576);
+		});
+
+		it.each(['', '0', '-5', '1.5', 'много'])('мусор %j → 4 МБ', async (value) => {
+			expect(await load(value)).toBe(4 * 1024 * 1024);
+		});
+	});
+
+	describe('attachImage и слот загрузки', () => {
+		const image = { cardId: '3f2b8c1e-0000-4000-8000-000000000001', mimeType: 'image/webp', data: Buffer.from('webp-bytes') };
+
+		function disk(uploadResult: unknown = { ID: 9011, FILE_ID: 32877, NAME: 'retro.webp' }) {
+			return portal((method) => {
+				if (method === 'disk.storage.getlist') return reply({ result: [{ ID: '11', ROOT_OBJECT_ID: '101', ENTITY_TYPE: 'user' }], time });
+				if (method === 'disk.storage.uploadFile') return reply({ result: uploadResult, time });
+				if (method === 'tasks.task.file.attach') return reply({ result: true, time });
+				return reply({ error: 'ERROR_METHOD_NOT_FOUND', error_description: 'Method not found!' }, 404);
+			});
+		}
+
+		// Часы, которыми управляет тест; setImmediate остаётся настоящим
+		const fakeClock = () => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+
+		// Настоящие макрозадачи, пока не выполнится условие (не больше 100): промисы успевают пройти, часы стоят
+		async function settle(done: () => boolean) {
+			for (let i = 0; i < 100 && !done(); i++) await new Promise((resolve) => setImmediate(resolve));
+		}
+
+		it('хранилище → загрузка с уникальным именем → прикрепление ID объекта Диска', async () => {
+			const { calls, opts } = disk();
+			await attachImage(hook, 1, 745181, image, opts);
+			expect(calls.map((c) => c.url)).toEqual([
+				'https://bitrix24.team/rest/1/abc123secret/disk.storage.getlist',
+				'https://bitrix24.team/rest/1/abc123secret/disk.storage.uploadFile',
+				'https://bitrix24.team/rest/api/1/abc123secret/tasks.task.file.attach'
+			]);
+			expect(calls[0].body).toEqual({ filter: { ENTITY_TYPE: 'user', ENTITY_ID: 1 } });
+			const name = 'retro-3f2b8c1e-0000-4000-8000-000000000001.webp';
+			expect(calls[1].body).toEqual({
+				id: '11',
+				data: { NAME: name },
+				fileContent: [name, Buffer.from('webp-bytes').toString('base64')],
+				generateUniqueName: true
+			});
+			expect(calls[2].body).toEqual({ taskId: 745181, fileIds: [9011] });
+		});
+
+		it('ID строкой приводится к числу, FILE_ID не используется', async () => {
+			const { calls, opts } = disk({ ID: '9011', FILE_ID: '32877' });
+			await attachImage(hook, 1, 745181, image, opts);
+			expect(calls[2].body.fileIds).toEqual([9011]);
+		});
+
+		it('без ID в ответе загрузки → shape, прикрепления нет', async () => {
+			const { calls, opts } = disk({ FILE_ID: 32877 });
+			await expect(attachImage(hook, 1, 745181, image, opts)).rejects.toMatchObject({ kind: 'shape' });
+			expect(calls).toHaveLength(2);
+		});
+
+		it.each([
+			['image/gif', 'gif'],
+			['image/png', 'png'],
+			['image/jpeg', 'jpg'],
+			['application/octet-stream', 'bin'],
+			['constructor', 'bin']
+		])('%s → расширение .%s', async (mimeType, ext) => {
+			const { calls, opts } = disk();
+			await attachImage(hook, 1, 745181, { ...image, mimeType }, opts);
+			expect(calls[1].body.data.NAME).toBe(`retro-${image.cardId}.${ext}`);
+			expect(calls[1].body.fileContent[0]).toBe(`retro-${image.cardId}.${ext}`);
+		});
+
+		it('нет личного хранилища → shape, загрузки нет', async () => {
+			const { calls, opts } = portal(() => reply({ result: [], time }));
+			await expect(attachImage(hook, 1, 745181, image, opts)).rejects.toMatchObject({ kind: 'shape' });
+			expect(calls).toHaveLength(1);
+		});
+
+		it('ошибка загрузки пробрасывается, прикрепления нет', async () => {
+			const { calls, opts } = portal((method) =>
+				method === 'disk.storage.getlist'
+					? reply({ result: [{ ID: '11' }], time })
+					: reply({ error: 'insufficient_scope', error_description: 'No disk scope' }, 401)
+			);
+			await expect(attachImage(hook, 1, 745181, image, opts)).rejects.toBeInstanceOf(BitrixError);
+			expect(calls).toHaveLength(2);
+		});
+
+		it('слот пропускает загрузки по одной', async () => {
+			let releaseFirstUpload!: () => void;
+			const gate = new Promise<void>((resolve) => (releaseFirstUpload = resolve));
+			let uploads = 0;
+			const { calls, opts } = portal(async (method) => {
+				if (method === 'disk.storage.getlist') return reply({ result: [{ ID: '11' }], time });
+				if (method === 'disk.storage.uploadFile') {
+					uploads += 1;
+					if (uploads === 1) await gate;
+					return reply({ result: { ID: 9000 + uploads }, time });
+				}
+				return reply({ result: true, time });
+			});
+
+			const first = withUploadSlot(() => attachImage(hook, 1, 1, image, opts));
+			const second = withUploadSlot(() => attachImage(hook, 1, 2, image, opts));
+			await vi.waitFor(() => expect(calls).toHaveLength(2));
+			await new Promise((resolve) => setTimeout(resolve, 20));
+			// первая загрузка висит — вторая даже не спросила хранилище
+			expect(calls.map((c) => c.url.split('/').pop())).toEqual(['disk.storage.getlist', 'disk.storage.uploadFile']);
+
+			releaseFirstUpload();
+			await Promise.all([first, second]);
+			expect(calls.map((c) => c.url.split('/').pop())).toEqual([
+				'disk.storage.getlist',
+				'disk.storage.uploadFile',
+				'tasks.task.file.attach',
+				'disk.storage.getlist',
+				'disk.storage.uploadFile',
+				'tasks.task.file.attach'
+			]);
+			expect(calls[2].body).toEqual({ taskId: 1, fileIds: [9001] });
+			expect(calls[5].body).toEqual({ taskId: 2, fileIds: [9002] });
+		});
+
+		it('упавшая работа освобождает слот и отдаёт свою ошибку', async () => {
+			await expect(withUploadSlot(async () => Promise.reject(new Error('упало')))).rejects.toThrow('упало');
+			await expect(withUploadSlot(async () => 'дальше')).resolves.toBe('дальше');
+		});
+
+		it('ждать слот дольше 30 с → timeout, работа не запускается, очередь не рвётся', async () => {
+			fakeClock();
+			let releaseFirst!: () => void;
+			const gate = new Promise<void>((resolve) => (releaseFirst = resolve));
+			try {
+				const first = withUploadSlot(async () => {
+					await gate;
+					return 'первая';
+				});
+				const secondWork = vi.fn(async () => 'вторая');
+				const second = withUploadSlot(secondWork).catch((e) => e);
+
+				await vi.advanceTimersByTimeAsync(29_999);
+				expect(secondWork).not.toHaveBeenCalled();
+				await vi.advanceTimersByTimeAsync(1);
+				const err = await second;
+				expect(err).toBeInstanceOf(BitrixError);
+				expect(err.kind).toBe('timeout');
+
+				// первая всё ещё держит слот: третья ждёт её, а не проскакивает на место отвалившейся второй
+				const thirdWork = vi.fn(async () => 'третья');
+				const third = withUploadSlot(thirdWork);
+				await settle(() => thirdWork.mock.calls.length > 0);
+				expect(thirdWork).not.toHaveBeenCalled();
+
+				releaseFirst();
+				await expect(first).resolves.toBe('первая');
+				await expect(third).resolves.toBe('третья');
+				expect(secondWork).not.toHaveBeenCalled();
+			} finally {
+				releaseFirst();
+				vi.useRealTimers();
+			}
+		});
+
+		it('на загрузку идёт остаток 30 с от постановки в очередь', async () => {
+			fakeClock();
+			let releaseFirst!: () => void;
+			const gate = new Promise<void>((resolve) => (releaseFirst = resolve));
+			try {
+				const enqueuedAt = Date.now();
+				let abortedAt: number | null = null;
+				const { calls, opts } = portal((method, _body, init) => {
+					if (method === 'disk.storage.getlist') return reply({ result: [{ ID: '11' }], time });
+					// загрузка висит, пока транспорт не оборвёт её по своему таймауту
+					return new Promise<Response>((_resolve, reject) => {
+						init?.signal?.addEventListener('abort', () => {
+							abortedAt = Date.now();
+							reject(new DOMException('aborted', 'AbortError'));
+						});
+					});
+				});
+				const first = withUploadSlot(() => gate);
+				const second = withUploadSlot(() => attachImage(hook, 1, 745181, image, opts)).catch((e) => e);
+
+				// слот освобождается через 20 с после постановки второй в очередь
+				await vi.advanceTimersByTimeAsync(20_000);
+				releaseFirst();
+				await first;
+				await settle(() => calls.length === 2);
+				expect(calls.map((c) => c.url.split('/').pop())).toEqual(['disk.storage.getlist', 'disk.storage.uploadFile']);
+
+				await vi.advanceTimersByTimeAsync(9_999);
+				expect(abortedAt).toBeNull();
+				await vi.advanceTimersByTimeAsync(1);
+				expect(abortedAt).toBe(enqueuedAt + 30_000);
+				expect(await second).toMatchObject({ kind: 'timeout' });
+			} finally {
+				releaseFirst();
+				vi.useRealTimers();
+			}
+		});
+
+		it('слот освободился за полсекунды до срока → timeout без загрузки файла', async () => {
+			fakeClock();
+			let releaseFirst!: () => void;
+			const gate = new Promise<void>((resolve) => (releaseFirst = resolve));
+			try {
+				const { calls, opts } = disk();
+				const first = withUploadSlot(() => gate);
+				const second = withUploadSlot(() => attachImage(hook, 1, 745181, image, opts)).catch((e) => e);
+
+				await vi.advanceTimersByTimeAsync(29_500);
+				releaseFirst();
+				await first;
+				const err = await second;
+				expect(err).toBeInstanceOf(BitrixError);
+				expect(err.kind).toBe('timeout');
+				// base64 не строился, файл на Диск не ушёл
+				expect(calls.map((c) => c.url.split('/').pop())).toEqual(['disk.storage.getlist']);
+			} finally {
+				releaseFirst();
+				vi.useRealTimers();
+			}
+		});
 	});
 });

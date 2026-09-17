@@ -2,6 +2,9 @@
 // старого REST и REST 3.0, классификация ошибок портала. Код вебхука — секрет:
 // в message, логи и метрики попадают только api, метод, код ошибки и HTTP-статус.
 
+import { createHash } from 'node:crypto';
+import type { CardTask } from '$lib/types.js';
+
 export type BitrixErrorKind =
 	| 'invalid_url'
 	| 'invalid_webhook'
@@ -331,4 +334,285 @@ export async function callLegacy(webhook: Webhook, method: string, params: unkno
 
 export async function callV3(webhook: Webhook, method: string, params: unknown, opts?: CallOptions): Promise<unknown> {
 	return (await bitrixRequest(webhook, method, params, 'v3', opts)).result;
+}
+
+// ---- Функции портала ----
+
+export type GroupResolution = { status: 'ok'; name: string } | { status: 'notFound' } | { status: 'noScope' };
+
+// '2026-09-17T12:36:12+03:00' → '+03:00'; смещение сервера портала, резерв для дедлайна
+function offsetFromIso(value: unknown): string | null {
+	if (typeof value !== 'string') return null;
+	if (value.endsWith('Z')) return '+00:00';
+	const match = /([+-]\d{2}:\d{2})$/.exec(value);
+	return match ? match[1] : null;
+}
+
+export async function verifyWebhook(
+	webhook: Webhook,
+	opts?: CallOptions
+): Promise<{ userId: number; userName: string; timeZone: string | null; portalOffset: string | null }> {
+	// profile работает без прав; нужен bitrixRequest, а не callLegacy, — смещение лежит в time, рядом с result
+	const { result, time } = await bitrixRequest(webhook, 'profile', {}, 'legacy', opts);
+	const profile = (result && typeof result === 'object' && !Array.isArray(result) ? result : {}) as Record<string, unknown>;
+	const userId = Number(profile.ID);
+	// Пустой объект — владелец вебхука неактивен
+	if (!Number.isInteger(userId) || userId <= 0) {
+		throw new BitrixError('invalid_webhook', 'Bitrix24 profile is empty');
+	}
+	const userName = [profile.NAME, profile.LAST_NAME]
+		.map((part) => (typeof part === 'string' ? part.trim() : ''))
+		.filter(Boolean)
+		.join(' ');
+	const timeZone = typeof profile.TIME_ZONE === 'string' && profile.TIME_ZONE ? profile.TIME_ZONE : null;
+	const portalOffset = offsetFromIso((time as { date_finish?: unknown } | null | undefined)?.date_finish);
+	return { userId, userName, timeZone, portalOffset };
+}
+
+export async function checkTasksScope(webhook: Webhook, opts?: CallOptions): Promise<void> {
+	// Пробный вызов v3: без права «Задачи» или без REST 3.0 транспорт бросит BitrixError('scope')
+	await callV3(webhook, 'tasks.task.field.list', { select: ['name'] }, opts);
+}
+
+export async function resolveGroup(webhook: Webhook, groupId: number, opts?: CallOptions): Promise<GroupResolution> {
+	let result: unknown;
+	try {
+		result = await callLegacy(webhook, 'sonet_group.get', { FILTER: { ID: groupId } }, opts);
+	} catch (err) {
+		// Нет права «Рабочие группы соцсети» — не ошибка: id остаётся без названия
+		if (err instanceof BitrixError && err.kind === 'scope') return { status: 'noScope' };
+		throw err;
+	}
+	if (!Array.isArray(result)) throw new BitrixError('shape', 'Bitrix24 sonet_group.get returned no list');
+	if (result.length === 0) return { status: 'notFound' };
+	const name = (result[0] as { NAME?: unknown } | null)?.NAME;
+	if (typeof name !== 'string' || !name) throw new BitrixError('shape', 'Bitrix24 group has no name');
+	return { status: 'ok', name };
+}
+
+export interface TaskFields {
+	title: string;
+	description: string;
+	groupId: number | null;
+	deadline: string | null; // YYYY-MM-DD
+	important: boolean;
+}
+
+const DEADLINE_TIME = '19:00:00';
+const FALLBACK_OFFSET = '+03:00';
+
+// Смещение зоны в момент epochMs: 'GMT+02:00' → '+02:00', голое 'GMT' (UTC) → '+00:00'.
+// Пустая или неизвестная зона — RangeError из Intl
+function zoneOffset(timeZone: string, epochMs: number): string {
+	const label = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'longOffset' })
+		.formatToParts(new Date(epochMs))
+		.find((part) => part.type === 'timeZoneName')?.value;
+	const match = label ? /^GMT(?:([+-]\d{2}:\d{2}))?$/.exec(label) : null;
+	if (!match) throw new RangeError('Unsupported time zone offset');
+	return match[1] ?? '+00:00';
+}
+
+function offsetMinutes(offset: string): number {
+	const sign = offset.startsWith('-') ? -1 : 1;
+	return sign * (Number(offset.slice(1, 3)) * 60 + Number(offset.slice(4, 6)));
+}
+
+export function deadlineIso(date: string, timeZone: string | null, portalOffset: string | null): string {
+	const fallback = `${date}T${DEADLINE_TIME}${portalOffset ?? FALLBACK_OFFSET}`;
+	if (!timeZone) return fallback;
+	const [year, month, day] = date.split('-').map(Number);
+	const utcEvening = Date.UTC(year, month - 1, day, 19);
+	try {
+		// Смещение на саму дату дедлайна (летнее время). Первая оценка — по 19:00 UTC,
+		// вторая — по моменту, когда в зоне 19:00: иначе у зон далеко от UTC
+		// (Сидней накануне перехода) смещение взялось бы уже со следующего дня
+		const guess = zoneOffset(timeZone, utcEvening);
+		const offset = zoneOffset(timeZone, utcEvening - offsetMinutes(guess) * 60_000);
+		return `${date}T${DEADLINE_TIME}${offset}`;
+	} catch {
+		return fallback;
+	}
+}
+
+export function idempotencyKey(cardId: string, fields: TaskFields): string {
+	// Порядок ключей задан явно: ключ не зависит от того, как собран объект полей
+	const canonical = JSON.stringify({
+		title: fields.title,
+		description: fields.description,
+		groupId: fields.groupId,
+		deadline: fields.deadline,
+		important: fields.important
+	});
+	return createHash('sha256').update(`${cardId}\n${canonical}`).digest('hex');
+}
+
+// Живой портал на несуществующую или чужую groupId отвечает ACCESSDENIEDEXCEPTION.
+// Прочие отказы доступа (тариф, OVERLOAD_LIMIT, PORTAL_DELETED) остаются access
+function isGroupRefusal(err: unknown): err is BitrixError {
+	if (!(err instanceof BitrixError)) return false;
+	if (err.kind === 'access') return err.code === 'BITRIX_REST_V3_EXCEPTION_ACCESSDENIEDEXCEPTION';
+	return err.kind === 'rejected' && /(^|\.)groupId$/.test(err.field ?? '');
+}
+
+export async function createTask(
+	webhook: Webhook,
+	fields: TaskFields,
+	tz: { timeZone: string | null; portalOffset: string | null },
+	key: string,
+	opts?: CallOptions
+): Promise<CardTask> {
+	const taskFields: Record<string, unknown> = {
+		title: fields.title,
+		description: fields.description,
+		creatorId: webhook.userId,
+		responsibleId: webhook.userId
+	};
+	if (fields.groupId !== null) taskFields.groupId = fields.groupId;
+	if (fields.deadline) taskFields.deadline = deadlineIso(fields.deadline, tz.timeZone, tz.portalOffset);
+	if (fields.important) taskFields.priority = 'high';
+
+	let result: unknown;
+	try {
+		result = await callV3(webhook, 'tasks.task.add', { fields: taskFields }, { ...opts, idempotencyKey: key });
+	} catch (err) {
+		if (fields.groupId !== null && isGroupRefusal(err)) {
+			throw new BitrixError('group', 'Bitrix24 group not found or unavailable', {
+				code: err.code,
+				status: err.status,
+				field: 'groupId'
+			});
+		}
+		throw err;
+	}
+
+	const item = (result as { item?: { id?: unknown; link?: unknown } } | null)?.item;
+	const id = item?.id;
+	if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) {
+		throw new BitrixError('shape', 'Bitrix24 task has no id');
+	}
+	// Только путь от корня портала: '@evil.com/…' или '//evil.com/…' увели бы ссылку на чужой хост
+	const link = item?.link;
+	if (typeof link !== 'string' || !link.startsWith('/') || link.startsWith('//')) {
+		throw new BitrixError('shape', 'Bitrix24 task link is not a portal path');
+	}
+	// origin = https://{portal}; в e2e (BITRIX_ALLOW_HTTP) — http://localhost:{port}
+	return { id, url: `${new URL(webhook.url).origin}${link}` };
+}
+
+export async function tagTask(webhook: Webhook, taskId: number, opts?: CallOptions): Promise<void> {
+	// v3 поле tags не принимает (проверено на живом портале) — тег ставит только старый REST
+	await callLegacy(webhook, 'tasks.task.update', { taskId, fields: { TAGS: ['retro'] } }, opts);
+}
+
+const DEFAULT_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+
+function readImageMaxBytes(raw: string | undefined): number {
+	const value = Number(raw);
+	return Number.isInteger(value) && value > 0 ? value : DEFAULT_IMAGE_MAX_BYTES;
+}
+
+// Анимированный GIF после Sharp бывает до 20 МБ, а процесс живёт в 256 МБ кучи
+export const IMAGE_MAX_BYTES = readImageMaxBytes(process.env.BITRIX_IMAGE_MAX_BYTES);
+
+const UPLOAD_TIMEOUT_MS = 30_000;
+// Меньше секунды на загрузку — заведомый обрыв: не строим base64 и не шлём файл
+const UPLOAD_MIN_BUDGET_MS = 1_000;
+
+// Семафор на одну загрузку: один attach стоит около трёх размеров файла в куче.
+// Вызывающий захватывает слот ДО чтения байтов картинки из БД.
+// 30 с считаются с постановки в очередь: кто не дождался слота — получает timeout,
+// а загрузке внутри слота достаётся остаток этих 30 с
+let uploadTail: Promise<void> = Promise.resolve();
+// Срок текущего держателя слота. Держатель всегда один, поэтому хватает одной переменной;
+// attachImage читает её и потому вызывается только внутри withUploadSlot (или вовсе без слота)
+let slotDeadline: number | null = null;
+
+export function withUploadSlot<T>(fn: () => Promise<T>): Promise<T> {
+	const deadline = Date.now() + UPLOAD_TIMEOUT_MS;
+	const previous = uploadTail;
+	let release!: () => void;
+	const released = new Promise<void>((resolve) => (release = resolve));
+	// Следующий в очереди ждёт и предыдущего держателя, и этот вызов:
+	// отвалившийся по таймауту вызов не открывает дорогу параллельной загрузке
+	uploadTail = previous.then(() => released);
+
+	return new Promise<T>((resolve, reject) => {
+		let expired = false;
+		const timer = setTimeout(() => {
+			expired = true;
+			release();
+			reject(new BitrixError('timeout', 'Bitrix24 upload queue timed out'));
+		}, UPLOAD_TIMEOUT_MS);
+
+		void previous.then(async () => {
+			if (expired) return;
+			clearTimeout(timer);
+			slotDeadline = deadline;
+			try {
+				resolve(await fn());
+			} catch (err) {
+				reject(err);
+			} finally {
+				slotDeadline = null;
+				release();
+			}
+		});
+	});
+}
+
+// Остаток 30 с держателя слота; прямой вызов без слота получает полные 30 с
+function uploadBudgetMs(): number {
+	return slotDeadline === null ? UPLOAD_TIMEOUT_MS : slotDeadline - Date.now();
+}
+
+const IMAGE_EXTENSIONS = new Map([
+	['image/webp', 'webp'],
+	['image/gif', 'gif'],
+	['image/png', 'png'],
+	['image/jpeg', 'jpg']
+]);
+
+export async function attachImage(
+	webhook: Webhook,
+	userId: number,
+	taskId: number,
+	image: { cardId: string; mimeType: string; data: Buffer },
+	opts?: CallOptions
+): Promise<void> {
+	// Методы Диска в v3 не переведены — хранилище и загрузка идут старым REST
+	const storages = await callLegacy(
+		webhook,
+		'disk.storage.getlist',
+		{ filter: { ENTITY_TYPE: 'user', ENTITY_ID: userId } },
+		opts
+	);
+	const storageId = Array.isArray(storages) ? (storages[0] as { ID?: unknown } | undefined)?.ID : undefined;
+	if (storageId === undefined || storageId === null || storageId === '') {
+		throw new BitrixError('shape', 'Bitrix24 user storage not found');
+	}
+
+	const budget = uploadBudgetMs();
+	if (budget < UPLOAD_MIN_BUDGET_MS) {
+		throw new BitrixError('timeout', 'Bitrix24 upload slot deadline passed');
+	}
+
+	const name = `retro-${image.cardId}.${IMAGE_EXTENSIONS.get(image.mimeType) ?? 'bin'}`;
+	const uploaded = await callLegacy(
+		webhook,
+		'disk.storage.uploadFile',
+		{
+			id: storageId,
+			data: { NAME: name },
+			fileContent: [name, image.data.toString('base64')],
+			generateUniqueName: true
+		},
+		{ ...opts, timeoutMs: budget }
+	);
+	// ID — объект Диска; FILE_ID — внутренний id, его tasks.task.file.attach не находит
+	const fileId = Number((uploaded as { ID?: unknown } | null)?.ID);
+	if (!Number.isInteger(fileId) || fileId <= 0) {
+		throw new BitrixError('shape', 'Bitrix24 upload returned no object id');
+	}
+
+	await callV3(webhook, 'tasks.task.file.attach', { taskId, fileIds: [fileId] }, opts);
 }
