@@ -48,7 +48,9 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		cookies.set(`retro_space_creator_${params.slug}`, adminParam, {
 			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
 		});
-		cookies.set(`retro_space_${params.slug}`, 'authenticated', {
+		// Значение cookie доступа — секрет пространства, а не константа:
+		// canViewSpace и server.js сравнивают его с access_token
+		cookies.set(`retro_space_${params.slug}`, space.accessToken, {
 			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
 		});
 		isCreator = true;
@@ -58,8 +60,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	}
 
 	const hasPassword = !!space.passwordHash;
-	const accessCookie = cookies.get(`retro_space_${params.slug}`);
-	if (hasPassword && !accessCookie && !isCreator) {
+	// Без пароля canViewSpace пускает всех; с паролем — создателя или cookie, равную access_token
+	if (!isCreator && !canViewSpace(space, cookies)) {
 		return {
 			space: { slug: space.slug, name: space.name },
 			authenticated: false,
@@ -191,7 +193,8 @@ export const actions: Actions = {
 			}
 		}
 
-		cookies.set(`retro_space_${params.slug}`, 'authenticated', {
+		// Пароль верный — выдаём текущий токен доступа; после следующего enablePassword он перестанет действовать
+		cookies.set(`retro_space_${params.slug}`, space.accessToken, {
 			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
 		});
 
@@ -212,6 +215,8 @@ export const actions: Actions = {
 		const valid = await verifyPassword(password || '', space.passwordHash);
 		if (!valid) return fail(400, { passwordAction: 'disable', passwordError: 'wrong_password' });
 
+		// access_token не трогаем: без пароля cookie не проверяется, а включение
+		// пароля (enablePassword) всё равно выдаёт новый токен
 		await db.update(spaces).set({ passwordHash: null }).where(eq(spaces.id, space.id));
 		return { passwordAction: 'disable', passwordSuccess: true };
 	},
@@ -229,18 +234,24 @@ export const actions: Actions = {
 		if (!password) return fail(400, { passwordAction: 'enable', passwordError: 'empty_password' });
 
 		const passwordHash = await hashPassword(password);
-		await db.update(spaces).set({ passwordHash }).where(eq(spaces.id, space.id));
+		// Новый пароль — новый токен доступа: cookie, выданные раньше (в том числе
+		// под прошлым паролем), перестают открывать пространство сами
+		const accessToken = nanoid(32);
+		await db.update(spaces).set({ passwordHash, accessToken }).where(eq(spaces.id, space.id));
+		cookies.set(`retro_space_${params.slug}`, accessToken, {
+			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
+		});
 		return { passwordAction: 'enable', passwordSuccess: true };
 	},
 
 	createBoard: async ({ request, params, cookies }) => {
-		const accessCookie = cookies.get(`retro_space_${params.slug}`);
-		if (!accessCookie) throw error(403, 'Not authenticated');
-
 		const space = await db.query.spaces.findFirst({
 			where: eq(spaces.slug, params.slug)
 		});
 		if (!space) throw error(404);
+		// Раньше хватало любой cookie retro_space_{slug}: подделав её, гость создавал
+		// доску в закрытом пространстве и становился её создателем
+		if (!canViewSpace(space, cookies)) throw error(403, 'Not authenticated');
 
 		const formData = await request.formData();
 		const locale = formData.get('locale') === 'ru' ? 'ru' : 'en';

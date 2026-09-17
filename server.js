@@ -382,8 +382,8 @@ io.on('connection', (socket) => {
 	// поэтому проверок доступа не делаем — slug пространства и так неугадываем
 	let currentSpace = null;
 
-	// Пространство с паролем: в комнату пускаем только с cookie доступа или
-	// cookie создателя (те же правила, что у страницы). Статус анализа несёт
+	// Пространство с паролем: в комнату пускаем только с cookie доступа, равной
+	// spaces.access_token, или cookie создателя (те же правила, что у страницы). Статус анализа несёт
 	// slug доски-анализа, а он должен быть виден лишь тем, кто прошёл пароль.
 	// ack: клиент запрашивает состояние по HTTP только после входа в комнату,
 	// иначе событие между fetch и join терялось бы.
@@ -396,7 +396,10 @@ io.on('connection', (socket) => {
 			if (space.passwordHash) {
 				const jar = parseCookies(socket.handshake?.headers?.cookie);
 				const creator = !!space.creatorToken && jar[`retro_space_creator_${slug}`] === space.creatorToken;
-				if (!creator && !jar[`retro_space_${slug}`]) return;
+				// Дубль равенства из canViewSpace (src/lib/server/space-access.ts): server.js
+				// не импортирует src/, меняйте обе строки вместе
+				const access = !!space.accessToken && jar[`retro_space_${slug}`] === space.accessToken;
+				if (!creator && !access) return;
 			}
 			if (currentSpace) socket.leave(`space:${currentSpace}`);
 			currentSpace = slug;

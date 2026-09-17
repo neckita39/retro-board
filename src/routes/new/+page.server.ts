@@ -52,12 +52,15 @@ export const actions: Actions = {
 
 		const slug = nanoid(21);
 		const creatorToken = nanoid(32);
+		// Токен cookie доступа генерируем сами, а не берём DEFAULT колонки: значение нужно
+		// сразу для cookie, и вставка не зависит от того, есть ли у колонки default
+		const accessToken = nanoid(32);
 		const passwordHash = password ? await hashPassword(password) : null;
 
-		await db.insert(spaces).values({ name, slug, passwordHash, creatorToken });
+		await db.insert(spaces).values({ name, slug, passwordHash, creatorToken, accessToken });
 
 		if (passwordHash) {
-			cookies.set(`retro_space_${slug}`, 'authenticated', {
+			cookies.set(`retro_space_${slug}`, accessToken, {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'lax',
