@@ -10,6 +10,10 @@ if (ENCRYPTION_KEY) {
 	}
 }
 
+// Без ключа encrypt() возвращает открытый текст — для вебхука Битрикс24 это
+// недопустимо, поэтому экшен подключения проверяет флаг до любого вызова портала
+export const encryptionEnabled = !!encKey;
+
 // Зеркало encrypt() из server.js: тот же формат, чтобы карточки, созданные
 // сервером SvelteKit (доска-анализ), читались сокет-сервером без оговорок
 export function encrypt(plaintext: string | null): string | null {
