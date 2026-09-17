@@ -1,4 +1,4 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import { moodCounts, type ColumnCount } from '$lib/mood.js';
@@ -9,7 +9,7 @@ import { eq, sql, desc, inArray, and, or, lt } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword, verifyPassword } from '$lib/server/password.js';
 import { metric } from '$lib/server/statsd.js';
-import { decrypt } from '$lib/server/crypto.js';
+import { decrypt, encryptionEnabled } from '$lib/server/crypto.js';
 import {
 	ANALYSIS_DAILY_LIMIT,
 	analysesInWindow,
@@ -30,7 +30,42 @@ import {
 import { emitSpace } from '$lib/server/bus.js';
 import { runAnalysisJob } from '$lib/server/analysis-job.js';
 import { canViewSpace } from '$lib/server/space-access.js';
+import { BitrixError, checkTasksScope, parseWebhookUrl, resolveGroup, verifyWebhook } from '$lib/server/bitrix.js';
+import {
+	deleteConnection,
+	loadConnection,
+	publicInfo,
+	saveConnection,
+	setLastError,
+	updateGroup
+} from '$lib/server/bitrix-connection.js';
+import { connectLimiter, groupLimiter } from '$lib/server/bitrix-limits.js';
+import { parseGroupId, persistsLastError, statusForKind, type ActionErrorKind } from '$lib/server/bitrix-flows.js';
 import type { PageServerLoad, Actions } from './$types.js';
+
+type BitrixAction = 'connect' | 'disconnect' | 'setGroup';
+type BitrixField = 'webhook' | 'groupId';
+
+// Панель Битрикс24 — только создателю пространства; чужому 403, как у rename
+async function spaceForCreator(slug: string, cookies: Cookies) {
+	const token = cookies.get(`retro_space_creator_${slug}`) ?? '';
+	const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, slug) });
+	if (!space) throw error(404);
+	if (!space.creatorToken || token !== space.creatorToken) throw error(403, 'Forbidden');
+	return space;
+}
+
+// Один контракт отказа на три экшена панели: клиент ветвится по bitrixError, не по статусу
+function bitrixFail(bitrixAction: BitrixAction, kind: ActionErrorKind, field?: BitrixField) {
+	return fail(statusForKind(kind), { bitrixAction, bitrixError: kind, ...(field ? { field } : {}) });
+}
+
+// В лог — только вид, код и HTTP-статус портала: ни адреса, ни кода вебхука
+function logBitrixFailure(event: string, spaceSlug: string, err: BitrixError) {
+	console.warn(
+		JSON.stringify({ event, space: spaceSlug, kind: err.kind, code: err.code ?? null, status: err.status ?? null })
+	);
+}
 
 export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const space = await db.query.spaces.findFirst({
@@ -72,7 +107,9 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			adminLink: null,
 			analysisEnabled: false,
 			analysis: null,
-			animateTiles: false
+			animateTiles: false,
+			bitrix: null,
+			encryptionEnabled: false
 		};
 	}
 
@@ -122,6 +159,9 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const animateTiles = !cookies.get('retro_tiles_seen');
 	if (animateTiles) cookies.set('retro_tiles_seen', '1', { path: '/', httpOnly: true, sameSite: 'lax' });
 
+	// Панель Битрикс24 видит только создатель; вебхук в page data не попадает — только publicInfo
+	const bitrixConnection = isCreator ? await loadConnection(space.id) : null;
+
 	const adminLink = isCreator
 		? `${url.origin}/spaces/${params.slug}?admin=${space.creatorToken}`
 		: null;
@@ -142,6 +182,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		analysisEnabled: !!env.DEEPSEEK_API_KEY,
 		analysis: statePayload(analysisRows, new Date()),
 		animateTiles,
+		bitrix: bitrixConnection ? publicInfo(bitrixConnection) : null,
+		encryptionEnabled: isCreator && encryptionEnabled,
 		boards: spaceBoards.map((b) => {
 			const rows = countsByBoard.get(b.id) ?? [];
 			const mood = moodCounts(b.format, rows);
@@ -416,5 +458,122 @@ export const actions: Actions = {
 		});
 
 		return { analysis: 'started' as const };
+	},
+
+	// Подключение вебхука. Порядок из спеки (Секция 3): создатель → лимитер (до любого
+	// исходящего вызова — сервер не должен стать прокси для перебора чужих вебхуков) →
+	// шифрование → адрес → profile → право «Задачи» → группа → upsert.
+	// Любой шаг упал — ничего не сохраняем.
+	bitrixConnect: async ({ request, params, cookies, getClientAddress }) => {
+		const space = await spaceForCreator(params.slug, cookies);
+		const failWith = (kind: ActionErrorKind, field?: BitrixField) => {
+			metric(`retro.bitrix.connect_failed.${kind}`, 1);
+			return bitrixFail('connect', kind, field);
+		};
+
+		if (!connectLimiter.check(getClientAddress())) return failWith('rate_limited');
+		if (!encryptionEnabled) return failWith('encryption');
+
+		const formData = await request.formData();
+		const raw = formData.get('webhook');
+		const webhook =
+			typeof raw === 'string' ? parseWebhookUrl(raw.trim(), { allowHttp: env.BITRIX_ALLOW_HTTP === '1' }) : null;
+		if (!webhook) return failWith('invalid_url', 'webhook');
+		const groupId = parseGroupId(formData.get('groupId'));
+		if (groupId === 'invalid') return failWith('invalid', 'groupId');
+
+		try {
+			const profile = await verifyWebhook(webhook);
+			await checkTasksScope(webhook);
+
+			let groupName: string | null = null;
+			let groupNameUnavailable = false;
+			if (groupId !== null) {
+				const group = await resolveGroup(webhook, groupId);
+				if (group.status === 'notFound') return failWith('group', 'groupId');
+				if (group.status === 'ok') groupName = group.name;
+				// noScope: нет права «Рабочие группы соцсети» — сохраняем id без названия
+				else groupNameUnavailable = true;
+			}
+
+			await saveConnection({
+				spaceId: space.id,
+				webhookUrl: webhook.url,
+				portal: webhook.portal,
+				userId: profile.userId,
+				userName: profile.userName,
+				timeZone: profile.timeZone,
+				portalOffset: profile.portalOffset,
+				groupId,
+				groupName
+			});
+			metric('retro.bitrix.connected', 1);
+			console.info(JSON.stringify({ event: 'bitrix:connected', space: params.slug, portal: webhook.portal }));
+			return {
+				bitrixAction: 'connect' as const,
+				bitrixSuccess: true as const,
+				...(groupNameUnavailable ? { groupNameUnavailable: true as const } : {})
+			};
+		} catch (err) {
+			if (!(err instanceof BitrixError)) throw err;
+			logBitrixFailure('bitrix:connect_failed', params.slug, err);
+			const kind = err.kind;
+			// Подключения ещё нет — UPDATE ничего не создаст; есть (переподключают сломанный) — панель покажет предупреждение
+			if (persistsLastError(kind)) await setLastError(space.id, kind);
+			return failWith(kind, kind === 'group' ? 'groupId' : 'webhook');
+		}
+	},
+
+	// Отключение: строка уходит, задачи на карточках остаются ссылками
+	bitrixDisconnect: async ({ params, cookies }) => {
+		const space = await spaceForCreator(params.slug, cookies);
+		await deleteConnection(space.id);
+		metric('retro.bitrix.disconnected', 1);
+		return { bitrixAction: 'disconnect' as const, bitrixSuccess: true as const };
+	},
+
+	// Смена группы по умолчанию без повторного ввода вебхука (мы его не показываем).
+	// Лимитер общий с GET /[slug]/bitrix/group.
+	bitrixSetGroup: async ({ request, params, cookies, getClientAddress }) => {
+		const space = await spaceForCreator(params.slug, cookies);
+		if (!groupLimiter.check(getClientAddress())) return bitrixFail('setGroup', 'rate_limited');
+
+		const formData = await request.formData();
+		const groupId = parseGroupId(formData.get('groupId'));
+		if (groupId === 'invalid') return bitrixFail('setGroup', 'invalid', 'groupId');
+
+		const connection = await loadConnection(space.id);
+		if (!connection) return bitrixFail('setGroup', 'not_connected');
+
+		// Пустое поле — «без группы»: портал не спрашиваем, last_error не трогаем
+		if (groupId === null) {
+			await updateGroup(space.id, null, null);
+			return { bitrixAction: 'setGroup' as const, bitrixSuccess: true as const };
+		}
+
+		// Не расшифровался (ключ сменили) — просим подключить заново
+		if (!connection.webhook) {
+			await setLastError(space.id, 'invalid_webhook');
+			return bitrixFail('setGroup', 'invalid_webhook');
+		}
+
+		try {
+			const group = await resolveGroup(connection.webhook, groupId);
+			if (group.status === 'notFound') return bitrixFail('setGroup', 'group', 'groupId');
+			await updateGroup(space.id, groupId, group.status === 'ok' ? group.name : null);
+			// Портал ответил — вебхук жив, старое предупреждение снимаем
+			if (connection.lastError) await setLastError(space.id, null);
+			return {
+				bitrixAction: 'setGroup' as const,
+				bitrixSuccess: true as const,
+				...(group.status === 'noScope' ? { groupNameUnavailable: true as const } : {})
+			};
+		} catch (err) {
+			if (!(err instanceof BitrixError)) throw err;
+			logBitrixFailure('bitrix:set_group_failed', params.slug, err);
+			const kind = err.kind;
+			if (persistsLastError(kind)) await setLastError(space.id, kind);
+			return bitrixFail('setGroup', kind, kind === 'group' ? 'groupId' : undefined);
+		}
 	}
 };
