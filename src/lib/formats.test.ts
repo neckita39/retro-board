@@ -75,6 +75,8 @@ describe('реестр форматов', () => {
 			expect(TONE[tone].badge).toContain('bg-');
 			expect(TONE[tone].tab).toContain('text-white');
 			expect(TONE[tone].bar).toBe(`bg-${tone}`);
+			// На плитке с иллюстрацией полоска не зависит от темы — art-токен
+			expect(TONE[tone].art).toBe(`bg-art-${tone}`);
 		}
 	});
 

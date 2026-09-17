@@ -46,7 +46,7 @@
 	onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
 >
 	<div
-		class="modal-card-enter flex w-[480px] max-w-full flex-col gap-[18px] rounded-3xl bg-surface-card p-6 shadow-2 sm:p-8"
+		class="modal-card-enter flex max-h-full w-[480px] max-w-full flex-col gap-[18px] overflow-y-auto rounded-3xl bg-surface-card p-6 shadow-2 sm:p-8"
 		role="dialog"
 		aria-modal="true"
 		aria-label={t('space.boards.create')}

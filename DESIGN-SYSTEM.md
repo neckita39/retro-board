@@ -83,6 +83,21 @@ Overrides in the `.dark` class, derived from the same warm palette:
   `plum #B57AA6`); tints become deep muted versions; `*-strong` tint-text tokens flip to light shades
 - Scrims and shadows stay ink — they are not redefined
 
+### Art tokens (format illustrations)
+A format illustration is the same picture in both themes, so everything drawn on top of it uses
+`art-*` tokens that have **no** `.dark` override (like the code block tokens of the API page).
+Values are the light-theme ones; the tile frame (`border-border`, hover, selected accent) is not
+art and follows the theme.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `art-canvas` | `#F4F4FE` | Tile fill. `scripts/format-art.mjs` shifts the empty part of every picture to this colour, so the tile extends the picture without a seam |
+| `art-ink` | `#211E1A` | Titles on illustrated tiles (15.2:1 on the canvas) |
+| `art-ink-secondary` | `#6B6A61` | Taglines, descriptions, chip text (5.0:1) |
+| `art-chip` / `art-chip-border` | `#FFFFFF` / `#E5E4DC` | Meta chips on `/formats` |
+| `art-accent` / `art-accent-bg` | `#A94620` / `#F7E7DE` | «Learn more» and «Recommended» — the light `accent-hover`: `accent` itself is 4.1:1 on the canvas |
+| `art-well` / `art-bad` / `art-improve` / `art-plum` | `#4C8C6A` / `#C05B4D` / `#5B72C0` / `#9A5B8C` | Column stripes on picker options (`TONE[tone].art`); the dark-theme tones fall to 2.7–3.1:1 on the canvas |
+
 ## Typography
 
 Self-hosted (`static/fonts/`, declared in `src/fonts.css`): `Unbounded` (400–800) +
@@ -342,6 +357,32 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
   error 13 `text-bad`, «Retry» `btn btn-secondary btn-sm` + `AiBadge`
 - `tileEnter` animation (70ms stagger, max 8) only on the first render of the list per session
 
+### Format tiles (`FormatTile.svelte`, `FormatPicker.svelte`, `.format-art`)
+- Pictures: `src/lib/assets/format-art/{id}.webp`, 1200×400 (3:1), one per visible format including
+  classic, made by `scripts/format-art.mjs`. `formatArt(id)` / `formatArtBackground(id)` in
+  `src/lib/format-art.ts` import them through Vite (hashed `/_app/immutable/` URL, year-long
+  immutable cache). A decorative CSS background: no `alt`, no layout shift, 7–11 KB each
+- `.format-art` = `rounded-2xl border border-border bg-art-canvas`, picture `auto 100%` at
+  `right center`: the whole illustration fits the tile height, the rest of the tile is `art-canvas`.
+  The illustration is the right 56 % of the picture, i.e. ≈ 1.68 × picture height, so the text
+  column is capped at `calc(100% − illustration − gap)` for a known picture height
+- `FormatTile` — links on `/formats` (with meta chips), the home page and `/how-to-run-a-retro`.
+  From `md`: `min-h-[168px] p-6`, text `max-w-[calc(100%-300px)]` (282 illustration + 18 gap);
+  title Unbounded 17/700 `art-ink` `leading-[1.3]`, tagline 14 `art-ink-secondary`, chips `badge
+  border border-art-chip-border bg-art-chip text-art-ink-secondary`; hover = `card-interactive`
+  (lift + `border-border-strong`), never a fill. Below `md` (`.format-art-stack`) the picture is a
+  full-width 3:1 band under the text. Grids: `/formats` and the guide one column, home one column
+  and two from `xl`
+- `FormatPicker` option = `.format-art`. Full (`/new`) = `.format-art-foot`: from `sm`
+  `min-h-[112px] p-4`, text `max-w-[calc(100%-204px)]`; below `sm` the picture is 72px high in the
+  bottom-right corner (80px bottom padding) and «Learn more» sits next to it
+  (`max-sm:absolute max-sm:bottom-4 max-sm:left-4`). Compact (modal) = `.format-art-row p-3`: the
+  picture is always 48px high at the right (illustration ≈ 81px), text `max-w-[calc(100%-86px)]` at
+  every width — a row that wraps on a phone does not grow under the picture. Never give compact rows
+  the corner: 80px padding per row pushed the modal to 1004px on a 375px phone
+- Never on an illustrated tile: a hover fill (`hover:bg-surface-hover`), tints, or theme tokens
+  (`text-text-primary`, `badge-accent`, `bg-well`) for anything drawn over the picture
+
 ### Create screen (`/new`, `FormatPicker.svelte`)
 - H1 26/32, subtitle 15 secondary; content `max-w-[720px]`
 - Type cards: `rounded-2xl border bg-surface-card p-6 gap-3`; **selected** = `border-accent
@@ -352,16 +393,18 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
   14/1.5 secondary, AI line = `<AiBadge label="AI" />` + 13/600 secondary
 - Field label 14/600; `input input-lg`; submit `btn btn-primary btn-lg w-full`; note 13 muted;
   «Already have a link?» 14 muted → `input input-md` + `btn btn-secondary btn-md`
-- FormatPicker: legend 14/600, grid `gap-2 sm:grid-cols-2` (`compact` = one column, no
-  descriptions), option `rounded-2xl border bg-surface-card p-4 gap-2` with the same selected /
-  unselected idiom, stripes `h-5 w-2.5 rounded-[3px] {TONE[tone].bar}` (plum for the fourth column
-  of 4L and Sailboat), title Unbounded 15/700, «Recommended» = `badge-sm badge-accent`,
-  description 13/1.5 secondary, «Learn more» 13/600 accent
+- FormatPicker: legend 14/600, one column `gap-2` (`compact` = no descriptions); option = an
+  illustrated tile (see Format tiles) with `gap-2` and the same selected / unselected idiom — the
+  inset accent shadow is painted over the background picture, so the 2px frame stays whole;
+  stripes `h-5 w-2.5 rounded-[3px] {TONE[tone].art}` (plum for the fourth column of 4L and
+  Sailboat), title Unbounded 15/700 `art-ink`, «Recommended» = `badge-sm bg-art-accent-bg
+  text-art-accent`, description 13/1.5 `art-ink-secondary`, «Learn more» 13/600 `art-accent`
 - Password toggle on `/new` = `ToggleSwitch` in a `self-start` wrapper (it is inline now)
 
 ### Modal (`NewBoardModal.svelte`)
 - Overlay `fixed inset-0 z-[70] bg-scrim p-4` (`modalFadeIn`); card `w-[480px] rounded-3xl
-  bg-surface-card p-6 sm:p-8 shadow-2 gap-[18px]` (`modalZoomIn`), `role="dialog"`
+  bg-surface-card p-6 sm:p-8 shadow-2 gap-[18px] max-h-full overflow-y-auto` (`modalZoomIn`),
+  `role="dialog"` — on a short phone screen the card scrolls instead of being cut off
 - Title Unbounded 21, context line 14 secondary, close `btn-icon btn-icon-lg btn-icon-bordered`
   (glyph 16); label 14/600; `input input-lg bg-surface`; `FormatPicker compact`; hint 13/1.5 muted;
   buttons `btn btn-secondary btn-lg flex-1` + `btn btn-primary btn-lg flex-[2]`; Escape closes
@@ -687,6 +730,15 @@ base + size + variant. Override any property with inline Tailwind.
 | Class | Purpose |
 |-------|---------|
 | `.icon-tip` | Icon-button tooltip (FocusTimer idiom): `rounded-xl bg-text-primary px-3 py-2 text-[13px] text-surface shadow-1`, 150ms on hover / `:focus-visible` — the card icons |
+
+### Format art
+
+| Class | Purpose |
+|-------|---------|
+| `.format-art` | Illustrated format tile: `rounded-2xl border border-border bg-art-canvas`, picture from `style:background-image` fitted to the tile height at the right |
+| `.format-art-row` | Compact `FormatPicker` row (modal): the picture always 48px high at the right, whatever the row height |
+| `.format-art-stack` | Below `md`: the picture as a full-width 3:1 band under the text (`FormatTile`) |
+| `.format-art-foot` | Below `sm`: the picture 72px high in the bottom-right corner, 80px bottom padding (full `FormatPicker` on `/new`) |
 
 ### Shared components that wrap these classes
 `AiBadge.svelte` (`badge-sm badge-ai` + star), `AnalyzeButton.svelte` (header / menu / retry),

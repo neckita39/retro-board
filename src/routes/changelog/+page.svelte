@@ -13,6 +13,17 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.15',
+			date: '2026-09-17',
+			title: { en: 'Format illustrations', ru: 'Иллюстрации форматов' },
+			changes: [
+				{ en: 'Every retro format now has its own illustration: on the formats page, on the home page, in the guide and when you pick a format for a new board', ru: 'У каждого формата ретро появилась своя иллюстрация — на странице форматов, на главной, в гайде и при выборе формата новой доски' },
+				{ en: 'The illustrations look the same in the light and the dark theme', ru: 'В светлой и тёмной теме иллюстрации выглядят одинаково' },
+				{ en: 'On a phone the picture moves under the text or into the corner of the card, so the text never covers it', ru: 'На телефоне картинка уходит под текст или в угол карточки, чтобы текст на неё не наезжал' },
+				{ en: 'The «New board» window in a space now scrolls on small screens', ru: 'Окно «Новая доска» в пространстве теперь прокручивается на небольших экранах' }
+			]
+		},
+		{
 			version: '1.14',
 			date: '2026-09-17',
 			title: { en: 'Tasks in Bitrix24', ru: 'Задачи в Битрикс24' },

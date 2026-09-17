@@ -43,6 +43,8 @@ export interface ToneClasses {
 	outline: string;
 	/** Сплошной цвет: полоски колонок в пикере и на плитках. Тинты на белом были невидимы */
 	bar: string;
+	/** Та же полоска на плитке с иллюстрацией: светлый тон в обеих темах (art-токены) */
+	art: string;
 }
 
 export const TONE: Record<Tone, ToneClasses> = {
@@ -52,7 +54,8 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-well-bg text-well-strong',
 		tab: 'bg-well text-white',
 		outline: 'outline-well bg-well-bg',
-		bar: 'bg-well'
+		bar: 'bg-well',
+		art: 'bg-art-well'
 	},
 	bad: {
 		border: 'border-bad',
@@ -60,7 +63,8 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-bad-bg text-bad-strong',
 		tab: 'bg-bad text-white',
 		outline: 'outline-bad bg-bad-bg',
-		bar: 'bg-bad'
+		bar: 'bg-bad',
+		art: 'bg-art-bad'
 	},
 	improve: {
 		border: 'border-improve',
@@ -68,7 +72,8 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-improve-bg text-improve-strong',
 		tab: 'bg-improve text-white',
 		outline: 'outline-improve bg-improve-bg',
-		bar: 'bg-improve'
+		bar: 'bg-improve',
+		art: 'bg-art-improve'
 	},
 	plum: {
 		border: 'border-plum',
@@ -76,6 +81,7 @@ export const TONE: Record<Tone, ToneClasses> = {
 		badge: 'bg-plum-bg text-plum-strong',
 		tab: 'bg-plum text-white',
 		outline: 'outline-plum bg-plum-bg',
-		bar: 'bg-plum'
+		bar: 'bg-plum',
+		art: 'bg-art-plum'
 	}
 };
