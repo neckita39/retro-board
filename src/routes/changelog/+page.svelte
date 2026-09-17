@@ -13,6 +13,22 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.14',
+			date: '2026-09-17',
+			title: { en: 'Tasks in Bitrix24', ru: 'Задачи в Битрикс24' },
+			changes: [
+				{ en: 'Turn a retro card into a Bitrix24 task right from the board: press «To Bitrix24 task» on the card, check the prefilled form and press «Create task»', ru: 'Карточку ретро можно превратить в задачу Битрикс24 прямо с доски: нажмите «В задачу Битрикс24» на карточке, проверьте заполненную форму и нажмите «Создать задачу»' },
+				{ en: 'The form fills itself in: the title is the first line of the card, the description has the card text, a link to the board, the author, votes and comments — edit anything before sending', ru: 'Форма заполняется сама: название — первая строка карточки, в описании текст карточки, ссылка на доску, автор, голоса и комментарии — перед отправкой всё можно поправить' },
+				{ en: 'Pick a group, a deadline and mark the task as important; the retro tag is added automatically, and the card image is attached to the task as a file', ru: 'Можно указать группу, срок и отметить задачу важной; тег retro добавляется сам, а картинка карточки прикрепляется к задаче файлом' },
+				{ en: 'Once created, the card shows a «Task #123» link — everyone on the board sees it at once, and it is also in the Summary and in the JSON and Markdown export', ru: 'После создания на карточке появляется ссылка «Задача #123» — её сразу видят все участники доски, она же есть в «Итогах» и в экспорте JSON и Markdown' },
+				{ en: 'In discussion mode a task can be created straight from the Summary without interrupting the discussion', ru: 'В режиме обсуждения задачу можно поставить прямо из «Итогов», не прерывая обсуждение' },
+				{ en: 'Bitrix24 is connected once per space: the space creator presses «Bitrix24» on the space page (or «Connect Bitrix24» in the board menu) and pastes the connection link from the portal — the hint on where to get it is right there. The link is stored encrypted and never shown again', ru: 'Битрикс24 подключается один раз на пространство: создатель пространства нажимает «Битрикс24» на странице пространства (или «Подключить Битрикс24» в меню доски) и вставляет ссылку для подключения из портала — подсказка, где её взять, там же. Ссылка хранится зашифрованной и больше не показывается' },
+				{ en: 'Tasks are created on behalf of whoever connected the portal — they are both the creator and the responsible person. Only the board creator and the space creator see the button, on regular boards and on AI analysis boards alike', ru: 'Задачи ставятся от имени того, кто подключил портал, — он и постановщик, и ответственный. Кнопку видят только создатель доски и создатель пространства — на обычных досках и на досках AI-анализа' },
+				{ en: 'Card icons now show a hint on hover', ru: 'У иконок на карточке появились подсказки при наведении' },
+				{ en: 'Password-protected spaces are better protected: after the update you may need to enter the space password once more', ru: 'Пространства с паролем защищены надёжнее: после обновления пароль, возможно, придётся ввести ещё раз' }
+			]
+		},
+		{
 			version: '1.13',
 			date: '2026-09-16',
 			title: { en: 'One consistent style', ru: 'Единый стиль' },

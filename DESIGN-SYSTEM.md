@@ -19,7 +19,7 @@ Five scales replace the old scatter. Every screen and shared component follows a
    32 (`h-8`) = controls inside cards and summary rows · 38 (`h-[38px]`) = header, toolbars,
    inline forms, labelled toggle · 54 (`h-[54px]`) = creation forms and the modal.
    Heights are set explicitly (`h-*`), never derived from padding. Mobile touch exceptions:
-   the composer is 48, vote/comment pills are 40, column tabs are `min-h-11`.
+   the composer is 48, vote/comment pills and the card's task badge are 40, column tabs are `min-h-11`.
 3. **Shadows** — three levels, all ink `rgba(33,30,26,…)`.
    Level 0 = 1px `border-border` only (cards, tiles, panels, chips) · level 1 = `shadow-1`
    (`0 4px 14px .08` — dropdown menus, toasts, FAB, tooltips) · level 2 = `shadow-2`
@@ -113,8 +113,8 @@ counter, timer and score.
 | 8 | `rounded-lg` | `btn-icon`, `badge-sm`, `badge-version`, image previews, `error-box`, mobile brand square, space placeholder squares |
 | 12 | `rounded-xl` | `btn-*`, `input-*`, `textarea`, timer chips, FocusTimer chip and tooltip, summary rows, comment bubbles, mobile column tabs, `btn-icon-lg`, labelled toggle, rename input |
 | 16 | `rounded-2xl` | `card`, `card-board`, tiles, panels, toasts, `dropdown`, name card, «Add a card…», expanded card form, analysis frame, lightbox image |
-| 24 | `rounded-3xl` | NewBoardModal |
-| full | `rounded-full` | `pill`, `badge`, avatars, `+N`, FAB, toast icon circles, mood bar segments, switch |
+| 24 | `rounded-3xl` | NewBoardModal, BitrixTaskModal (a square sheet on phones) |
+| full | `rounded-full` | `pill`, `badge`, `TaskBadge`, avatars, `+N`, FAB, toast icon circles, mood bar segments, switch |
 
 ## Height scale
 
@@ -123,12 +123,12 @@ counter, timer and score.
 | 20 | `badge-sm` | Column labels, tags inside rows |
 | 22 | inline | «live now» tag on tiles |
 | 24 | inline | Toast icon circle, «Add a card…» plus circle |
-| 28 | `btn-icon-sm`, `badge`, summary comment pill | Inside cards, summary rows, chips; lock badge next to the space H1 |
-| 32 | `btn-sm`, `input-sm`, `btn-icon-md`, `pill`, avatar, `+N`, FocusTimer chip, name-card avatar | Card action rows, summary controls, comment form, header participants |
-| 38 | `btn-md`, `input-md`, `btn-icon-lg`, timer chips, ToggleSwitch, FAB, ⋯ button, mobile share | Header, toolbars, inline forms, name card, password panel, feedback panel |
+| 28 | `btn-icon-sm`, `badge`, summary comment pill, `TaskBadge size="sm"` | Inside cards, summary rows, chips; lock badge next to the space H1 |
+| 32 | `btn-sm`, `input-sm`, `btn-icon-md`, `pill`, avatar, `+N`, FocusTimer chip, name-card avatar, `TaskBadge` | Card action rows, summary controls, comment form, header participants |
+| 38 | `btn-md`, `input-md`, `btn-icon-lg`, timer chips, ToggleSwitch, FAB, ⋯ button, mobile share, Bitrix24 trigger | Header, toolbars, inline forms, name card, password and Bitrix24 panels, feedback panel |
 | 46 | «Add a card…» affordance | Top of each column |
 | 48 | Mobile composer input / send / attach | Bottom of the screen on phones |
-| 54 | `btn-lg`, `input-lg` | Create screen, NewBoardModal, space password form |
+| 54 | `btn-lg`, `input-lg` | Create screen, NewBoardModal, BitrixTaskModal, space password form |
 
 ## Spacing
 
@@ -177,7 +177,9 @@ contexts. Every control in the right-hand row is 38px with radius 12.
   in the overflow menu. Below `md` it is a 38×38 ink square
 - `⋯` = 38×38 bordered `rounded-xl`; the `dropdown` (w-52) holds: copy code, admin link, JSON,
   Markdown, API, «Space analysis» (`AnalyzeButton variant="menu"`, star `text-improve`),
-  EN + Theme toggles, rename, delete (`text-bad hover:bg-bad-bg`, inline confirm with `btn-sm`)
+  EN + Theme toggles, rename, «Connect Bitrix24» (space creator, space without a connection: link
+  glyph 16 muted → `/spaces/{slug}?bitrix=1`), delete (`text-bad hover:bg-bad-bg`, inline confirm
+  with `btn-sm`)
 - Mobile: title Unbounded 17/800 (links to the space or `/`), subtitle 13 muted
   «space · N online»; compact timer chip; 38px share square; menu
 
@@ -192,12 +194,14 @@ contexts. Every control in the right-hand row is 38px with radius 12.
 - Page heading row: H1 Unbounded `text-[26px] sm:text-[32px]` `tracking-[-0.02em]` →
   lock `badge badge-outline` (28px pill, glyph 12, `space.locked`) when protected → pencil
   `btn-icon btn-icon-sm` (creator) → success badge after a password change; meta line 15 secondary.
-  Right: labelled `ToggleSwitch` «Password» (38) + delete `btn-icon btn-icon-lg btn-icon-bordered`
-  (hover `bad-bg`/`bad`); confirm state = 13 secondary text + `btn-danger btn-md` + `btn-secondary btn-md`
+  Right (creator): «Bitrix24» panel trigger (see Bitrix24) + labelled `ToggleSwitch` «Password» (38)
+  + delete `btn-icon btn-icon-lg btn-icon-bordered` (hover `bad-bg`/`bad`); confirm state = 13
+  secondary text + `btn-danger btn-md` + `btn-secondary btn-md`
 - Rename input: `input font-heading h-auto px-3 py-1 text-[26px] sm:text-[32px] font-bold`
 - Password panel (collapsible): `rounded-2xl border border-border bg-surface-card p-4`,
   description 14 secondary, `input input-md`, `btn-primary`/`btn-danger btn-md` + `btn-secondary btn-md`,
-  error 13 `text-bad` with `shake`
+  error 13 `text-bad` with `shake`. The Bitrix24 panel uses the same frame; one panel is open at a
+  time, and the delete confirm collapses both
 
 ## Avatar / User Identity
 
@@ -220,7 +224,8 @@ One notification system for the whole app — no bottom banners, no `AdminBanner
   `card-enter` animation; `data-testid="toast"`, `data-kind`
 - Icon: 24px circle — success = `well-bg`/`well-strong` ✓, error = `bad-bg`/`bad-strong` !,
   info = `improve-bg`/`improve-strong` ★ (glyph 12)
-- Text 14/1.4 ink; action 13/700 accent «label →»: `{ label, href }` renders a link,
+- Text 14/1.4 ink; action 13/700 accent «label →»: `{ label, href }` renders a link
+  (`external: true` adds `target="_blank" rel="noopener"` — «Task #N created → Open»),
   `{ label, onClick }` a button whose label turns into `copy.copied` for 2s after a click
 - Close = `btn-icon btn-icon-sm` glyph 12, `aria-label` = `toast.close`
 - `role="status"` (`alert` for errors); timeouts 8s default, 12s error, 15s for the
@@ -244,19 +249,31 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
 - `.card-board` (`rounded-2xl border border-border bg-surface-card p-4`) + `card-interactive` —
   **no shadow**; text 15/1.5 (`whitespace-pre-wrap`)
 - Action icons top-right, **always visible**: a group with `-mt-1.5 -mr-1.5 gap-0.5` of
-  `btn-icon btn-icon-sm` (28, radius 8, glyph 16): move = swap arrows, edit = pencil, delete = ✕
-  (first click → `bg-bad text-white` confirm state for 3s). Move opens a row of `badge-sm` tone
+  `btn-icon btn-icon-sm` (28, radius 8, glyph 16): task = square with a check (first; board or
+  space creator, connected space, card without a task), move = swap arrows, edit = pencil,
+  delete = ✕ (first click → `bg-bad text-white` confirm state for 3s). Each icon keeps `title` +
+  `aria-label` and shows an `.icon-tip` tooltip. Move opens a row of `badge-sm` tone
   chips for the other columns
 - Image preview `rounded-lg` (8), `max-h-48`, opens the lightbox
 - Action row (`mt-3 gap-2`): like / dislike `pill` (`pill-outline` inactive, `pill-well` /
   `pill-bad` active, `vote-bounce`), comment counter = `pill pill-neutral` when > 0 or a
   borderless `pill text-text-muted hover:bg-surface-hover` with `comment.add` when 0 —
-  terracotta stays with actions and the timer; author right, 13 muted. Pills are 40px on phones
+  terracotta stays with actions and the timer; `TaskBadge` (32) after the comment pill; author
+  right (`ml-auto`), 13 muted. Pills and the task badge are 40px on phones, where the row wraps
+  (`flex-wrap gap-2`) and the badge moves to the second line together with the author
 - Comments: collapsible list of `rounded-xl bg-surface px-3 py-2 text-[13px]` bubbles; the form
   is a 32px row: attach `btn-icon btn-icon-sm` + `input input-sm` + `btn btn-dark btn-sm`
 - Edit mode: `textarea bg-surface px-3 py-2`; Enter saves, Escape cancels
 - Draggable between columns (`rotate-1 scale-[0.97] opacity-40` while dragging)
 - Animation: `cardEnter 0.55s spring`, stagger 50ms
+
+### Icon tooltip (`.icon-tip`)
+- The FocusTimer tooltip idiom for icon buttons, one class in `src/app.css`: `rounded-xl
+  bg-text-primary px-3 py-2 text-[13px] text-surface shadow-1`, `mt-1.5` under the icon group,
+  aligned to its right edge; appears over 150ms on hover (only on devices with real hover,
+  `@media (hover: hover)`) and on `:focus-visible`
+- Used on all four card icons (task, move, edit, delete); the button keeps `title` + `aria-label`,
+  the tooltip repeats the same text (its content comes from `aria-label`)
 
 ### «Add a card…» (`CardForm.svelte`)
 - Collapsed: a dashed affordance at the top of every column — `h-[46px] rounded-2xl
@@ -288,13 +305,18 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
   «Discuss» = `btn btn-primary btn-sm`, «End discussion» = `btn btn-secondary btn-sm`
 - Column labels = `badge-sm` with the tone badge classes (20px, radius 8, uppercase)
 - Row: `rounded-xl border border-border bg-surface-card px-3.5 py-2.5`, rows `gap-2`; score
-  13/600 muted `min-w-6` centred (✓ in `well` once discussed), text 15/1.4 ink, author 13 muted,
+  13/600 muted `min-w-6` centred (✓ in `well` once discussed), text 15/1.4 ink, author 13 muted
+  (yields space first: `max-w-28 truncate`), task link «#123» (`TaskBadge size="sm"`, 28,
+  `pointer-events-auto` so the click is not swallowed by the focus-jump layer),
   comment pill 28px (`h-7 rounded-full px-2.5 text-[13px] font-semibold`, `bg-surface-hover
   text-text-primary` when > 0, muted and transparent otherwise); dimmed rows `opacity-45`
 - Focused row: `border-2 border-accent px-4 py-3.5`, **no glow**; top line = score
   `badge-sm badge-accent tabular-nums`, position 13/600 muted, author 13 muted, FocusTimer at the
   right; text 15/1.6; controls row `mt-3 border-t pt-2.5`: «← Back» `btn btn-secondary btn-sm`,
-  «Next →» `btn btn-primary btn-sm` (on the last card: «End discussion»), comment pill `ml-auto`
+  «Next →» `btn btn-primary btn-sm` (on the last card: «End discussion»), «To task»
+  `btn btn-secondary btn-sm` with a 14px glyph (creator, connected space, no task yet) that turns
+  into the 32px `TaskBadge` once the task exists (both `pointer-events-auto`, the row wraps),
+  comment pill `ml-auto`
 - FocusTimer chip = the header timer idiom at 32: `h-8 rounded-xl border border-border bg-surface
   px-2.5 gap-2`, clock 14 secondary, time 13/700 tabular, bar 48×4, no shadow; its tooltip
   `rounded-xl bg-text-primary text-surface text-[13px] shadow-1` (hover, focus or tap to pin)
@@ -364,6 +386,59 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
 - Frames: `border-2 border-improve` on the analysis tile and (from `md`) around the analysis
   board's columns; spinner `text-improve`; info toasts use the improve tint icon
 
+### Bitrix24 (`BitrixPanel.svelte`, `BitrixTaskModal.svelte`, `TaskBadge.svelte`)
+- Neutral family: the task badge never takes a column tone, accent or `improve`; `well` / `bad`
+  only for success and error states; terracotta only on the one primary button of the panel
+  («Connect») and of the modal («Create task»)
+- **Trigger** (space page, creator row before «Password»): `btn btn-secondary btn-md pr-3.5`, link
+  glyph 16 `text-text-secondary` (✓ 16 `text-well` once connected), label «Bitrix24», chevron 14
+  muted rotated 180° when open, `aria-expanded`; `?bitrix=1` opens the panel with focus in the
+  webhook field
+- **`BitrixPanel`**: `collapsible` + `mt-7 rounded-2xl border border-border bg-surface-card p-4`.
+  Not connected: labels 14/600, `input input-md` webhook `flex-1` (`type=url`) + group `w-[290px]`
+  (`inputmode=numeric`), «Connect» `btn btn-primary btn-md` + «Cancel» `btn btn-secondary btn-md`,
+  one-line hint 13 muted; Enter = Connect. Checking: 16px `animate-spin` spinner + «Checking…»,
+  fields `opacity-50 pointer-events-none`. Connected: title 14/600 «Bitrix24 · {portal}» +
+  `badge badge-outline` ✓ «Connected»; ink initial avatar 32 (13/700); «Tasks are created by:
+  {name}» + a 13 note; default group «42 · Name» (muted «not set») with a pencil `btn-icon
+  btn-icon-sm` → `input input-md w-32` + Save `btn btn-dark btn-md` + Cancel; «Disconnect»
+  `btn btn-secondary btn-md hover:bg-bad-bg hover:text-bad` → `btn btn-danger btn-md` «Click again
+  to disconnect» for 3s, no browser dialogs. Result badges `badge badge-success badge-pop` for 2.5s.
+  Errors: field `border-bad` + `shake`, 13 `text-bad` under the row, the typed value stays;
+  `last_error` → `error-box` above the reconnect form; no `ENCRYPTION_KEY` → an explanation
+  instead of the form
+- **`TaskBadge`** (`task`, `size`): an `<a target="_blank" rel="noopener">`; next to `AiBadge` it
+  is the framed one. `md` (card, focused Summary row): `inline-flex h-8 items-center gap-1.5
+  rounded-full border border-border bg-surface-card px-3 text-[13px] font-semibold
+  text-text-primary`, external-link glyph 14 muted, «Task #123», hover `border-border-strong
+  bg-surface-hover`, `active:scale-[0.97]`, `badgePop`, `title` = the task URL,
+  `max-md:h-10 max-md:px-4`. `sm` (Summary row): `h-7 gap-1 px-2.5 text-text-secondary`, glyph 12,
+  «#123», hover `border-border-strong text-text-primary`, `title` «Task #123 in Bitrix24».
+  Rendered for everyone from `card.bitrixTaskUrl`, with or without a space
+- **`BitrixTaskModal`** (mounted once in `Board.svelte`): the `NewBoardModal` recipe — overlay
+  `fixed inset-0 z-[70] bg-scrim p-4` (transparent, no scrim, on phones), card `flex max-h-[calc(100dvh-2rem)]
+  w-[480px] max-w-full flex-col rounded-3xl bg-surface-card shadow-2`, `role="dialog" aria-modal="true"`,
+  focus trap, the title is focused and selected on open. Padding lives on each section, not on the
+  card: header `shrink-0` (`px-6 pt-6 sm:px-8 sm:pt-8`) has the title Unbounded 21 + context 14
+  secondary «{portal} · the retro tag is added automatically» and close `btn-icon btn-icon-lg
+  btn-icon-bordered`; the fields section scrolls (`min-h-0 flex-1 overflow-y-auto gap-[18px] px-6
+  py-[18px] sm:px-8`); the button row is `shrink-0` (`px-6 pb-6 sm:px-8 sm:pb-8`). Fields `input
+  input-lg bg-surface` (title `maxlength=250`; group with a 13 status line `mt-1.5`: name muted /
+  «not found» `text-bad`; date `type=date` with a 16px muted calendar glyph over a transparent native picker indicator); description `textarea bg-surface px-[18px] py-3
+  text-[15px] leading-[1.5]`, grows 4–8 lines, then `max-h-[204px] overflow-y-auto`; «Important
+  task» = `ToggleSwitch`; indicator lines 13 secondary with 14px glyphs, outside the Tab order.
+  Buttons `btn btn-secondary btn-lg flex-1` + `btn btn-primary btn-lg flex-[2]`. Submitting: 16px
+  spinner + «Creating…» («Creating and attaching the image…» with an image), form and close
+  `opacity-50 pointer-events-none`, `aria-busy`, Escape and overlay ignored. Errors: `error-box`
+  (`fadeUp`, `role="alert"`) above the buttons, «Space settings →» 700 `text-bad-strong
+  underline`; retryable errors turn the primary button into «Retry»
+- **Phone sheet** (below `sm`): `max-sm:fixed max-sm:inset-0 max-sm:h-[100dvh]
+  max-sm:rounded-none`, no scrim, enters with `fly y:24`; the header and the button row stay
+  `shrink-0` and gain a `border-border` divider (`max-sm:border-b` / `max-sm:border-t`) instead of
+  scrolling away, fields scroll between them, so «Create task» stays visible above the keyboard
+- Test ids: `bitrix-panel-toggle`, `bitrix-panel`, `menu-bitrix-connect`, `card-task-button`,
+  `summary-task-button`, `bitrix-task-form`, `bitrix-task-submit`, `task-badge`
+
 ### Feedback
 - **FAB**: `fixed right-5 bottom-5 z-[500] h-[38px] rounded-full bg-text-primary px-4 sm:px-[18px]
   text-sm font-semibold text-surface shadow-1`, 16px icon, label from `sm`; hover lift only
@@ -393,15 +468,15 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
 | cardEnter (`.card-enter`) | 0.55s | spring `(0.34, 1.56, 0.64, 1)` | Cards, dropdown menu, toasts, name card |
 | tileEnter (`.tile-enter`) | 0.6s | spring | Board tiles in a space (first render only, 70ms stagger) |
 | voteBounce | 0.3s | spring | Vote pill feedback |
-| badgePop | 0.25s | spring | Comment counter, password success badge |
+| badgePop | 0.25s | spring | Comment counter, password success badge, TaskBadge, Bitrix24 panel badges |
 | timerPulse | 0.7s ∞ | ease-in-out | Expired timer / focus timer |
 | fadeUp | 0.25–0.8s | `(0.25, 1, 0.5, 1)` | Tab panels, move row, expanded card form, page headers |
 | revealUp | 0.9s | `(0.16, 1, 0.3, 1)` | Landing scroll reveals |
 | panelExpand (`.panel-enter`) | 0.3s | `(0.25, 1, 0.5, 1)` | Dropdown panels |
-| collapsible | 0.25s | `(0.25, 1, 0.5, 1)` | Password panel, comments (grid-template-rows) |
-| modalFadeIn / modalZoomIn | 0.2s / 0.3s | ease / spring | NewBoardModal overlay / card |
+| collapsible | 0.25s | `(0.25, 1, 0.5, 1)` | Password and Bitrix24 panels, comments (grid-template-rows) |
+| modalFadeIn / modalZoomIn | 0.2s / 0.3s | ease / spring | NewBoardModal and BitrixTaskModal overlay / card (the phone sheet flies in, y 24) |
 | lightboxFadeIn / lightboxZoomIn | 0.25s / 0.35s | `(0.25, 1, 0.5, 1)` / spring | Lightbox |
-| shake | 0.5s | ease | Wrong password |
+| shake | 0.5s | ease | Wrong password, Bitrix24 webhook and group fields |
 | feedback panel | fade 0.2s / fly 0.35s | cubic-out | Overlay / side panel |
 | View Transition | 0.2–0.3s | `(0.25, 1, 0.5, 1)` | Page crossfade |
 
@@ -430,7 +505,7 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
 | FocusTimer tooltip | 30 | Maxim under the focus timer chip |
 | Mobile composer, toasts | 40 | Bottom bar on phones; the notification stack sits under the header so an open ⋯ menu is never covered |
 | Header, dropdown menu, lightbox | 50 | Sticky navigation, board ⋯ menu, image viewer |
-| Modal | 70 | NewBoardModal overlay |
+| Modal | 70 | NewBoardModal and BitrixTaskModal overlays |
 | FAB | 500 | Feedback floating button |
 | Overlay | 600 | Feedback panel backdrop |
 | Panel | 601 | Feedback slide-out |
@@ -514,6 +589,7 @@ Every interactive element must have:
 | Error | 13px `text-bad` text near the field, `shake`; error toast for background jobs |
 | Loading | Spinner on the button, button disabled; pending tile with an improve spinner |
 | Background job done | Info/success toast with an «Open →» link — on any page |
+| Create a Bitrix24 task | Spinner + «Creating…» on the button, modal locked; success closes it, the badge pops for everyone, success toast «Task #N created» with «Open →» in a new tab |
 
 ### Mobile UX
 - Header collapses to essentials (brand square or title, timer, share square, menu)
@@ -606,9 +682,16 @@ base + size + variant. Override any property with inline Tailwind.
 | `.error-box` | `rounded-lg bg-bad-bg text-bad-strong`, text-sm, icon gap |
 | `.error-box-sm` | Smaller padding + `text-[13px]` |
 
+### Tooltips
+
+| Class | Purpose |
+|-------|---------|
+| `.icon-tip` | Icon-button tooltip (FocusTimer idiom): `rounded-xl bg-text-primary px-3 py-2 text-[13px] text-surface shadow-1`, 150ms on hover / `:focus-visible` — the card icons |
+
 ### Shared components that wrap these classes
 `AiBadge.svelte` (`badge-sm badge-ai` + star), `AnalyzeButton.svelte` (header / menu / retry),
-`ToggleSwitch.svelte` (38px labelled frame), `Toasts.svelte` + `toastStore`, `NamePrompt.svelte`.
+`ToggleSwitch.svelte` (38px labelled frame), `Toasts.svelte` + `toastStore`, `NamePrompt.svelte`,
+`TaskBadge.svelte` (bordered link pill, `md` 32 / `sm` 28).
 
 ## Anti-patterns (DO NOT)
 
