@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, pgEnum, unique, integer, customType } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 const bytea = customType<{ data: Buffer }>({
 	dataType() {
@@ -16,6 +17,8 @@ export const spaces = pgTable('spaces', {
 	creatorToken: text('creator_token').notNull().default(''),
 	// Формат последней созданной здесь доски — предвыбор для следующей
 	lastFormat: text('last_format'),
+	// Значение cookie доступа к закрытому пространству; новое при каждом включении пароля
+	accessToken: text('access_token').notNull().default(sql`gen_random_uuid()::text`),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -51,6 +54,27 @@ export const spaceAnalyses = pgTable('space_analyses', {
 	finishedAt: timestamp('finished_at', { withTimezone: true })
 });
 
+// Подключение Битрикс24: одна строка на пространство. Секрет — только код вебхука,
+// он живёт внутри шифротекста webhook_enc; хост и id владельца не секрет.
+export const spaceBitrix = pgTable('space_bitrix', {
+	spaceId: uuid('space_id')
+		.primaryKey()
+		.references(() => spaces.id, { onDelete: 'cascade' }),
+	webhookEnc: text('webhook_enc').notNull(),
+	portal: text('portal').notNull(),
+	userId: integer('user_id').notNull(),
+	userName: text('user_name').notNull(),
+	// IANA-зона из profile.TIME_ZONE; NULL, если портал вернул пустую строку
+	timeZone: text('time_zone'),
+	// Смещение сервера портала из time.date_finish ответа profile, например '+03:00'
+	portalOffset: text('portal_offset'),
+	groupId: integer('group_id'),
+	groupName: text('group_name'),
+	connectedAt: timestamp('connected_at', { withTimezone: true }).notNull().defaultNow(),
+	// invalid_webhook | scope | access — пишут только экшены на пути fail
+	lastError: text('last_error')
+});
+
 export const images = pgTable('images', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	data: bytea('data').notNull(),
@@ -70,6 +94,9 @@ export const cards = pgTable('cards', {
 	content: text('content').notNull(),
 	authorName: text('author_name'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
+	// Задача Битрикс24 из карточки: id и готовая ссылка, считаются один раз при создании
+	bitrixTaskId: integer('bitrix_task_id'),
+	bitrixTaskUrl: text('bitrix_task_url'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 

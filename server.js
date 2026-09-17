@@ -56,6 +56,7 @@ const spaces = pgTable('spaces', {
 	passwordHash: text('password_hash').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
 	lastFormat: text('last_format'),
+	accessToken: text('access_token').notNull().default(sql`gen_random_uuid()::text`),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -85,6 +86,8 @@ const cards = pgTable('cards', {
 	content: text('content').notNull(),
 	authorName: text('author_name'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
+	bitrixTaskId: integer('bitrix_task_id'),
+	bitrixTaskUrl: text('bitrix_task_url'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 

@@ -43,7 +43,7 @@ describe('spaceAnalysesToMarkdown', () => {
 	const analysis: BoardExport = {
 		board: { title: 'Space analysis for 17.08.2026', slug: 'b-ai', format: 'analysis', createdAt: '2026-08-17T10:00:00.000Z' },
 		columns: {
-			again_well: [{ content: 'Deploys are smooth (in 3 boards)', authorName: 'AI analysis', likes: 0, dislikes: 0, imageUrl: null, createdAt: '2026-08-17T10:00:00.000Z', comments: [] }],
+			again_well: [{ content: 'Deploys are smooth (in 3 boards)', authorName: 'AI analysis', likes: 0, dislikes: 0, imageUrl: null, task: null, createdAt: '2026-08-17T10:00:00.000Z', comments: [] }],
 			again_bad: [],
 			again_improve: []
 		}

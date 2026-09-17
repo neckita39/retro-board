@@ -5,6 +5,7 @@ import { decrypt } from '$lib/server/crypto.js';
 import { translate, type Locale } from '$lib/i18n/index.js';
 import { createRateLimiter } from '$lib/server/ratelimit.js';
 import { findBoardFormat } from '$lib/formats.js';
+import type { CardTask } from '$lib/types.js';
 
 // Shared across export.md / export.json routes: 30 requests per IP per minute
 export const exportRateLimiter = createRateLimiter({ max: 30, windowMs: 60_000 });
@@ -22,6 +23,8 @@ export interface ExportCard {
 	likes: number;
 	dislikes: number;
 	imageUrl: string | null;
+	/** Задача Битрикс24 карточки; null — задачи нет */
+	task: CardTask | null;
 	createdAt: string;
 	comments: ExportComment[];
 }
@@ -44,6 +47,8 @@ interface CardRow {
 	content: string;
 	authorName: string | null;
 	imageId: string | null;
+	bitrixTaskId: number | null;
+	bitrixTaskUrl: string | null;
 	createdAt: Date;
 }
 interface VoteRow {
@@ -77,6 +82,10 @@ export function assembleExport(
 				likes: boardVotes.filter((v) => v.cardId === card.id && v.type === 'like').length,
 				dislikes: boardVotes.filter((v) => v.cardId === card.id && v.type === 'dislike').length,
 				imageUrl: imageUrl(card.imageId),
+				task:
+					card.bitrixTaskId !== null && card.bitrixTaskUrl
+						? { id: card.bitrixTaskId, url: card.bitrixTaskUrl }
+						: null,
 				createdAt: card.createdAt.toISOString(),
 				comments: boardComments
 					.filter((c) => c.cardId === card.id)
@@ -137,6 +146,10 @@ export function toMarkdown(data: BoardExport, lang: Locale = 'en'): string {
 
 			if (card.imageUrl) {
 				md += `  ![image](${card.imageUrl})\n`;
+			}
+
+			if (card.task) {
+				md += `  [${translate(lang, 'apiExport.task')} #${card.task.id}](${card.task.url})\n`;
 			}
 
 			for (const comment of card.comments) {

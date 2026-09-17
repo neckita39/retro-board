@@ -127,6 +127,7 @@
 	"apiExport.analyses": "AI analyses",
 	"apiExport.likes": "{n} like|{n} likes",
 	"apiExport.dislikes": "{n} dislike|{n} dislikes",
+	"apiExport.task": "Task",
 
 	"export.api": "API for agents",
 

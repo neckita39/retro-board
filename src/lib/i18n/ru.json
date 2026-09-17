@@ -127,6 +127,7 @@
 	"apiExport.analyses": "AI-анализы",
 	"apiExport.likes": "{n} лайк|{n} лайка|{n} лайков",
 	"apiExport.dislikes": "{n} дизлайк|{n} дизлайка|{n} дизлайков",
+	"apiExport.task": "Задача",
 
 	"export.api": "API для агентов",
 

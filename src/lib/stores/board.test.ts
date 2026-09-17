@@ -23,6 +23,8 @@ function makeCard(overrides: Partial<Card> = {}): Card {
 		imageId: null,
 		imageWidth: null,
 		imageHeight: null,
+		bitrixTaskId: null,
+		bitrixTaskUrl: null,
 		createdAt: '2025-01-01T00:00:00Z',
 		...overrides
 	};
