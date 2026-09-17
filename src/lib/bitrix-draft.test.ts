@@ -70,7 +70,7 @@ describe('buildTaskDraft — название', () => {
 
 	it('карточка-фото без текста называется по доске в обеих локалях', () => {
 		expect(buildTaskDraft(withCard(ru, { content: '', imageId: 'img-1' })).title).toBe('Карточка из ретро «Спринт 42»');
-		expect(buildTaskDraft(withCard(en, { content: '  \n ', imageId: 'img-1' })).title).toBe('Card from retro "Sprint 42"');
+		expect(buildTaskDraft(withCard(en, { content: '  \n ', imageId: 'img-1' })).title).toBe('Card from retro “Sprint 42”');
 	});
 });
 
@@ -90,7 +90,7 @@ describe('buildTaskDraft — описание', () => {
 		expect(buildTaskDraft(en).description).toBe(
 			[
 				'Релизы по пятницам ломают выходные\nДавайте катить до четверга',
-				'From retro "Sprint 42" · column "Didn\'t Go Well"\nhttps://retro.test/abc123',
+				'From retro “Sprint 42” · column “Didn\'t Go Well”\nhttps://retro.test/abc123',
 				'Author: Maria · 3 votes · against: 1',
 				'Comments:\nPeter: Agreed'
 			].join('\n\n')
@@ -157,12 +157,12 @@ describe('buildTaskDraft — описание', () => {
 		const { description } = buildTaskDraft(analysis);
 		expect(description).toContain('\n\nИз AI-анализа «Анализ пространства»\nhttps://retro.test/an1\n\n');
 		expect(description).not.toContain('колонка');
-		expect(buildTaskDraft({ ...analysis, locale: 'en' }).description).toContain('From AI analysis "Анализ пространства"\n');
+		expect(buildTaskDraft({ ...analysis, locale: 'en' }).description).toContain('From AI analysis “Анализ пространства”\n');
 	});
 
 	it('неизвестная колонка — строка источника без колонки', () => {
 		expect(buildTaskDraft({ ...ru, columnTitle: null }).description).toContain('\n\nИз ретро «Спринт 42»\nhttps://retro.test/abc123\n\n');
-		expect(buildTaskDraft({ ...en, columnTitle: null }).description).toContain('\n\nFrom retro "Sprint 42"\nhttps://retro.test/abc123\n\n');
+		expect(buildTaskDraft({ ...en, columnTitle: null }).description).toContain('\n\nFrom retro “Sprint 42”\nhttps://retro.test/abc123\n\n');
 	});
 
 	it('завершающий слэш в origin не удваивается', () => {
