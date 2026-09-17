@@ -11329,3 +11329,1142 @@ Expected: `git log -1 --stat` показывает три файла (четыр
 
 Уборка:
 22. Удалить в портале тестовые задачи и файлы `retro-*.webp` в корне Диска владельца, удалить тестовое пространство. Если адрес вебхука попадал куда-то кроме поля панели, перевыпустить вебхук.
+
+---
+
+### Task 13: Иллюстрации форматов — фон плиток на /formats, главной, в гайде и в пикере
+
+Задача последняя и от Битрикс24 не зависит. Пять картинок (лавандовая карточка, иллюстрация справа, слева пусто) становятся фоном плиток форматов. Текст идёт поверх, и в светлой и в тёмной теме плитка выглядит одинаково. Задача идёт **после задач 10 и 12**: правки `src/app.css`, `DESIGN-SYSTEM.md`, `CLAUDE.md` и changelog привязаны к строкам, которые те задачи не меняют. Запись в changelog — отдельный релиз `1.15` над записью `1.14` из задачи 12. Исходники PNG лежат в `.superpowers/sdd/2026-09-17-bitrix24-integration/format-art-src/`. Каталог в `.gitignore` и будет удалён после плана, поэтому задача сама генерирует и коммитит готовые WebP.
+
+Плитки форматов есть в четырёх местах, других нет (`grep -rn "FORMATS\|FormatPicker" src`):
+- `src/routes/formats/+page.svelte` — сетка из 4 плиток;
+- `src/routes/+page.svelte` — секция «Форматы ретроспективы», 4 плитки;
+- `src/routes/how-to-run-a-retro/+page.svelte` — секция форматов в гайде, те же 4 плитки. Контроллер её не назвал;
+- `src/lib/components/FormatPicker.svelte` — 5 вариантов, включая classic: на `/new` и компактно в `NewBoardModal`.
+
+На `/formats/[format]` плиток нет. Плитки пространства — это доски, а не форматы.
+
+#### Решения (проверены на копии репозитория: скрипт, сборка, скриншоты 320–1536 px, e2e)
+
+1. **Обрезка — `scripts/format-art.mjs`.**
+   - **Граница карточки.** Её ищем по цвету, а не жёсткими числами. У белого поля все каналы 253–255, у лаванды красный 239–246. Пиксель карточки — тот, у которого min(R,G,B) ≤ 249. Граница — первый столбец или строка, где таких пикселей больше половины.
+   - **Радиус.** Меряем по диагонали из угла: d = r·(1−1/√2).
+   - **Угол кадра.** Ставим его на дугу под 60°: по X внутрь на r·(1−cos 60°), по Y на r·(1−sin 60°), плюс 6 px запаса. Это тоже точка внутри квадранта, но по Y срез мельче.
+   - **Почему не 45°.** Вариант 45° (отступ r·0.293 по обеим осям) проверен. У Mad Sad Glad молния стоит в 43 px от верха карточки, а срез при r = 123 был 43 px, и молния упиралась в край.
+   - **Пропорция.** Кадр доводим до 3:1 (1200×400) у всех: лишняя ширина срезается слева, там пусто.
+   - **Цвет пустой части.** Приводим его к `--color-art-canvas` `#f4f4fe`: у исходников он отличается до 4.3 единицы канала, а среднеквадратичное отклонение в пустой зоне меньше 1. Плитка шире картинки заливается токеном, и шва нет: крайний столбец отличается от токена максимум на 2.
+   - **Самопроверка.** После записи скрипт проверяет, что на краях WebP нет белых пикселей, и при ошибке завершается с `exit 1`. Если убрать отступ, находит 175 белых пикселей.
+
+   | id | исходник | карточка l,t,r,b | r | срез X/Y | кадр в исходнике | сдвиг цвета | WebP |
+   |---|---|---|---|---|---|---|---|
+   | classic | img5 | 26,27,2146,696 | 44 | 28/12 | 1938×646 от 181,39 | −0.3,−1.1,+0.3 | 7138 B |
+   | start-stop-continue | img4 | 20,20,2151,702 | 65 | 39/15 | 1959×653 от 154,35 | +1.4,+1.3,+0.4 | 7806 B |
+   | mad-sad-glad | img3 | 0,0,2171,716 | 123 | 68/23 | 2013×671 от 91,23 | −1.1,−0.2,+0.5 | 8678 B |
+   | 4l | img2 | 40,43,2131,680 | 65 | 39/15 | 1824×608 от 269,58 | −0.4,−0.6,+0.3 | 10508 B |
+   | sailboat | img6 | 41,42,2131,679 | 65 | 39/15 | 1824×608 от 269,57 | +4.3,+3.3,+0.4 | 7128 B |
+
+   Иллюстрация (первый столбец, отличный от фона больше чем на 10) начинается на 44.4–48.4 % ширины. У Sailboat бледные волны начинаются с 39 %, яркие объекты — с 52 %. Отсюда правило: **иллюстрация — правые 56 % картинки, то есть ≈ 1.68 × высоты картинки** (у плитки, где картинка вписана по высоте, — ≈ 1.68 × высоты плитки).
+
+2. **Хранение и соответствие.**
+   - **Где лежат файлы.** Файлы лежат в `src/lib/assets/format-art/{id}.webp`, а не в `static/`. Проверено на собранном `server.js`: файлы из `static/` adapter-node отдаёт только с `ETag` (`/logo.png`: без `Cache-Control`), а импорт через Vite даёт `/_app/immutable/assets/4l.B4gICkYg.webp` с `cache-control: public,max-age=31536000,immutable`. `/_app/` уже открыт в `robots.txt`, `seo.test.ts` трогать не нужно.
+   - **Функция.** Соответствие хранит одна чистая функция `formatArt(id)` в `src/lib/format-art.ts` на `import.meta.glob` (в Vitest работает и отдаёт `/src/lib/assets/format-art/4l.webp`). Отдельный модуль нужен, чтобы типизированный реестр `formats.ts` не зависел от Vite-ассетов.
+   - **Тест.** Юнит-тест проверяет: картинка есть у всех видимых форматов и всех страниц форматов, у `analysis` её нет, лишних файлов в каталоге нет. Скрытые файлы при этом не считаются: Finder кладёт `.DS_Store` (в корне репозитория он уже есть), и без фильтра локальный `npm test` падал бы на нём.
+
+3. **Независимость от темы — токены `art-*` в `@theme` без `.dark`-варианта.** Прецедент — `--color-code-*` в том же файле. Сырые цвета живут только в `@theme`.
+   - **Значения.** Светлые значения ink / text-secondary / surface-card / border и тонов колонок.
+   - **Контраст на `#f4f4fe`.** ink 15.2:1, text-secondary 4.98:1. У `accent` только 4.11:1, поэтому `art-accent` = светлый `accent-hover` `#a94620` (5.36:1, на `accent-bg` 4.87:1).
+   - **Полоски.** У тёмных тонов колонок контраст на лаванде 2.74–3.09:1, поэтому у полосок пикера тоже art-токены (`TONE[tone].art`).
+   - **Рамка плитки.** Она не часть картинки и следует теме: `border-border`, при наведении `border-border-strong`, выбранная — `border-accent`.
+
+4. **Читаемость.** Картинка — CSS-фон `auto 100%` у правого края: иллюстрация целиком по высоте плитки, остальное — `art-canvas`. Ширина текста = «ширина − 1.68 × высота картинки − зазор» при заданной высоте.
+   - **Одна колонка на `/formats` и в гайде.** Раньше было 2 колонки по ≈390×170: картинка шириной 510, иллюстрация ≈285, тексту оставалось ≈60 px.
+   - **`FormatTile` с md.** `min-h-[168px] p-6`: иллюстрация ≈280, зазор 20, текст `max-w-[calc(100%-300px)]`.
+   - **Главная.** Была `lg:grid-cols-4`, при ≈303 px на плитку текст не помещается. Стало 1 колонка, 2 колонки с xl (578–618 px на плитку).
+   - **`FormatPicker` на `/new`.** Раньше 2 колонки по 356: тексту досталось бы ≈100 px. Стало 1 колонка, `min-h-[112px]` → текст `calc(100%-204px)`.
+   - **Компактный пикер в модалке (416 px).** Картинка всегда 48 px высотой у правого края (`.format-art-row`), иллюстрация ≈81 px при любой высоте строки. Текст `max-w-[calc(100%-86px)]` на всех ширинах, без `sm:`. Самая длинная строка (RU «Классическая» + «РЕКОМЕНДУЕМ» = 302 px) входит в 390 − 86 = 304. При 96 она уже не входит (294): на десктопе строка classic переносится до 77 px, модалка растёт с 652 до 680. Нижний угол (`.format-art-foot`) компактным строкам не даётся: с ним каждая строка на телефоне получала бы 80 px снизу (117–145 px вместо ≈50–105), и контент модалки на 375×740 и 390×844 вырастал до 1004 px.
+   - **Узкие экраны.** До md у `FormatTile` картинка идёт лентой 3:1 под текстом (`.format-art-stack`). До sm у полного пикера на `/new` картинка высотой 72 px стоит в правом нижнем углу, рядом «Подробнее» (`.format-art-foot`). Полная лента растянула бы пикер на 375 px до ≈1150 px, с углом он ≈810 px (было ≈590). Компактные строки модалки на телефоне остаются с картинкой 48 px справа.
+   - **Замер.** Расстояние от правого края текста до иллюстрации на 640/768/1280/1536, RU и EN: `/formats` ≥ 61, главная ≥ 45, гайд ≥ 53, `/new` ≥ 42, модалка ≥ 19. В модалке на телефоне (360–414 px) ≥ 17. Исключение — RU classic на 320 px: 4 px. Это ширина неразрывного слова «Классическая», а не `max-w`, поэтому запас в `calc` его не увеличивает. На иллюстрацию текст не заходит. e2e-тест держит порог 16 (модалку он не открывает).
+
+5. **Состояния.**
+   - **Наведение.** Заливка `hover:bg-surface-hover` убрана: заливка — это картинка. `FormatTile` берёт `card-interactive` (подъём + `border-border-strong`, как плитки пространства).
+   - **Выбор в пикере.** Как было: `border-accent shadow-[inset_0_0_0_1px_var(--color-accent)]`. Внутренняя тень рисуется поверх `background-image`, поэтому рамка 2 px цела и на картинке. Поэтому CSS-фон, а не `<img>`: абсолютно спозиционированная картинка легла бы поверх внутренней тени.
+   - **Остальное без изменений.** Полоски, «Рекомендуем» и «Подробнее» (`stopPropagation`) на месте.
+   - **Размеры по дизайн-системе.** Заголовок плитки 17/700 (было 18 и 16). Чипы на `/formats` — `badge` 28 px / 13 px (было 12 px `text-xs`).
+
+6. **Производительность и SEO.**
+   - **Вес.** 7–11 КБ на файл, 41 КБ на все пять.
+   - **Декоративный CSS-фон.** Нет `alt` и нет сдвига раскладки: фон на размер не влияет. Место под ленту на телефоне держит CSS.
+   - **Lazy не нужен.** Браузер грузит фон только у отрисованных плиток, а кэш вечный.
+   - **Модалка.** На телефоне строки компактного пикера переносятся (текст ограничен на 86 px под картинку). Контент `NewBoardModal` на 375×740 — 742 px (RU) / 714 px (EN) при 708 px видимых, до задачи было 704 / 676. На 390×844 — 692 px, всё помещается. Поэтому карточке добавлены `max-h-full overflow-y-auto`. На 375×667 (635 px видимых) модалка обрезалась и до задачи.
+
+7. **Проверка.**
+   - **Юнит-тесты.** `format-art.test.ts` (5 тестов) и проверка `TONE.art`.
+   - **e2e.** Три новых теста в `e2e/formats.spec.ts`:
+     - фон с нужным файлом, `content-type` и кэш, цвета плитки не меняются после кнопки «Theme», а цвет H1 меняется;
+     - все 5 вариантов пикера с фоном и те же цвета в тёмной теме;
+     - текст не заходит на иллюстрацию на 4 ширинах в двух локалях.
+   - **Проверка самих тестов.** Если переопределить `--color-art-ink` в `.dark`, падают оба теста темы. Если поднять порог до 62, тест раскладки падает на «/ 1280px ru start-stop-continue, Received: 58».
+   - **Остальное e2e.** Прогнано полностью, падений из-за этой задачи нет.
+
+8. **Документация.** `DESIGN-SYSTEM.md`: таблица art-токенов, раздел Format tiles, пикер, модалка, таблица классов. Changelog `1.15` на двух языках. `CLAUDE.md` — одна строка.
+
+**Files:**
+- Create: `scripts/format-art.mjs` — одноразовый генератор, коммитится.
+- Create: `src/lib/assets/format-art/classic.webp`, `start-stop-continue.webp`, `mad-sad-glad.webp`, `4l.webp`, `sailboat.webp` — вывод скрипта. `.gitignore` игнорирует `*.png`, но не `*.webp`.
+- Create: `src/lib/format-art.ts`.
+- Create: `src/lib/components/FormatTile.svelte`.
+- Modify: `src/lib/formats.ts` — поле `art` в `ToneClasses` и `TONE`.
+- Modify: `src/app.css` — токены после `--color-code-number`, `.format-art` и `.format-art-row` после `.card-board`, медиа-правила перед `/* Respect reduced motion */`.
+- Modify: `src/lib/components/FormatPicker.svelte` — файл целиком.
+- Modify: `src/lib/components/NewBoardModal.svelte` — класс карточки.
+- Modify: `src/routes/formats/+page.svelte`, `src/routes/+page.svelte`, `src/routes/how-to-run-a-retro/+page.svelte`.
+- Modify: `src/routes/changelog/+page.svelte` — релиз `1.15` перед `1.14`.
+- Modify: `DESIGN-SYSTEM.md`, `CLAUDE.md`.
+- Test: `src/lib/format-art.test.ts` (Create), `src/lib/formats.test.ts` (Modify), `e2e/formats.spec.ts` (Modify, +3 теста).
+
+**Interfaces:**
+- Consumes:
+  - `VISIBLE_FORMATS` из `board-formats.js`;
+  - `VISIBLE_FORMATS`, `ANALYSIS_FORMAT`, `TONE` из `src/lib/formats.ts`;
+  - `FORMATS`, `RetroFormat` из `src/lib/content/formats.ts`;
+  - `txt()`, `t()`;
+  - классы `card-interactive`, `badge`, `badge-sm` из `src/app.css`;
+  - кнопка темы `ThemeToggle` с `aria-label` «Theme» (EN);
+  - e2e-хелпер `initStorage`;
+  - `sharp` 0.33.5 (уже в dependencies).
+- Produces:
+  - `formatArt(id: string): string | null` и `formatArtBackground(id: string): string | undefined` из `src/lib/format-art.ts`;
+  - `TONE[tone].art` (`bg-art-well|bad|improve|plum`);
+  - токены `--color-art-canvas`, `-ink`, `-ink-secondary`, `-chip`, `-chip-border`, `-accent`, `-accent-bg`, `-well`, `-bad`, `-improve`, `-plum`;
+  - классы `.format-art`, `.format-art-row`, `.format-art-stack`, `.format-art-foot`;
+  - компонент `FormatTile.svelte` (`format: RetroFormat`, `meta?: boolean`, `style?: string`);
+  - тестовые якоря `data-testid="format-tile"` и `data-testid="format-option"` с `data-format={id}`;
+  - CLI `node scripts/format-art.mjs <png> <id>`.
+
+- [ ] **Step 1: Предусловия и базовая линия**
+
+```bash
+ls .superpowers/sdd/2026-09-17-bitrix24-integration/format-art-src/
+node -e "console.log(require('sharp/package.json').version)"
+grep -c "icon-tip" src/app.css
+grep -n "version: '1.14'" src/routes/changelog/+page.svelte
+npm test 2>&1 | grep -E "Test Files|Tests "
+```
+Expected:
+- `img2.png img3.png img4.png img5.png img6.png`. Если каталога нет, остановиться: исходники нужно получить у владельца репозитория.
+- `0.33.5`.
+- число ≥ 1: задача 10 выполнена.
+- одна строка с `version: '1.14'`: задача 12 выполнена.
+- записать числа `Test Files N passed` и `Tests M passed`. Шаги ниже сверяются с N+1 и M+5.
+
+- [ ] **Step 2: Скрипт обрезки `scripts/format-art.mjs`**
+
+Создать файл:
+
+```js
+/**
+ * Иллюстрации форматов ретро: исходная PNG → src/lib/assets/format-art/{id}.webp.
+ *
+ * Одноразовый инструмент; коммитится, чтобы картинки можно было пересобрать. Исходники
+ * в репозиторий не кладём (PNG 2172×724 по ~1 МБ): лавандовая карточка со скруглёнными
+ * углами на белом поле, иллюстрация справа, слева пусто. Соответствие исходников
+ * форматам: img2 → 4l, img3 → mad-sad-glad, img4 → start-stop-continue,
+ * img5 → classic, img6 → sailboat. Они лежали в
+ * .superpowers/sdd/2026-09-17-bitrix24-integration/format-art-src/ (каталог в .gitignore
+ * и удаляется после плана) — если его нет, исходники у владельца репозитория.
+ *
+ * Запуск из корня репозитория, по одному формату:
+ *   node scripts/format-art.mjs <путь к PNG> <id формата>
+ *
+ * 1. Карточка ищется по цвету, а не по жёстким числам: пиксель карточки — тот, у которого
+ *    самый тёмный канал ≤ 249 (белое поле 253–255, лаванда 239–246). Граница — первый
+ *    столбец/строка, где таких пикселей больше половины: углы и иллюстрация не мешают.
+ * 2. Радиус скругления меряется по диагонали из угла рамки: до карточки d = r·(1 − 1/√2)
+ *    белых пикселей, отсюда r. Угол кадра ставится на дугу под 60°: по X внутрь на
+ *    r·(1 − cos 60°), по Y — на r·(1 − sin 60°), плюс SAFETY по обеим осям. Такая точка
+ *    лежит внутри квадранта, белого в углах нет; по Y режем мельче, потому что сверху и
+ *    снизу иллюстрации доходят до края, а слева пусто.
+ * 3. Кадр доводится до 3:1: лишняя ширина срезается слева (там пусто), лишняя высота —
+ *    поровну сверху и снизу. У всех форматов один размер 1200×400 — одна раскладка плиток.
+ * 4. Пустая часть приводится к одному цвету CANVAS (= --color-art-canvas в src/app.css):
+ *    каналы сдвигаются на разницу со средним в пустой зоне (5–35 % ширины, 15–85 % высоты).
+ *    Плитка шире картинки заливается этим токеном, и шва на стыке нет.
+ * 5. WebP quality 80, затем самопроверка: на краях готового файла нет белых пикселей.
+ *    Печатает замеры одной строкой JSON; при белом на краю — exit 1.
+ */
+import sharp from 'sharp';
+import { mkdirSync, statSync } from 'node:fs';
+import { VISIBLE_FORMATS } from '../board-formats.js';
+
+const OUT_W = 1200;
+const OUT_H = 400;
+const SAFETY = 6;
+/** Совпадает с --color-art-canvas (#f4f4fe) в src/app.css */
+const CANVAS = [244, 244, 254];
+
+const [src, id] = process.argv.slice(2);
+if (!src || !VISIBLE_FORMATS.some((f) => f.id === id)) {
+	const ids = VISIBLE_FORMATS.map((f) => f.id).join('|');
+	console.error(`usage: node scripts/format-art.mjs <png> <${ids}>`);
+	process.exit(1);
+}
+
+const { data, info } = await sharp(src).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+const { width: W, height: H } = info;
+const isCard = (x, y) => {
+	const i = (y * W + x) * 3;
+	return Math.min(data[i], data[i + 1], data[i + 2]) <= 249;
+};
+const share = (count, total) => count / total;
+const colShare = (x) => {
+	let n = 0;
+	for (let y = 0; y < H; y++) if (isCard(x, y)) n++;
+	return share(n, H);
+};
+const rowShare = (y) => {
+	let n = 0;
+	for (let x = 0; x < W; x++) if (isCard(x, y)) n++;
+	return share(n, W);
+};
+
+let left = 0;
+while (colShare(left) < 0.5) left++;
+let right = W - 1;
+while (colShare(right) < 0.5) right--;
+let top = 0;
+while (rowShare(top) < 0.5) top++;
+let bottom = H - 1;
+while (rowShare(bottom) < 0.5) bottom--;
+
+const diagonal = (x0, y0, sx, sy) => {
+	let t = 0;
+	while (!isCard(x0 + sx * t, y0 + sy * t)) t++;
+	return t;
+};
+const radius = Math.round(
+	Math.max(
+		diagonal(left, top, 1, 1),
+		diagonal(right, top, -1, 1),
+		diagonal(left, bottom, 1, -1),
+		diagonal(right, bottom, -1, -1)
+	) / (1 - Math.SQRT1_2)
+);
+const insetX = Math.ceil(radius * (1 - Math.cos(Math.PI / 3))) + SAFETY;
+const insetY = Math.ceil(radius * (1 - Math.sin(Math.PI / 3))) + SAFETY;
+
+let cx = left + insetX;
+let cy = top + insetY;
+let cw = right - left + 1 - 2 * insetX;
+let ch = bottom - top + 1 - 2 * insetY;
+if (cw * OUT_H > ch * OUT_W) {
+	const w = Math.round((ch * OUT_W) / OUT_H);
+	cx += cw - w;
+	cw = w;
+} else {
+	const h = Math.round((cw * OUT_H) / OUT_W);
+	cy += Math.floor((ch - h) / 2);
+	ch = h;
+}
+
+const sum = [0, 0, 0];
+let count = 0;
+for (let y = cy + Math.round(ch * 0.15); y < cy + Math.round(ch * 0.85); y += 2) {
+	for (let x = cx + Math.round(cw * 0.05); x < cx + Math.round(cw * 0.35); x += 2) {
+		const i = (y * W + x) * 3;
+		for (let c = 0; c < 3; c++) sum[c] += data[i + c];
+		count++;
+	}
+}
+const canvas = sum.map((s) => Math.round((s / count) * 10) / 10);
+const offset = canvas.map((v, c) => Math.round((CANVAS[c] - v) * 10) / 10);
+
+mkdirSync('src/lib/assets/format-art', { recursive: true });
+const out = `src/lib/assets/format-art/${id}.webp`;
+await sharp(src)
+	.removeAlpha()
+	.extract({ left: cx, top: cy, width: cw, height: ch })
+	.resize(OUT_W, OUT_H)
+	.linear([1, 1, 1], offset)
+	.webp({ quality: 80, effort: 6 })
+	.toFile(out);
+
+// Самопроверка: белый нейтральный пиксель (все каналы ≥ 251, разброс ≤ 3) на краю кадра
+// значит, что угол карточки или поле попали в картинку
+const res = await sharp(out).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+const px = (x, y) => {
+	const i = (y * res.info.width + x) * 3;
+	return [res.data[i], res.data[i + 1], res.data[i + 2]];
+};
+const isWhite = ([r, g, b]) => Math.min(r, g, b) >= 251 && Math.max(r, g, b) - Math.min(r, g, b) <= 3;
+let whiteEdge = 0;
+for (let x = 0; x < res.info.width; x++) {
+	if (isWhite(px(x, 0))) whiteEdge++;
+	if (isWhite(px(x, res.info.height - 1))) whiteEdge++;
+}
+for (let y = 0; y < res.info.height; y++) {
+	if (isWhite(px(0, y))) whiteEdge++;
+	if (isWhite(px(res.info.width - 1, y))) whiteEdge++;
+}
+
+console.log(
+	JSON.stringify({
+		id,
+		card: { left, top, right, bottom },
+		radius,
+		inset: { x: insetX, y: insetY },
+		crop: { x: cx, y: cy, w: cw, h: ch },
+		canvas,
+		offset,
+		size: `${res.info.width}x${res.info.height}`,
+		bytes: statSync(out).size,
+		whiteEdge
+	})
+);
+if (whiteEdge > 0) process.exit(1);
+```
+
+- [ ] **Step 3: Сгенерировать пять WebP и проверить их**
+
+```bash
+SRC=.superpowers/sdd/2026-09-17-bitrix24-integration/format-art-src
+node scripts/format-art.mjs $SRC/img5.png classic
+node scripts/format-art.mjs $SRC/img4.png start-stop-continue
+node scripts/format-art.mjs $SRC/img3.png mad-sad-glad
+node scripts/format-art.mjs $SRC/img2.png 4l
+node scripts/format-art.mjs $SRC/img6.png sailboat
+node scripts/format-art.mjs $SRC/img2.png analysis; echo "exit=$?"
+```
+Expected: пять строк JSON. Размеры и замеры совпадают точно. `bytes` может отличаться на единицы процентов, если libwebp собран иначе:
+```text
+{"id":"classic","card":{"left":26,"top":27,"right":2146,"bottom":696},"radius":44,"inset":{"x":28,"y":12},"crop":{"x":181,"y":39,"w":1938,"h":646},"canvas":[244.3,245.1,253.7],"offset":[-0.3,-1.1,0.3],"size":"1200x400","bytes":7138,"whiteEdge":0}
+{"id":"start-stop-continue","card":{"left":20,"top":20,"right":2151,"bottom":702},"radius":65,"inset":{"x":39,"y":15},"crop":{"x":154,"y":35,"w":1959,"h":653},"canvas":[242.6,242.7,253.6],"offset":[1.4,1.3,0.4],"size":"1200x400","bytes":7806,"whiteEdge":0}
+{"id":"mad-sad-glad","card":{"left":0,"top":0,"right":2171,"bottom":716},"radius":123,"inset":{"x":68,"y":23},"crop":{"x":91,"y":23,"w":2013,"h":671},"canvas":[245.1,244.2,253.5],"offset":[-1.1,-0.2,0.5],"size":"1200x400","bytes":8678,"whiteEdge":0}
+{"id":"4l","card":{"left":40,"top":43,"right":2131,"bottom":680},"radius":65,"inset":{"x":39,"y":15},"crop":{"x":269,"y":58,"w":1824,"h":608},"canvas":[244.4,244.6,253.7],"offset":[-0.4,-0.6,0.3],"size":"1200x400","bytes":10508,"whiteEdge":0}
+{"id":"sailboat","card":{"left":41,"top":42,"right":2131,"bottom":679},"radius":65,"inset":{"x":39,"y":15},"crop":{"x":269,"y":57,"w":1824,"h":608},"canvas":[239.7,240.7,253.6],"offset":[4.3,3.3,0.4],"size":"1200x400","bytes":7128,"whiteEdge":0}
+usage: node scripts/format-art.mjs <png> <classic|start-stop-continue|mad-sad-glad|4l|sailboat>
+exit=1
+```
+У mad-sad-glad `left 0, top 0, right 2171`: в img3 карточка почти во весь кадр, скругление самое большое. Это не ошибка поиска.
+
+```bash
+git check-ignore -v src/lib/assets/format-art/4l.webp scripts/format-art.mjs; echo "exit=$?"
+```
+Expected: пустой вывод и `exit=1`, то есть файлы не игнорируются.
+
+Затем открыть все пять WebP инструментом Read: WebP показывается картинкой. Что проверить:
+- в углах нет белого;
+- у mad-sad-glad молния не упирается в верхний край;
+- справа иллюстрации не срезаны (у 4l листья и у mad-sad-glad грустное облако доходят до края, как и в исходнике);
+- левая половина — ровная лаванда.
+
+- [ ] **Step 4: Падающие юнит-тесты**
+
+Создать `src/lib/format-art.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { readdirSync } from 'node:fs';
+import { formatArt, formatArtBackground } from './format-art.js';
+import { VISIBLE_FORMATS, ANALYSIS_FORMAT } from './formats.js';
+import { FORMATS } from './content/formats.js';
+
+describe('иллюстрации форматов', () => {
+	it('у каждого формата из пикера, включая classic, есть картинка со своим id в имени', () => {
+		for (const f of VISIBLE_FORMATS) {
+			// В тестах это /src/lib/assets/format-art/4l.webp, в сборке — 4l.<хеш>.webp
+			expect(formatArt(f.id)).toMatch(new RegExp(`/${f.id}\\.([\\w-]+\\.)?webp$`));
+		}
+	});
+
+	it('у каждой страницы формата есть картинка — плитки /formats, главной и гайда без неё не останутся', () => {
+		for (const seo of FORMATS) expect(formatArt(seo.slug)).not.toBeNull();
+	});
+
+	it('у скрытого analysis и неизвестных id картинки нет', () => {
+		expect(formatArt(ANALYSIS_FORMAT)).toBeNull();
+		expect(formatArt('nope')).toBeNull();
+		expect(formatArt('')).toBeNull();
+		expect(formatArtBackground(ANALYSIS_FORMAT)).toBeUndefined();
+	});
+
+	it('фон — CSS url() от того же файла', () => {
+		expect(formatArtBackground('sailboat')).toBe(`url("${formatArt('sailboat')}")`);
+	});
+
+	it('в каталоге ровно по файлу на видимый формат — осиротевших картинок нет', () => {
+		// Скрытые файлы не в счёт: Finder кладёт сюда .DS_Store (он в .gitignore). Фильтр не по
+		// расширению — забытый .png или .jpg тест должен ловить
+		const files = readdirSync('src/lib/assets/format-art').filter((f) => !f.startsWith('.')).sort();
+		expect(files).toEqual(VISIBLE_FORMATS.map((f) => `${f.id}.webp`).sort());
+	});
+});
+```
+
+В `src/lib/formats.test.ts`, тест «у каждого тона есть полный набор классов, полоска — сплошная». Было:
+
+```ts
+			expect(TONE[tone].bar).toBe(`bg-${tone}`);
+```
+Стало:
+```ts
+			expect(TONE[tone].bar).toBe(`bg-${tone}`);
+			// На плитке с иллюстрацией полоска не зависит от темы — art-токен
+			expect(TONE[tone].art).toBe(`bg-art-${tone}`);
+```
+
+Run: `npx vitest run src/lib/format-art.test.ts src/lib/formats.test.ts`
+Expected:
+- `FAIL  src/lib/format-art.test.ts` с `Error: Cannot find module './format-art.js'`;
+- в `formats.test.ts` падает «у каждого тона есть полный набор классов» с `expected undefined to be 'bg-art-well'`, остальные тесты файла зелёные.
+
+- [ ] **Step 5: `src/lib/format-art.ts` и `TONE.art`**
+
+Создать `src/lib/format-art.ts`:
+
+```ts
+// Иллюстрации форматов ретро — фон плиток на /formats, главной, /how-to-run-a-retro
+// и в FormatPicker. Файлы src/lib/assets/format-art/{id}.webp (1200×400) делает
+// scripts/format-art.mjs; id файла = id формата в board-formats.js = slug страницы.
+//
+// Через Vite, а не static/: в сборке имя файла получает хеш и отдаётся из
+// /_app/immutable/ с Cache-Control immutable на год (файлы из static/ adapter-node
+// отдаёт только с ETag), а /_app/ уже открыт в robots.txt.
+const FILES = import.meta.glob('./assets/format-art/*.webp', {
+	eager: true,
+	query: '?url',
+	import: 'default'
+}) as Record<string, string>;
+
+/** URL иллюстрации формата или null — у скрытого analysis и неизвестных id её нет */
+export function formatArt(id: string): string | null {
+	return FILES[`./assets/format-art/${id}.webp`] ?? null;
+}
+
+/** Значение для style:background-image; undefined — Svelte не ставит свойство вовсе */
+export function formatArtBackground(id: string): string | undefined {
+	const src = formatArt(id);
+	return src ? `url("${src}")` : undefined;
+}
+```
+
+В `src/lib/formats.ts`, интерфейс `ToneClasses`. Было:
+```ts
+	/** Сплошной цвет: полоски колонок в пикере и на плитках. Тинты на белом были невидимы */
+	bar: string;
+}
+```
+Стало:
+```ts
+	/** Сплошной цвет: полоски колонок в пикере и на плитках. Тинты на белом были невидимы */
+	bar: string;
+	/** Та же полоска на плитке с иллюстрацией: светлый тон в обеих темах (art-токены) */
+	art: string;
+}
+```
+В объекте `TONE` у каждого тона после `bar` добавить `art`. Четыре правки одного вида: `bar: 'bg-well'` → `bar: 'bg-well',` + новая строка `art: 'bg-art-well'`, и так же для `bad`, `improve`, `plum`:
+```ts
+		bar: 'bg-well',
+		art: 'bg-art-well'
+```
+```ts
+		bar: 'bg-bad',
+		art: 'bg-art-bad'
+```
+```ts
+		bar: 'bg-improve',
+		art: 'bg-art-improve'
+```
+```ts
+		bar: 'bg-plum',
+		art: 'bg-art-plum'
+```
+
+Run: `npm test`
+Expected: `Test Files  N+1 passed`, `Tests  M+5 passed`, ни одного `failed`.
+
+- [ ] **Step 6: Токены и классы в `src/app.css`**
+
+Правка 1 (`@theme`). Было:
+```css
+	--color-code-number: #8fb6d9;
+```
+Стало:
+```css
+	--color-code-number: #8fb6d9;
+
+	/* Плитки форматов с иллюстрацией (.format-art): картинка одна на обе темы, значит и всё
+	   поверх неё одинаково в обеих темах — у этих токенов, как у блока кода, нет
+	   .dark-варианта. art-canvas — цвет пустой части картинок: scripts/format-art.mjs
+	   приводит к нему каждый файл, поэтому плитка шире картинки заливается им без шва.
+	   Остальные — светлые значения ink / text-secondary / surface-card / border и тонов
+	   колонок; терракота — светлый accent-hover: на лаванде у accent контраст 4.1:1 */
+	--color-art-canvas: #f4f4fe;
+	--color-art-ink: #211e1a;
+	--color-art-ink-secondary: #6b6a61;
+	--color-art-chip: #ffffff;
+	--color-art-chip-border: #e5e4dc;
+	--color-art-accent: #a94620;
+	--color-art-accent-bg: #f7e7de;
+	--color-art-well: #4c8c6a;
+	--color-art-bad: #c05b4d;
+	--color-art-improve: #5b72c0;
+	--color-art-plum: #9a5b8c;
+```
+
+Правка 2 (`@layer components`, блок CARDS). Было:
+```css
+	/* Карточка на доске: тот же радиус 16, что у всех карточек сайта */
+	.card-board {
+		@apply rounded-2xl border border-border bg-surface-card p-4;
+	}
+```
+Стало:
+```css
+	/* Карточка на доске: тот же радиус 16, что у всех карточек сайта */
+	.card-board {
+		@apply rounded-2xl border border-border bg-surface-card p-4;
+	}
+
+	/* Плитка формата с иллюстрацией (formatArtBackground в style:background-image).
+	   Картинка 3:1 вписана по высоте и прижата вправо: иллюстрация видна целиком, остальное
+	   заливает art-canvas без шва. Иллюстрация — правые 56 % картинки, ≈1.68 × высоты
+	   плитки; ширину текста под это ограничивают FormatTile и FormatPicker */
+	.format-art {
+		@apply rounded-2xl border border-border bg-art-canvas bg-no-repeat;
+		background-size: auto 100%;
+		background-position: right center;
+	}
+	/* Строка компактного пикера (модалка «Новая доска»): картинка всегда 48px высотой,
+	   иллюстрация ≈81px на любой ширине — перенесённая на телефоне строка не растёт
+	   под картинку, а текст ограничен на 86px справа */
+	.format-art-row {
+		background-size: auto 48px;
+		background-position: right center;
+	}
+```
+`.format-art-row` стоит в том же слое после `.format-art`, поэтому перебивает его `background-size`.
+
+Правка 3 (вне слоёв). Было:
+```css
+/* Respect reduced motion */
+```
+Стало:
+```css
+/* Плитка формата в узкой ячейке — иллюстрации не хватает места справа от текста.
+   .format-art-stack (плитки-ссылки, до md): картинка лентой во всю ширину под текстом,
+   ::after (3:1 от ширины контента) держит под неё место.
+   .format-art-foot (полный FormatPicker на /new, до sm): картинка высотой 72px в правом
+   нижнем углу, под неё нижний отступ 80px — список из пяти вариантов не растягивается
+   на два экрана. Компактным строкам модалки угол не нужен, у них .format-art-row.
+   Вне @layer: правила перебивают background-size базового .format-art и p-* утилиты */
+@media (width < 48rem) {
+	.format-art-stack {
+		background-size: 100% auto;
+		background-position: right bottom;
+	}
+	.format-art-stack::after {
+		content: '';
+		aspect-ratio: 3;
+	}
+}
+@media (width < 40rem) {
+	.format-art-foot {
+		background-size: auto 72px;
+		background-position: right bottom;
+		padding-bottom: 80px;
+	}
+}
+
+/* Respect reduced motion */
+```
+
+Run: `grep -n "color-art-\|format-art" src/app.css | wc -l`
+Expected: `22` (проверено на копии, правки применены дословно):
+- 2 строки комментария к токенам: `(.format-art)` и `scripts/format-art.mjs`;
+- 11 токенов;
+- `.format-art {` и `.format-art-row {` (комментарии над ними совпадений не дают: `formatArtBackground` и `art-canvas` под шаблон не подходят);
+- 4 строки комментария к медиа-правилам: `.format-art-stack`, `.format-art-foot`, `у них .format-art-row`, `.format-art и p-* утилиты`;
+- `.format-art-stack {`, `.format-art-stack::after {`, `.format-art-foot {`.
+
+Затем `grep -n "\.dark {" -A30 src/app.css | grep -c "art-"` → `0`.
+
+- [ ] **Step 7: Падающие e2e**
+
+В `e2e/formats.spec.ts` заменить первую строку. Было:
+```ts
+import { test, expect } from '@playwright/test';
+```
+Стало:
+```ts
+import { test, expect, type Locator } from '@playwright/test';
+```
+В конец файла дописать:
+
+```ts
+
+// Иллюстрация формата — фон плитки, один и тот же в обеих темах: art-токены не
+// переопределяются в .dark, поэтому цвет текста и фона плитки после переключения темы
+// тот же, а заголовок страницы (обычный токен) — другой.
+async function colors(tile: Locator) {
+	const title = tile.locator('.font-heading').first();
+	return {
+		text: await title.evaluate((el) => getComputedStyle(el).color),
+		background: await tile.evaluate((el) => getComputedStyle(el).backgroundColor)
+	};
+}
+
+test('format tiles on /formats show their illustration and ignore the theme', async ({ page }) => {
+	await initStorage(page);
+	await page.goto('/formats');
+	await expect(page.getByTestId('format-tile')).toHaveCount(4);
+	for (const slug of ['start-stop-continue', 'mad-sad-glad', '4l', 'sailboat']) {
+		await expect(page.locator(`[data-testid="format-tile"][data-format="${slug}"]`)).toHaveCSS(
+			'background-image',
+			new RegExp(`/_app/immutable/assets/${slug}\\.[\\w-]+\\.webp`)
+		);
+	}
+
+	const tile = page.locator('[data-testid="format-tile"][data-format="sailboat"]');
+	// Файл из сборки Vite: хеш в имени и кэш на год
+	const image = await tile.evaluate((el) => getComputedStyle(el).backgroundImage.slice(5, -2));
+	const res = await page.request.get(image);
+	expect(res.headers()['content-type']).toBe('image/webp');
+	expect(res.headers()['cache-control']).toBe('public,max-age=31536000,immutable');
+
+	const heading = page.getByRole('heading', { level: 1 });
+	const light = await colors(tile);
+	const headingLight = await heading.evaluate((el) => getComputedStyle(el).color);
+
+	await page.getByRole('button', { name: 'Theme', exact: true }).click();
+	await expect(heading).not.toHaveCSS('color', headingLight);
+	expect(await colors(tile)).toEqual(light);
+});
+
+test('every option of the format picker, classic included, has its illustration in both themes', async ({ page }) => {
+	await initStorage(page);
+	await page.goto('/new');
+	const options = page.getByTestId('format-option');
+	await expect(options).toHaveCount(5);
+	for (const id of ['classic', 'start-stop-continue', 'mad-sad-glad', '4l', 'sailboat']) {
+		await expect(page.locator(`[data-testid="format-option"][data-format="${id}"]`)).toHaveCSS(
+			'background-image',
+			new RegExp(`/_app/immutable/assets/${id}\\.[\\w-]+\\.webp`)
+		);
+	}
+
+	const classic = page.locator('[data-testid="format-option"][data-format="classic"]');
+	const light = await colors(classic);
+	await page.getByRole('button', { name: 'Theme', exact: true }).click();
+	await expect(page.locator('html')).toHaveClass(/dark/);
+	expect(await colors(classic)).toEqual(light);
+});
+
+// Картинка 3:1 вписана по высоте и прижата вправо; иллюстрация — её правые 56 %, то есть
+// 0.56 × 3 × высота плитки от правого края. Текст (правый край его строк) должен кончаться
+// левее хотя бы на 16px — на всех ширинах, где плитка в режиме «баннер», в обеих локалях.
+test('text on illustrated tiles never runs into the illustration', async ({ page }) => {
+	await initStorage(page);
+	for (const locale of ['ru', 'en']) {
+		await page.addInitScript((l) => localStorage.setItem('retro-locale', l), locale);
+		for (const width of [640, 768, 1280, 1536]) {
+			await page.setViewportSize({ width, height: 900 });
+			for (const path of ['/formats', '/', '/how-to-run-a-retro', '/new']) {
+				await page.goto(path);
+				const tiles = page.locator('[data-testid="format-tile"], [data-testid="format-option"]');
+				await expect(tiles.first()).toBeVisible();
+				const gaps = await tiles.evaluateAll((els) =>
+					els
+						.filter((el) => getComputedStyle(el).backgroundSize === 'auto 100%')
+						.map((el) => {
+							const box = el.getBoundingClientRect();
+							let textRight = 0;
+							for (const child of el.querySelectorAll(':scope > :not(input)')) {
+								if (getComputedStyle(child).position === 'absolute') continue;
+								const range = document.createRange();
+								range.selectNodeContents(child);
+								for (const r of range.getClientRects()) textRight = Math.max(textRight, r.right);
+							}
+							const art = 0.56 * 3 * (box.height - 2);
+							return { id: (el as HTMLElement).dataset.format, gap: Math.round(box.right - 1 - art - textRight) };
+						})
+				);
+				for (const { id, gap } of gaps) {
+					expect(gap, `${path} ${width}px ${locale} ${id}`).toBeGreaterThanOrEqual(16);
+				}
+			}
+		}
+	}
+});
+```
+
+Сначала проверить порты: `lsof -nP -iTCP:4777 -iTCP:4778 -iTCP:4779 -sTCP:LISTEN`. Вывод должен быть пустым; висящие `node server.js` / `node e2e/mock-*.mjs` завершить через `kill <PID>`, иначе Playwright переиспользует старую сборку.
+
+Run: `docker compose up -d db && npm run build && npx playwright test e2e/formats.spec.ts`
+Expected: `3 failed`, `2 passed`.
+- Тест про плитки `/formats` падает на `toHaveCount`: `Expected: 4`, `Received: 0`.
+- Тест про пикер падает на `toHaveCount`: `Expected: 5`, `Received: 0`.
+- Тест раскладки падает на `toBeVisible`: `element(s) not found`.
+- Два старых теста (`classic is preselected…`, `a board created from a format link…`) зелёные.
+
+- [ ] **Step 8: Компонент `src/lib/components/FormatTile.svelte`**
+
+```svelte
+<script lang="ts">
+	import { t } from '$lib/i18n/index.js';
+	import { txt } from '$lib/content/localized.js';
+	import { formatArtBackground } from '$lib/format-art.js';
+	import type { RetroFormat } from '$lib/content/formats.js';
+
+	// Плитка-ссылка на страницу формата с иллюстрацией фоном: /formats (meta — чипы
+	// «минуты · люди · колонки»), главная, /how-to-run-a-retro. Всё поверх картинки — art-токены.
+	// С md: высота от 168 → иллюстрация ≈280 + зазор 20, отсюда текст max-w 100% − 300px.
+	// До md картинка лентой под текстом (.format-art-stack)
+	let { format, meta = false, style }: { format: RetroFormat; meta?: boolean; style?: string } = $props();
+</script>
+
+<a
+	href="/formats/{format.slug}"
+	data-testid="format-tile"
+	data-format={format.slug}
+	class="format-art format-art-stack card-interactive flex flex-col gap-2 p-5 md:min-h-[168px] md:p-6"
+	style:background-image={formatArtBackground(format.slug)}
+	{style}
+>
+	<span class="font-heading text-[17px] font-bold leading-[1.3] text-art-ink md:max-w-[calc(100%-300px)]">{txt(format.name)}</span>
+	<span class="text-sm leading-relaxed text-art-ink-secondary md:max-w-[calc(100%-300px)]">{txt(format.tagline)}</span>
+	{#if meta}
+		<span class="mt-1 flex flex-wrap gap-1.5 md:max-w-[calc(100%-300px)]">
+			<span class="badge border border-art-chip-border bg-art-chip text-art-ink-secondary">{t('formats.meta.minutes', { n: format.minutes })}</span>
+			<span class="badge border border-art-chip-border bg-art-chip text-art-ink-secondary">{txt(format.teamSize)}</span>
+			<span class="badge border border-art-chip-border bg-art-chip text-art-ink-secondary">{t('formats.meta.columns', { n: format.columns.length })}</span>
+		</span>
+	{/if}
+</a>
+```
+
+`style` из `/formats` приносит анимацию `fadeUp`. Директива `style:background-image` добавляется к нему и не затирает его. Анимация двигает `transform`, а подъём при наведении у `card-interactive` задан свойством `translate`, так что они не конфликтуют.
+
+- [ ] **Step 9: Плитки на `/formats`, главной и в гайде**
+
+`src/routes/formats/+page.svelte`. Импорт — было:
+```svelte
+	import JsonLd from '$lib/components/JsonLd.svelte';
+```
+Стало:
+```svelte
+	import JsonLd from '$lib/components/JsonLd.svelte';
+	import FormatTile from '$lib/components/FormatTile.svelte';
+```
+Сетка — было:
+```svelte
+		<div class="grid gap-4 sm:grid-cols-2">
+			{#each FORMATS as format, i (format.slug)}
+				<a
+					href="/formats/{format.slug}"
+					class="flex flex-col gap-2.5 rounded-2xl border border-border bg-surface-card p-5 transition-colors hover:bg-surface-hover sm:p-6"
+					style="animation: fadeUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) {Math.min(i, 5) * 0.08}s both;"
+				>
+					<span class="font-heading text-[18px] font-bold text-text-primary">{txt(format.name)}</span>
+					<span class="text-sm leading-relaxed text-text-secondary">{txt(format.tagline)}</span>
+					<div class="mt-1 flex flex-wrap gap-1.5">
+						<span class="rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary">
+							{t('formats.meta.minutes', { n: format.minutes })}
+						</span>
+						<span class="rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary">
+							{txt(format.teamSize)}
+						</span>
+						<span class="rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary">
+							{t('formats.meta.columns', { n: format.columns.length })}
+						</span>
+					</div>
+				</a>
+			{/each}
+		</div>
+```
+Стало:
+```svelte
+		<div class="grid gap-4">
+			{#each FORMATS as format, i (format.slug)}
+				<FormatTile {format} meta style="animation: fadeUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) {Math.min(i, 5) * 0.08}s both;" />
+			{/each}
+		</div>
+```
+
+`src/routes/+page.svelte`. Импорт — такая же правка, как выше: строка `import FormatTile …` после `import JsonLd …`. Сетка — было:
+```svelte
+			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				{#each FORMATS as format (format.slug)}
+					<a
+						href="/formats/{format.slug}"
+						class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5 transition-colors hover:bg-surface-hover"
+					>
+						<span class="font-heading text-[16px] font-bold text-text-primary">{txt(format.name)}</span>
+						<span class="text-sm leading-relaxed text-text-secondary">{txt(format.tagline)}</span>
+					</a>
+				{/each}
+			</div>
+```
+Стало:
+```svelte
+			<div class="grid gap-3 xl:grid-cols-2">
+				{#each FORMATS as format (format.slug)}
+					<FormatTile {format} />
+				{/each}
+			</div>
+```
+
+`src/routes/how-to-run-a-retro/+page.svelte`. Импорт — такая же правка. Сетка — было:
+```svelte
+			<div class="grid gap-3 sm:grid-cols-2">
+				{#each FORMATS as format (format.slug)}
+					<a
+						href="/formats/{format.slug}"
+						class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5 transition-colors hover:bg-surface-hover"
+					>
+						<span class="font-heading text-[16px] font-bold text-text-primary">{txt(format.name)}</span>
+						<span class="text-sm leading-relaxed text-text-secondary">{txt(format.tagline)}</span>
+					</a>
+				{/each}
+			</div>
+```
+Стало:
+```svelte
+			<div class="grid gap-3">
+				{#each FORMATS as format (format.slug)}
+					<FormatTile {format} />
+				{/each}
+			</div>
+```
+
+Импорты `t` и `txt` на всех трёх страницах остаются: они используются в JSON-LD, подвале и гайде.
+
+Run: `npm run check`
+Expected: `svelte-check found 0 errors and 0 warnings`.
+
+- [ ] **Step 10: `src/lib/components/FormatPicker.svelte` целиком**
+
+```svelte
+<script lang="ts">
+	import { VISIBLE_FORMATS, TONE } from '$lib/formats.js';
+	import { FORMATS } from '$lib/content/formats.js';
+	import { txt } from '$lib/content/localized.js';
+	import { formatArtBackground } from '$lib/format-art.js';
+	import { t } from '$lib/i18n/index.js';
+
+	let { value = $bindable('classic'), compact = false }: { value?: string; compact?: boolean } = $props();
+
+	// Название и подпись: классика — из словаря, остальные — со страниц форматов
+	function meta(id: string) {
+		if (id === 'classic') return { name: t('format.classic.name'), desc: t('format.classic.desc'), page: null };
+		const seo = FORMATS.find((f) => f.slug === id);
+		return {
+			name: seo ? txt(seo.short) : id,
+			desc: seo ? txt(seo.tagline) : '',
+			page: seo ? `/formats/${seo.slug}` : null
+		};
+	}
+
+	// Иллюстрация — правые 56 % картинки 3:1, ≈1.68 × высоты картинки, поэтому текст ограничен
+	// шириной «всё минус иллюстрация». Полный вариант (/new): картинка по высоте варианта,
+	// min-h 112 → иллюстрация ≈185 + зазор ≈20 = 204; до sm картинка уходит в правый нижний
+	// угол (.format-art-foot), и ограничение снимается. Компактная строка (модалка): картинка
+	// всегда 48px (.format-art-row) → иллюстрация ≈81 + зазор = 86 на любой ширине. Самая
+	// длинная строка (RU «Классическая» + «Рекомендуем», 302px) ещё входит в 390 − 86 = 304px
+	// модалки; при 96 она переносится и на десктопе
+	const text = $derived(compact ? 'max-w-[calc(100%-86px)]' : 'sm:max-w-[calc(100%-204px)]');
+</script>
+
+<fieldset class="flex flex-col gap-2">
+	<legend class="mb-2 text-sm font-semibold text-text-primary">{t('new.format.title')}</legend>
+	<div class="grid gap-2">
+		{#each VISIBLE_FORMATS as format (format.id)}
+			{@const m = meta(format.id)}
+			<!-- Выбрано = рамка 2px терракотой (граница + внутренняя тень), как у карточек типа на /new.
+			     Фон — картинка формата: внутренняя тень рисуется поверх background-image -->
+			<label
+				data-testid="format-option"
+				data-format={format.id}
+				class="format-art relative flex cursor-pointer flex-col gap-2 transition-colors {compact
+					? 'format-art-row p-3'
+					: 'format-art-foot p-4 sm:min-h-[112px]'} {value === format.id
+					? 'border-accent shadow-[inset_0_0_0_1px_var(--color-accent)]'
+					: 'border-border hover:border-border-strong'}"
+				style:background-image={formatArtBackground(format.id)}
+			>
+				<input type="radio" name="format" value={format.id} bind:group={value} class="sr-only" />
+				<div class="flex flex-wrap items-center gap-2 {text}">
+					<div class="flex gap-1" aria-hidden="true">
+						{#each format.columns as col (col.id)}
+							<div class="h-5 w-2.5 rounded-[3px] {TONE[col.tone].art}"></div>
+						{/each}
+					</div>
+					<span class="font-heading text-[15px] font-bold text-art-ink">{m.name}</span>
+					{#if format.id === 'classic'}
+						<span class="badge-sm bg-art-accent-bg text-art-accent">{t('format.recommended')}</span>
+					{/if}
+				</div>
+				{#if !compact}
+					<p class="text-[13px] leading-[1.5] text-art-ink-secondary {text}">{m.desc}</p>
+					{#if m.page}
+						<a href={m.page} class="self-start text-[13px] font-semibold text-art-accent hover:underline max-sm:absolute max-sm:bottom-4 max-sm:left-4" onclick={(e) => e.stopPropagation()}>{t('new.format.more')}</a>
+					{/if}
+				{/if}
+			</label>
+		{/each}
+	</div>
+</fieldset>
+```
+
+Что изменилось относительно прежнего файла:
+- сетка стала одной колонкой (было `sm:grid-cols-2`);
+- у варианта `.format-art`, фон и `data-testid` / `data-format`;
+- у полного варианта `.format-art-foot` (угол на телефоне), у компактного — `.format-art-row p-3` (картинка 48 px справа на любой ширине) и ограничение текста без префикса `sm:`;
+- цвета заменены на art-токены: полоски `TONE[…].art`, «Рекомендуем» без `badge-accent`, «Подробнее» без `text-accent`;
+- на телефоне ссылка «Подробнее» стоит абсолютно, рядом с картинкой;
+- `aria-hidden` у полосок, `sr-only` у радио и `stopPropagation` у ссылки остались прежними.
+
+Замеры на копии, модалка `NewBoardModal` (контент / видимая высота):
+- 1280×800: 652 px, прокрутки нет, все строки 416×49, «Классическая + РЕКОМЕНДУЕМ» в одну строку;
+- 390×844: 692 px, прокрутки нет;
+- 375×740: 742 (RU) / 714 (EN) при 708 видимых. Без `.format-art-row` (с углом у всех строк) было 1004;
+- 320×640: 840 (RU) / 812 (EN) при 608 видимых. У RU classic зазор до иллюстрации 4 px: это ширина слова «Классическая», текст на иллюстрацию не заходит.
+
+- [ ] **Step 11: Прокрутка модалки «Новая доска»**
+
+`src/lib/components/NewBoardModal.svelte`. Было:
+```svelte
+		class="modal-card-enter flex w-[480px] max-w-full flex-col gap-[18px] rounded-3xl bg-surface-card p-6 shadow-2 sm:p-8"
+```
+Стало:
+```svelte
+		class="modal-card-enter flex max-h-full w-[480px] max-w-full flex-col gap-[18px] overflow-y-auto rounded-3xl bg-surface-card p-6 shadow-2 sm:p-8"
+```
+Зачем: на телефоне строки компактного пикера переносятся (текст ограничен на 86 px под картинку справа). Контент модалки на 375×740 — 742 px (RU) / 714 px (EN) при 708 px видимых; до задачи было 704 / 676. Без прокрутки низ карточки с кнопкой «Создать доску» обрезается. На 390×844 контент 692 px, всё помещается. На 375×667 (635 видимых) модалка обрезалась и до задачи. `max-h-full` считается от оверлея `fixed inset-0 p-4`. На десктопе модалка (≈652 px) в экран помещается, прокрутки нет.
+
+- [ ] **Step 12: e2e зелёные**
+
+Run: `npm run build && npx playwright test e2e/formats.spec.ts`
+Expected: `5 passed`. Если упал тест раскладки, в сообщении будут страница, ширина, локаль и формат, например `/ 1280px ru mad-sad-glad`, и `Received` меньше 16. Значит, текст заходит на иллюстрацию. Числа в `max-w-[calc(…)]` или `min-h` из шагов 8 и 10 править нельзя, пока нет замера на этой ширине.
+
+Контрольные минимумы на копии: `/formats` 61, главная 45, гайд 53, `/new` 42. Модалку тест не открывает: у компактных строк фон `auto 48px`, фильтр по `auto 100%` их и не взял бы.
+
+- [ ] **Step 13: Changelog 1.15**
+
+`src/routes/changelog/+page.svelte`, новый первый элемент массива `releases`, сразу над записью задачи 12. Было:
+```svelte
+	const releases: Release[] = [
+		{
+			version: '1.14',
+```
+Стало:
+```svelte
+	const releases: Release[] = [
+		{
+			version: '1.15',
+			date: '2026-09-17',
+			title: { en: 'Format illustrations', ru: 'Иллюстрации форматов' },
+			changes: [
+				{ en: 'Every retro format now has its own illustration: on the formats page, on the home page, in the guide and when you pick a format for a new board', ru: 'У каждого формата ретро появилась своя иллюстрация — на странице форматов, на главной, в гайде и при выборе формата новой доски' },
+				{ en: 'The illustrations look the same in the light and the dark theme', ru: 'В светлой и тёмной теме иллюстрации выглядят одинаково' },
+				{ en: 'On a phone the picture moves under the text or into the corner of the card, so the text never covers it', ru: 'На телефоне картинка уходит под текст или в угол карточки, чтобы текст на неё не наезжал' },
+				{ en: 'The «New board» window in a space now scrolls on small screens', ru: 'Окно «Новая доска» в пространстве теперь прокручивается на небольших экранах' }
+			]
+		},
+		{
+			version: '1.14',
+```
+В английских строках нет ASCII-апострофов, тексты `en` уникальны (по ним ключ `{#each}`). Запись `1.14` не меняется.
+
+- [ ] **Step 14: `DESIGN-SYSTEM.md`**
+
+Правка 1: art-токены в разделе Colors. Было:
+```text
+- Scrims and shadows stay ink — they are not redefined
+```
+Стало:
+```text
+- Scrims and shadows stay ink — they are not redefined
+
+### Art tokens (format illustrations)
+A format illustration is the same picture in both themes, so everything drawn on top of it uses
+`art-*` tokens that have **no** `.dark` override (like the code block tokens of the API page).
+Values are the light-theme ones; the tile frame (`border-border`, hover, selected accent) is not
+art and follows the theme.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `art-canvas` | `#F4F4FE` | Tile fill. `scripts/format-art.mjs` shifts the empty part of every picture to this colour, so the tile extends the picture without a seam |
+| `art-ink` | `#211E1A` | Titles on illustrated tiles (15.2:1 on the canvas) |
+| `art-ink-secondary` | `#6B6A61` | Taglines, descriptions, chip text (5.0:1) |
+| `art-chip` / `art-chip-border` | `#FFFFFF` / `#E5E4DC` | Meta chips on `/formats` |
+| `art-accent` / `art-accent-bg` | `#A94620` / `#F7E7DE` | «Learn more» and «Recommended» — the light `accent-hover`: `accent` itself is 4.1:1 on the canvas |
+| `art-well` / `art-bad` / `art-improve` / `art-plum` | `#4C8C6A` / `#C05B4D` / `#5B72C0` / `#9A5B8C` | Column stripes on picker options (`TONE[tone].art`); the dark-theme tones fall to 2.7–3.1:1 on the canvas |
+```
+
+Правка 2: новый подраздел перед экраном создания. Было:
+```text
+### Create screen (`/new`, `FormatPicker.svelte`)
+```
+Стало:
+```text
+### Format tiles (`FormatTile.svelte`, `FormatPicker.svelte`, `.format-art`)
+- Pictures: `src/lib/assets/format-art/{id}.webp`, 1200×400 (3:1), one per visible format including
+  classic, made by `scripts/format-art.mjs`. `formatArt(id)` / `formatArtBackground(id)` in
+  `src/lib/format-art.ts` import them through Vite (hashed `/_app/immutable/` URL, year-long
+  immutable cache). A decorative CSS background: no `alt`, no layout shift, 7–11 KB each
+- `.format-art` = `rounded-2xl border border-border bg-art-canvas`, picture `auto 100%` at
+  `right center`: the whole illustration fits the tile height, the rest of the tile is `art-canvas`.
+  The illustration is the right 56 % of the picture, i.e. ≈ 1.68 × picture height, so the text
+  column is capped at `calc(100% − illustration − gap)` for a known picture height
+- `FormatTile` — links on `/formats` (with meta chips), the home page and `/how-to-run-a-retro`.
+  From `md`: `min-h-[168px] p-6`, text `max-w-[calc(100%-300px)]` (282 illustration + 18 gap);
+  title Unbounded 17/700 `art-ink` `leading-[1.3]`, tagline 14 `art-ink-secondary`, chips `badge
+  border border-art-chip-border bg-art-chip text-art-ink-secondary`; hover = `card-interactive`
+  (lift + `border-border-strong`), never a fill. Below `md` (`.format-art-stack`) the picture is a
+  full-width 3:1 band under the text. Grids: `/formats` and the guide one column, home one column
+  and two from `xl`
+- `FormatPicker` option = `.format-art`. Full (`/new`) = `.format-art-foot`: from `sm`
+  `min-h-[112px] p-4`, text `max-w-[calc(100%-204px)]`; below `sm` the picture is 72px high in the
+  bottom-right corner (80px bottom padding) and «Learn more» sits next to it
+  (`max-sm:absolute max-sm:bottom-4 max-sm:left-4`). Compact (modal) = `.format-art-row p-3`: the
+  picture is always 48px high at the right (illustration ≈ 81px), text `max-w-[calc(100%-86px)]` at
+  every width — a row that wraps on a phone does not grow under the picture. Never give compact rows
+  the corner: 80px padding per row pushed the modal to 1004px on a 375px phone
+- Never on an illustrated tile: a hover fill (`hover:bg-surface-hover`), tints, or theme tokens
+  (`text-text-primary`, `badge-accent`, `bg-well`) for anything drawn over the picture
+
+### Create screen (`/new`, `FormatPicker.svelte`)
+```
+
+Правка 3: пикер на экране создания. Было:
+```text
+- FormatPicker: legend 14/600, grid `gap-2 sm:grid-cols-2` (`compact` = one column, no
+  descriptions), option `rounded-2xl border bg-surface-card p-4 gap-2` with the same selected /
+  unselected idiom, stripes `h-5 w-2.5 rounded-[3px] {TONE[tone].bar}` (plum for the fourth column
+  of 4L and Sailboat), title Unbounded 15/700, «Recommended» = `badge-sm badge-accent`,
+  description 13/1.5 secondary, «Learn more» 13/600 accent
+```
+Стало:
+```text
+- FormatPicker: legend 14/600, one column `gap-2` (`compact` = no descriptions); option = an
+  illustrated tile (see Format tiles) with `gap-2` and the same selected / unselected idiom — the
+  inset accent shadow is painted over the background picture, so the 2px frame stays whole;
+  stripes `h-5 w-2.5 rounded-[3px] {TONE[tone].art}` (plum for the fourth column of 4L and
+  Sailboat), title Unbounded 15/700 `art-ink`, «Recommended» = `badge-sm bg-art-accent-bg
+  text-art-accent`, description 13/1.5 `art-ink-secondary`, «Learn more» 13/600 `art-accent`
+```
+
+Правка 4: модалка. Было:
+```text
+- Overlay `fixed inset-0 z-[70] bg-scrim p-4` (`modalFadeIn`); card `w-[480px] rounded-3xl
+  bg-surface-card p-6 sm:p-8 shadow-2 gap-[18px]` (`modalZoomIn`), `role="dialog"`
+```
+Стало:
+```text
+- Overlay `fixed inset-0 z-[70] bg-scrim p-4` (`modalFadeIn`); card `w-[480px] rounded-3xl
+  bg-surface-card p-6 sm:p-8 shadow-2 gap-[18px] max-h-full overflow-y-auto` (`modalZoomIn`),
+  `role="dialog"` — on a short phone screen the card scrolls instead of being cut off
+```
+
+Правка 5: таблица классов. Вставить перед списком общих компонентов; таблица `Tooltips` из задачи 12 остаётся выше. Было:
+```text
+### Shared components that wrap these classes
+```
+Стало:
+```text
+### Format art
+
+| Class | Purpose |
+|-------|---------|
+| `.format-art` | Illustrated format tile: `rounded-2xl border border-border bg-art-canvas`, picture from `style:background-image` fitted to the tile height at the right |
+| `.format-art-row` | Compact `FormatPicker` row (modal): the picture always 48px high at the right, whatever the row height |
+| `.format-art-stack` | Below `md`: the picture as a full-width 3:1 band under the text (`FormatTile`) |
+| `.format-art-foot` | Below `sm`: the picture 72px high in the bottom-right corner, 80px bottom padding (full `FormatPicker` on `/new`) |
+
+### Shared components that wrap these classes
+```
+
+Проверка: `grep -c "### Format tiles\|### Art tokens\|### Format art\|max-h-full overflow-y-auto\|TONE\[tone\].art" DESIGN-SYSTEM.md` → `6`. Правка 1 даёт две строки (`### Art tokens` и `TONE[tone].art` в таблице токенов). Правка 3 даёт третью строку с `TONE[tone].art`. Правки 2, 4 и 5 дают по одной строке.
+
+- [ ] **Step 15: `CLAUDE.md` — одна строка**
+
+Было:
+```text
+- `src/lib/content/` — long-form page content as inline `{ en, ru }` pairs (formats.ts, guide.ts) plus the `txt()` helper; dictionaries stay for UI chrome
+```
+Стало:
+```text
+- `src/lib/content/` — long-form page content as inline `{ en, ru }` pairs (formats.ts, guide.ts) plus the `txt()` helper; dictionaries stay for UI chrome
+- `src/lib/assets/format-art/` — format illustrations `{id}.webp` (1200×400, one per visible format, same in both themes), generated by `scripts/format-art.mjs` from source PNGs that are not in the repo; `formatArt(id)` in `src/lib/format-art.ts` gives the hashed URL, `FormatTile.svelte` and `FormatPicker.svelte` draw them with `.format-art` and the `art-*` tokens (see «Format tiles» in `DESIGN-SYSTEM.md`)
+```
+
+- [ ] **Step 16: Полная проверка**
+
+```bash
+npm test 2>&1 | grep -E "Test Files|Tests "
+npm run check 2>&1 | tail -1
+npm run build 2>&1 | grep -E "client/_app/immutable/assets/.*\.webp|✔ done"
+grep -nE "surface-hover|badge-accent|\.bar\}|text-text-secondary|bg-surface-card|#[0-9a-fA-F]{3,6}\b" src/lib/components/FormatTile.svelte src/lib/components/FormatPicker.svelte; echo "exit=$?"
+```
+Expected:
+- `Test Files  N+1 passed`, `Tests  M+5 passed`;
+- `svelte-check found 0 errors and 0 warnings`;
+- пять строк `.svelte-kit/output/client/_app/immutable/assets/{classic,start-stop-continue,mad-sad-glad,4l,sailboat}.<хеш>.webp` размером 7.13 / 7.14 / 7.81 / 8.68 / 10.51 kB и `✔ done`;
+- последняя команда: пустой вывод и `exit=1`, то есть поверх картинок нет токенов темы и сырых цветов.
+
+Порты: `lsof -nP -iTCP:4777 -iTCP:4778 -iTCP:4779 -sTCP:LISTEN` → пусто.
+Run: `docker compose up -d db && npm run test:e2e`
+Expected: `N passed` без `failed` и `flaky`, где N — число тестов до задачи плюс 3. `formats.spec.ts` 5 из 5. Сценарии с модалкой (`createBoardInSpace` в `analysis`, `space-rename`, `bitrix`) зелёные.
+
+- [ ] **Step 17: Ручная проверка (для владельца; исполнитель не выполняет, но перечисляет в отчёте)**
+
+`docker compose up -d --build`, http://localhost:3777. Проверить в светлой и тёмной теме (кнопка темы в шапке), в RU и EN:
+- **`/formats` на десктопе (1280).** Четыре широкие плитки, иллюстрация справа целиком, текст и чипы слева. В тёмной теме плитки те же лавандовые, с теми же цветами текста. При наведении плитка приподнимается и рамка темнеет, заливки нет.
+- **`/formats` на 375 px.** Картинка лентой под текстом. У 4L и Sailboat верхний край ленты режет бледное пятно ровной линией — это край карточки из исходника, так и должно быть.
+- **Главная, секция форматов.** На 1280 две колонки, на 1024 одна, на 375 ленты.
+- **`/how-to-run-a-retro`, раздел форматов.** Одна колонка.
+- **`/new` на 1280 и 640.**
+  - Пять вариантов в одну колонку, у classic «Рекомендуем».
+  - Выбранный вариант в рамке 2 px терракотой, и рамка цела поверх картинки.
+  - Полоски колонок читаются.
+  - «Подробнее» открывает страницу формата и не переключает выбор.
+- **`/new` на 375 px.** Картинка 72 px в правом нижнем углу, «Подробнее» слева от неё. Текст на картинку не заходит.
+- **Пространство → «Новая доска».**
+  - На десктопе компактные строки высотой 49 px с иллюстрацией справа, «Классическая + РЕКОМЕНДУЕМ» в одну строку.
+  - На телефоне (375) у строк та же картинка 48 px справа, без угла и без нижнего отступа. Строки, где текст перенёсся, выше картинки: бледные пятна иллюстрации у них обрезаны ровной линией сверху и снизу — это край картинки, так и должно быть.
+  - На 375×740 модалку нужно чуть прокрутить (на 34 px в RU), на 390×844 всё помещается без прокрутки.
+- **DevTools → Network.** Пять `…/_app/immutable/assets/*.webp` по 7–11 КБ с `cache-control: public,max-age=31536000,immutable`. При повторном заходе они берутся из кэша.
+
+- [ ] **Step 18: Commit**
+
+```bash
+git status --short
+```
+Expected, и ничего сверх этого:
+- `M CLAUDE.md`, `M DESIGN-SYSTEM.md`, `M e2e/formats.spec.ts`, `M src/app.css`;
+- `M src/lib/components/FormatPicker.svelte`, `M src/lib/components/NewBoardModal.svelte`, `M src/lib/formats.test.ts`, `M src/lib/formats.ts`;
+- `M src/routes/+page.svelte`, `M src/routes/changelog/+page.svelte`, `M src/routes/formats/+page.svelte`, `M src/routes/how-to-run-a-retro/+page.svelte`;
+- `?? scripts/`, `?? src/lib/assets/`, `?? src/lib/components/FormatTile.svelte`, `?? src/lib/format-art.test.ts`, `?? src/lib/format-art.ts`.
+
+`.superpowers/`, PNG и `.DS_Store` в списке нет: они в `.gitignore`.
+
+```bash
+git add scripts/format-art.mjs src/lib/assets/format-art/classic.webp src/lib/assets/format-art/start-stop-continue.webp src/lib/assets/format-art/mad-sad-glad.webp src/lib/assets/format-art/4l.webp src/lib/assets/format-art/sailboat.webp src/lib/format-art.ts src/lib/format-art.test.ts src/lib/formats.ts src/lib/formats.test.ts src/app.css src/lib/components/FormatTile.svelte src/lib/components/FormatPicker.svelte src/lib/components/NewBoardModal.svelte src/routes/formats/+page.svelte src/routes/+page.svelte src/routes/how-to-run-a-retro/+page.svelte e2e/formats.spec.ts src/routes/changelog/+page.svelte DESIGN-SYSTEM.md CLAUDE.md
+git commit -F - <<'EOF'
+Иллюстрации форматов фоном плиток
+
+Пять картинок (классика, Start Stop Continue, Mad Sad Glad, 4L, Sailboat)
+обрезаны скриптом scripts/format-art.mjs до WebP 1200×400 и лежат в
+src/lib/assets/format-art: Vite отдаёт их с хешем и кэшем на год.
+FormatTile на /formats, главной и в гайде и варианты FormatPicker
+показывают их фоном: картинка по высоте справа, текст слева, на узких
+экранах — лентой под текстом или в углу, в модалке — маленькой
+картинкой справа. Всё поверх картинки — art-токены без тёмного
+варианта, поэтому плитки одинаковы в обеих темах. Модалка «Новая доска»
+прокручивается на коротких экранах. Changelog 1.15, DESIGN-SYSTEM.md
+(art-токены, Format tiles), CLAUDE.md. e2e: фон и кэш, независимость
+от темы, текст не заходит на иллюстрацию.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+EOF
+```
