@@ -392,6 +392,7 @@
 							use:focusAndSelect
 							oninput={() => clearInvalid('title')}
 							disabled={busy}
+							aria-invalid={invalidField === 'title'}
 							class="input input-lg bg-surface {invalidField === 'title' ? 'border-bad' : ''}"
 						/>
 					</label>
@@ -406,6 +407,7 @@
 							use:autosize
 							oninput={() => clearInvalid('description')}
 							disabled={busy}
+							aria-invalid={invalidField === 'description'}
 							class="textarea max-h-[204px] min-h-[114px] overflow-y-auto bg-surface px-[18px] py-3 text-[15px] leading-[1.5] {invalidField === 'description'
 								? 'border-bad'
 								: ''}"
@@ -424,15 +426,19 @@
 									bind:value={groupId}
 									oninput={(e) => onGroupInput(e.currentTarget.value)}
 									disabled={busy}
+									aria-invalid={groupStatus.kind === 'notFound' || invalidField === 'groupId'}
+									aria-describedby={groupStatus.kind === 'idle' ? undefined : 'bitrix-task-group-status'}
 									class="input input-lg bg-surface {groupStatus.kind === 'notFound' || invalidField === 'groupId'
 										? 'border-bad'
 										: ''} {groupShake ? 'animate-[shake_0.5s_ease]' : ''}"
 								/>
 							</label>
+							<!-- Строка-состояние поля группы: название найденной группы или «не найдена».
+							     На неё ссылается aria-describedby поля — иначе о подписи знает только зрячий -->
 							{#if groupStatus.kind === 'name'}
-								<p class="mt-1.5 truncate text-[13px] text-text-muted">{groupStatus.name}</p>
+								<p id="bitrix-task-group-status" class="mt-1.5 truncate text-[13px] text-text-muted">{groupStatus.name}</p>
 							{:else if groupStatus.kind === 'notFound'}
-								<p class="mt-1.5 text-[13px] text-bad">{t('bitrix.form.groupNotFound')}</p>
+								<p id="bitrix-task-group-status" class="mt-1.5 text-[13px] text-bad">{t('bitrix.form.groupNotFound')}</p>
 							{/if}
 						</div>
 						<label class="flex min-w-0 flex-col gap-2">

@@ -44,8 +44,18 @@ export interface Webhook {
 const WEBHOOK_PATH = /^\/rest\/([1-9]\d{0,9})\/([A-Za-z0-9]+)\/?$/;
 const MAX_USER_ID = 2_147_483_647; // user_id — integer в Postgres
 
+/**
+ * Единственный источник флага BITRIX_ALLOW_HTTP (http://localhost только для e2e с моком).
+ * Читает process.env при каждом вызове: одно и то же значение видят и parseWebhookUrl,
+ * и bitrix-connection.ts, и экшен подключения — иначе адрес, принятый при подключении,
+ * потом не расшифровался бы в рабочий вебхук.
+ */
+export function allowHttpEnabled(): boolean {
+	return process.env.BITRIX_ALLOW_HTTP === '1';
+}
+
 export function parseWebhookUrl(raw: string, opts: { allowHttp?: boolean } = {}): Webhook | null {
-	const allowHttp = opts.allowHttp ?? process.env.BITRIX_ALLOW_HTTP === '1';
+	const allowHttp = opts.allowHttp ?? allowHttpEnabled();
 	const input = typeof raw === 'string' ? raw.trim() : '';
 	// new URL молча выбрасывает пустые '?' и '#', поэтому смотрим на исходную строку
 	if (!input || /[?#]/.test(input)) return null;
@@ -235,6 +245,17 @@ function webhookSecret(webhook: Webhook): string | undefined {
 	return /\/rest\/\d+\/([^/]+)\/$/.exec(webhook.url)?.[1];
 }
 
+const CAUSE_CODE = /^[A-Z0-9_]+$/;
+
+// undici кладёт машинную причину в err.cause.code (ENOTFOUND, ECONNRESET, CERT_HAS_EXPIRED),
+// системные ошибки — в err.code. Берём только сам код и только в этом виде: текст undici
+// копировать нельзя никогда, в нём бывает адрес вебхука
+function causeCode(err: unknown): string | undefined {
+	const e = err as { code?: unknown; cause?: { code?: unknown } | null } | null | undefined;
+	const raw = e?.cause?.code ?? e?.code;
+	return typeof raw === 'string' && CAUSE_CODE.test(raw) ? raw : undefined;
+}
+
 async function readLimitedBody(res: Response, signal: AbortSignal, where: string): Promise<string> {
 	const tooLarge = () => new BitrixError('shape', `${where}: response is larger than 1 MB`, { status: res.status });
 	if (Number(res.headers.get('content-length')) > MAX_BODY_BYTES) {
@@ -247,10 +268,10 @@ async function readLimitedBody(res: Response, signal: AbortSignal, where: string
 	const chunks: Uint8Array[] = [];
 	let size = 0;
 	for (;;) {
-		const next = await reader.read().catch(() => {
+		const next = await reader.read().catch((err: unknown) => {
 			throw signal.aborted
-				? new BitrixError('timeout', `${where}: timed out while reading the body`)
-				: new BitrixError('network', `${where}: connection dropped`);
+				? new BitrixError('timeout', `${where}: timed out while reading the body`, { code: causeCode(err) })
+				: new BitrixError('network', `${where}: connection dropped`, { code: causeCode(err) });
 		});
 		if (next.done) break;
 		size += next.value.byteLength;
@@ -292,11 +313,12 @@ export async function bitrixRequest(
 				redirect: 'manual',
 				signal: controller.signal
 			});
-		} catch {
-			// текст исходной ошибки не берём: в нём может оказаться адрес вебхука
+		} catch (err) {
+			// текст исходной ошибки не берём: в нём может оказаться адрес вебхука.
+			// В code уходит только машинный код причины: по нему видно ENOTFOUND или протухший сертификат
 			throw controller.signal.aborted
-				? new BitrixError('timeout', `${where}: timed out`)
-				: new BitrixError('network', `${where}: portal unreachable`);
+				? new BitrixError('timeout', `${where}: timed out`, { code: causeCode(err) })
+				: new BitrixError('network', `${where}: portal unreachable`, { code: causeCode(err) });
 		}
 
 		// Следовать редиректу нельзя: это путь к внутренним сервисам, в том числе https → http
@@ -360,10 +382,13 @@ export async function verifyWebhook(
 	if (!Number.isInteger(userId) || userId <= 0) {
 		throw new BitrixError('invalid_webhook', 'Bitrix24 profile is empty');
 	}
-	const userName = [profile.NAME, profile.LAST_NAME]
-		.map((part) => (typeof part === 'string' ? part.trim() : ''))
-		.filter(Boolean)
-		.join(' ');
+	// Профиль без имени и фамилии (приглашение по почте) — показываем «#id»,
+	// иначе панель и преформа рисуют «Задачи создаёт:» с пустотой после двоеточия
+	const userName =
+		[profile.NAME, profile.LAST_NAME]
+			.map((part) => (typeof part === 'string' ? part.trim() : ''))
+			.filter(Boolean)
+			.join(' ') || `#${userId}`;
 	const timeZone = typeof profile.TIME_ZONE === 'string' && profile.TIME_ZONE ? profile.TIME_ZONE : null;
 	const portalOffset = offsetFromIso((time as { date_finish?: unknown } | null | undefined)?.date_finish);
 	return { userId, userName, timeZone, portalOffset };
@@ -490,13 +515,16 @@ export async function createTask(
 	if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) {
 		throw new BitrixError('shape', 'Bitrix24 task has no id');
 	}
-	// Только путь от корня портала: '@evil.com/…' или '//evil.com/…' увели бы ссылку на чужой хост
+	// Только путь от корня портала: '@evil.com/…' или '//evil.com/…' увели бы ссылку на чужой хост.
+	// Задача в портале уже есть, терять её нельзя: негодную ссылку заменяем на карточку задачи
+	// в личном разделе владельца вебхука — этот путь есть на любом портале
 	const link = item?.link;
-	if (typeof link !== 'string' || !link.startsWith('/') || link.startsWith('//')) {
-		throw new BitrixError('shape', 'Bitrix24 task link is not a portal path');
-	}
+	const path =
+		typeof link === 'string' && link.startsWith('/') && !link.startsWith('//')
+			? link
+			: `/company/personal/user/${webhook.userId}/tasks/task/view/${id}/`;
 	// origin = https://{portal}; в e2e (BITRIX_ALLOW_HTTP) — http://localhost:{port}
-	return { id, url: `${new URL(webhook.url).origin}${link}` };
+	return { id, url: `${new URL(webhook.url).origin}${path}` };
 }
 
 export async function tagTask(webhook: Webhook, taskId: number, opts?: CallOptions): Promise<void> {

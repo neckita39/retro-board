@@ -213,7 +213,6 @@ html {
 	   под картинку, а текст ограничен на 86px справа */
 	.format-art-row {
 		background-size: auto 48px;
-		background-position: right center;
 	}
 
 	.dropdown {

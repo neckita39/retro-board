@@ -105,6 +105,9 @@ test('every option of the format picker, classic included, has its illustration 
 // левее хотя бы на 16px — на всех ширинах, где плитка в режиме «баннер», в обеих локалях.
 test('text on illustrated tiles never runs into the illustration', async ({ page }) => {
 	await initStorage(page);
+	// На части сочетаний (например /formats при 640px) плитки в режиме ленты и в замеры не попадают.
+	// Считаем сами замеры: тест без единой проверки должен падать, а не проходить
+	let measured = 0;
 	for (const locale of ['ru', 'en']) {
 		await page.addInitScript((l) => localStorage.setItem('retro-locale', l), locale);
 		for (const width of [640, 768, 1280, 1536]) {
@@ -129,10 +132,12 @@ test('text on illustrated tiles never runs into the illustration', async ({ page
 							return { id: (el as HTMLElement).dataset.format, gap: Math.round(box.right - 1 - art - textRight) };
 						})
 				);
+				measured += gaps.length;
 				for (const { id, gap } of gaps) {
 					expect(gap, `${path} ${width}px ${locale} ${id}`).toBeGreaterThanOrEqual(16);
 				}
 			}
 		}
 	}
+	expect(measured, 'ни одна плитка не измерена — проверять было нечего').toBeGreaterThan(0);
 });

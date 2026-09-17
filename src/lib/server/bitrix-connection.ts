@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { db } from './db/index.js';
 import { spaceBitrix } from './db/schema.js';
 import { decrypt, encrypt, encryptionEnabled } from './crypto.js';
-import { parseWebhookUrl, type Webhook } from './bitrix.js';
+import { allowHttpEnabled, parseWebhookUrl, type Webhook } from './bitrix.js';
 
 export interface BitrixConnection {
 	spaceId: string;
@@ -19,11 +19,6 @@ export interface BitrixConnection {
 	lastError: string | null;
 	/** null — расшифровка или разбор адреса не прошли (ключ сменили) */
 	webhook: Webhook | null;
-}
-
-// http://localhost разрешён только в e2e (BITRIX_ALLOW_HTTP=1 в playwright.config.ts)
-function allowHttp(): boolean {
-	return process.env.BITRIX_ALLOW_HTTP === '1';
 }
 
 /** Строка таблицы → подключение. Чистая: decrypt подменяется в тесте */
@@ -49,8 +44,38 @@ export function toConnection(
 }
 
 export async function loadConnection(spaceId: string): Promise<BitrixConnection | null> {
+	// http://localhost разрешён только в e2e (BITRIX_ALLOW_HTTP=1 в playwright.config.ts)
 	const [row] = await db.select().from(spaceBitrix).where(eq(spaceBitrix.spaceId, spaceId)).limit(1);
-	return row ? toConnection(row, decrypt, allowHttp()) : null;
+	return row ? toConnection(row, decrypt, allowHttpEnabled()) : null;
+}
+
+export interface BitrixPublicInfo {
+	portal: string;
+	userName: string;
+	groupId: number | null;
+	groupName: string | null;
+	lastError: string | null;
+}
+
+/**
+ * То же, что publicInfo(loadConnection(...)), но webhook_enc не выбирается и не расшифровывается:
+ * секрет не материализуется в памяти ради чтения, которое им не пользуется (load доски).
+ * Отличие от publicInfo: last_error здесь только из колонки — расшифровать нечего, значит
+ * «ключ сменили» видно лишь после того, как экшен запишет invalid_webhook.
+ */
+export async function loadPublicInfo(spaceId: string): Promise<BitrixPublicInfo | null> {
+	const [row] = await db
+		.select({
+			portal: spaceBitrix.portal,
+			userName: spaceBitrix.userName,
+			groupId: spaceBitrix.groupId,
+			groupName: spaceBitrix.groupName,
+			lastError: spaceBitrix.lastError
+		})
+		.from(spaceBitrix)
+		.where(eq(spaceBitrix.spaceId, spaceId))
+		.limit(1);
+	return row ?? null;
 }
 
 /** Upsert строки пространства; last_error сбрасывается. Без ключа шифрования — отказ, открытым текстом не храним */
@@ -100,13 +125,7 @@ export async function setLastError(spaceId: string, kind: 'invalid_webhook' | 's
 	await db.update(spaceBitrix).set({ lastError: kind }).where(eq(spaceBitrix.spaceId, spaceId));
 }
 
-export function publicInfo(c: BitrixConnection): {
-	portal: string;
-	userName: string;
-	groupId: number | null;
-	groupName: string | null;
-	lastError: string | null;
-} {
+export function publicInfo(c: BitrixConnection): BitrixPublicInfo {
 	return {
 		portal: c.portal,
 		userName: c.userName,

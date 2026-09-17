@@ -30,7 +30,14 @@ import {
 import { emitSpace } from '$lib/server/bus.js';
 import { runAnalysisJob } from '$lib/server/analysis-job.js';
 import { canViewSpace } from '$lib/server/space-access.js';
-import { BitrixError, checkTasksScope, parseWebhookUrl, resolveGroup, verifyWebhook } from '$lib/server/bitrix.js';
+import {
+	allowHttpEnabled,
+	BitrixError,
+	checkTasksScope,
+	parseWebhookUrl,
+	resolveGroup,
+	verifyWebhook
+} from '$lib/server/bitrix.js';
 import {
 	deleteConnection,
 	loadConnection,
@@ -159,7 +166,9 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const animateTiles = !cookies.get('retro_tiles_seen');
 	if (animateTiles) cookies.set('retro_tiles_seen', '1', { path: '/', httpOnly: true, sameSite: 'lax' });
 
-	// Панель Битрикс24 видит только создатель; вебхук в page data не попадает — только publicInfo
+	// Панель Битрикс24 видит только создатель; вебхук в page data не попадает — только publicInfo.
+	// Здесь нужен именно loadConnection, а не loadPublicInfo: панель показывает «подключите заново»,
+	// когда вебхук не расшифровался (сменили ENCRYPTION_KEY), а это видно только после decrypt
 	const bitrixConnection = isCreator ? await loadConnection(space.id) : null;
 
 	const adminLink = isCreator
@@ -476,8 +485,9 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const raw = formData.get('webhook');
-		const webhook =
-			typeof raw === 'string' ? parseWebhookUrl(raw.trim(), { allowHttp: env.BITRIX_ALLOW_HTTP === '1' }) : null;
+		// allowHttpEnabled — общий источник флага с bitrix.ts и bitrix-connection.ts: адрес,
+		// принятый здесь, должен расшифровываться в рабочий вебхук и при чтении строки
+		const webhook = typeof raw === 'string' ? parseWebhookUrl(raw.trim(), { allowHttp: allowHttpEnabled() }) : null;
 		if (!webhook) return failWith('invalid_url', 'webhook');
 		const groupId = parseGroupId(formData.get('groupId'));
 		if (groupId === 'invalid') return failWith('invalid', 'groupId');

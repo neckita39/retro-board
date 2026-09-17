@@ -9,7 +9,7 @@ import { canViewSpace } from '$lib/server/space-access.js';
 import { decrypt } from '$lib/server/crypto.js';
 import { metric } from '$lib/server/statsd.js';
 import { emitBoard } from '$lib/server/bus.js';
-import { loadConnection, setLastError } from '$lib/server/bitrix-connection.js';
+import { loadConnection, loadPublicInfo, setLastError } from '$lib/server/bitrix-connection.js';
 import { createIpLimiter, createSpaceLimiter, runningCards } from '$lib/server/bitrix-limits.js';
 import {
 	canCreateTask,
@@ -115,11 +115,12 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	// Битрикс24. Преформа — ведущему (создатель доски или пространства) с доступом
 	// к пространству, когда пространство подключено; пункт меню «Подключить» —
 	// только создателю пространства и только пока не подключено.
-	// Вебхук (connection.webhook) в page data не уходит никогда.
+	// Читаем loadPublicInfo, а не loadConnection: здесь нужны только портал, владелец и группа,
+	// и вебхук незачем расшифровывать — в page data он не уходит никогда.
 	let bitrix: BitrixInfo | null = null;
 	let bitrixOffer = false;
 	if (space && spaceId && spaceViewable && isCreator) {
-		const connection = await loadConnection(spaceId);
+		const connection = await loadPublicInfo(spaceId);
 		if (connection) {
 			bitrix = {
 				spaceSlug: space.slug,

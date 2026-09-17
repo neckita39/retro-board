@@ -266,9 +266,9 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
 - Action icons top-right, **always visible**: a group with `-mt-1.5 -mr-1.5 gap-0.5` of
   `btn-icon btn-icon-sm` (28, radius 8, glyph 16): task = square with a check (first; board or
   space creator, connected space, card without a task), move = swap arrows, edit = pencil,
-  delete = ✕ (first click → `bg-bad text-white` confirm state for 3s). Each icon keeps `title` +
-  `aria-label` and shows an `.icon-tip` tooltip. Move opens a row of `badge-sm` tone
-  chips for the other columns
+  delete = ✕ (first click → `bg-bad text-white` confirm state for 3s). Each icon carries
+  `aria-label` only — no `title` — and shows an `.icon-tip` tooltip. Move opens a row of
+  `badge-sm` tone chips for the other columns
 - Image preview `rounded-lg` (8), `max-h-48`, opens the lightbox
 - Action row (`mt-3 gap-2`): like / dislike `pill` (`pill-outline` inactive, `pill-well` /
   `pill-bad` active, `vote-bounce`), comment counter = `pill pill-neutral` when > 0 or a
@@ -287,8 +287,9 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
   bg-text-primary px-3 py-2 text-[13px] text-surface shadow-1`, `mt-1.5` under the icon group,
   aligned to its right edge; appears over 150ms on hover (only on devices with real hover,
   `@media (hover: hover)`) and on `:focus-visible`
-- Used on all four card icons (task, move, edit, delete); the button keeps `title` + `aria-label`,
-  the tooltip repeats the same text (its content comes from `aria-label`)
+- Used on all four card icons (task, move, edit, delete); the button carries `aria-label` and no
+  `title` — the tooltip content comes from `aria-label`, and a `title` would raise the native
+  browser tooltip on top of it a moment later. The accessible name is the same either way
 
 ### «Add a card…» (`CardForm.svelte`)
 - Collapsed: a dashed affordance at the top of every column — `h-[46px] rounded-2xl

@@ -127,6 +127,8 @@
 			<!-- Действия всегда видны, без появления по ховеру. Кнопки 28px вылезают
 			     на 6px за паддинг карточки, чтобы глифы стояли вровень с первой строкой.
 			     relative — опора подсказок .icon-tip: плашка прижата к правому краю группы.
+			     title у этих кнопок нет намеренно: .icon-tip уже рисует подсказку из aria-label,
+			     а нативная всплыла бы поверх неё секундой позже. Доступное имя даёт aria-label.
 			     Верхняя группа — действия над карточкой, поэтому «В задачу» здесь, первой -->
 			<div class="relative -mr-1.5 -mt-1.5 flex shrink-0 gap-0.5">
 				{#if canCreateTask}
@@ -134,7 +136,6 @@
 						onclick={() => bitrixTaskStore.open(card.id, 'card')}
 						class="btn-icon btn-icon-sm icon-tip"
 						aria-label={t('bitrix.card.create')}
-						title={t('bitrix.card.create')}
 						data-testid="card-task-button"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -148,7 +149,6 @@
 					class="btn-icon btn-icon-sm icon-tip {moveOpen ? 'bg-surface-hover text-text-primary' : ''}"
 					aria-label={t('card.move')}
 					aria-expanded={moveOpen}
-					title={t('card.move')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<polyline points="17 11 21 7 17 3"/>
@@ -161,7 +161,6 @@
 					onclick={startEdit}
 					class="btn-icon btn-icon-sm icon-tip"
 					aria-label={t('card.edit')}
-					title={t('card.edit')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M12 20h9"/>
@@ -174,7 +173,6 @@
 						? 'bg-bad text-white hover:bg-bad hover:text-white hover:opacity-85'
 						: 'hover:bg-bad-bg hover:text-bad'}"
 					aria-label={deleteConfirming ? t('card.delete.confirm') : t('card.delete')}
-					title={deleteConfirming ? t('card.delete.confirm') : t('card.delete')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<line x1="18" y1="6" x2="6" y2="18"/>

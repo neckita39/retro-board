@@ -27,7 +27,8 @@ export type TaskReaction =
 const FIELDS: readonly TaskFormField[] = ['title', 'description', 'groupId', 'deadline'];
 const SETTINGS_KINDS = new Set(['invalid_webhook', 'scope', 'access', 'not_connected']);
 const RETRY_KINDS = new Set(['network', 'timeout', 'shape', 'limit', 'rate_limited', 'running']);
-const GENERIC: TaskReaction = { type: 'toast', toastKey: 'bitrix.toast.error' };
+// Общий на все ветки объект — заморожен, чтобы вызывающий не мог его случайно изменить
+const GENERIC: TaskReaction = Object.freeze({ type: 'toast', toastKey: 'bitrix.toast.error' } as const);
 
 function isCardTask(value: unknown): value is CardTask {
 	const o = value as { id?: unknown; url?: unknown } | null | undefined;
@@ -71,11 +72,12 @@ export function taskResultReaction(result: ActionResult): TaskReaction | null {
 	if (kind === 'group') return form({ field: 'groupId', groupNotFound: true });
 	if (kind === 'invalid') return form({ errorKey: 'bitrix.error.invalid', field: knownField(data.field) });
 	if (kind === 'rejected') {
-		return form({
-			errorKey: 'bitrix.error.rejected',
-			params: { message: typeof data.message === 'string' ? data.message : '' },
-			field: knownField(data.field)
-		});
+		const message = typeof data.message === 'string' ? data.message : '';
+		// Портал отказал молча: «Портал отклонил задачу: » с висящим двоеточием читать не на чем,
+		// показываем текст «непонятный ответ портала»
+		return message
+			? form({ errorKey: 'bitrix.error.rejected', params: { message }, field: knownField(data.field) })
+			: form({ errorKey: 'bitrix.error.shape', field: knownField(data.field) });
 	}
 	if (kind === 'encryption') return form({ errorKey: 'bitrix.error.encryption' });
 	return GENERIC;

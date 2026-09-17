@@ -15,6 +15,7 @@
  * 1. Карточка ищется по цвету, а не по жёстким числам: пиксель карточки — тот, у которого
  *    самый тёмный канал ≤ 249 (белое поле 253–255, лаванда 239–246). Граница — первый
  *    столбец/строка, где таких пикселей больше половины: углы и иллюстрация не мешают.
+ *    Сканы ограничены размерами картинки: не нашлось — печатается причина и exit 1.
  * 2. Радиус скругления меряется по диагонали из угла рамки: до карточки d = r·(1 − 1/√2)
  *    белых пикселей, отсюда r. Угол кадра ставится на дугу под 60°: по X внутрь на
  *    r·(1 − cos 60°), по Y — на r·(1 − sin 60°), плюс SAFETY по обеим осям. Такая точка
@@ -51,30 +52,43 @@ const isCard = (x, y) => {
 	const i = (y * W + x) * 3;
 	return Math.min(data[i], data[i + 1], data[i + 2]) <= 249;
 };
-const share = (count, total) => count / total;
 const colShare = (x) => {
 	let n = 0;
 	for (let y = 0; y < H; y++) if (isCard(x, y)) n++;
-	return share(n, H);
+	return n / H;
 };
 const rowShare = (y) => {
 	let n = 0;
 	for (let x = 0; x < W; x++) if (isCard(x, y)) n++;
-	return share(n, W);
+	return n / W;
+};
+
+// Все сканы ограничены размерами картинки: на неподходящем исходнике (карточки нет,
+// другой фон) инструмент должен сказать, что именно не нашлось, а не крутиться вечно
+// и не читать data за пределами буфера
+const fail = (reason) => {
+	console.error(`format-art: ${reason} (${src}, ${W}x${H})`);
+	process.exit(1);
 };
 
 let left = 0;
-while (colShare(left) < 0.5) left++;
+while (left < W && colShare(left) < 0.5) left++;
+if (left === W) fail('карточка не найдена: нет ни одного столбца, где больше половины пикселей темнее поля');
 let right = W - 1;
-while (colShare(right) < 0.5) right--;
+while (right > left && colShare(right) < 0.5) right--;
 let top = 0;
-while (rowShare(top) < 0.5) top++;
+while (top < H && rowShare(top) < 0.5) top++;
+if (top === H) fail('карточка не найдена: нет ни одной строки, где больше половины пикселей темнее поля');
 let bottom = H - 1;
-while (rowShare(bottom) < 0.5) bottom--;
+while (bottom > top && rowShare(bottom) < 0.5) bottom--;
 
+// Диагональ из угла рамки внутрь карточки. Дальше края идти некуда (шаг по обеим осям,
+// поэтому предел — не больше min(W, H)): за буфером isCard читал бы соседнюю строку
 const diagonal = (x0, y0, sx, sy) => {
+	const limit = Math.min(sx > 0 ? W - x0 : x0 + 1, sy > 0 ? H - y0 : y0 + 1);
 	let t = 0;
-	while (!isCard(x0 + sx * t, y0 + sy * t)) t++;
+	while (t < limit && !isCard(x0 + sx * t, y0 + sy * t)) t++;
+	if (t === limit) fail(`угол (${x0}, ${y0}) не приводит к карточке: скругление не измерить`);
 	return t;
 };
 const radius = Math.round(

@@ -36,12 +36,14 @@ interface MockCall {
 }
 
 // Лимиты Битрикс24 считаются по IP (5 подключений в минуту), а весь прогон идёт с одного адреса.
-// Сервер e2e берёт IP из x-forwarded-for (ADDRESS_HEADER в playwright.config.ts) — у каждого теста свой
+// Сервер e2e берёт IP из x-forwarded-for (ADDRESS_HEADER в playwright.config.ts) — у каждого теста свой.
+// Адрес считает счётчик, а не random: два теста в одну минуту не должны случайно совпасть
 let clientIp = '10.0.0.1';
-const octet = () => 1 + Math.floor(Math.random() * 254);
+let ipCounter = 0;
 
 test.beforeEach(async ({ context, request }) => {
-	clientIp = `10.${octet()}.${octet()}.${octet()}`;
+	ipCounter++;
+	clientIp = `10.${(ipCounter >> 16) & 255}.${(ipCounter >> 8) & 255}.${ipCounter & 255}`;
 	await context.setExtraHTTPHeaders({ 'x-forwarded-for': clientIp });
 	await request.post(`${BITRIX_MOCK}/__reset`);
 	await request.post(`${BITRIX_MOCK}/__mode`, { data: { mode: 'ok' } });
@@ -76,7 +78,11 @@ async function postAction(page: Page, path: string, form: Record<string, string>
 		headers: { accept: 'application/json', 'x-sveltekit-action': 'true', origin: APP },
 		maxRedirects: 0
 	});
-	return { httpStatus: res.status(), result: await res.json() };
+	// Тело разбираем, только если это JSON: на редирект или страницу ошибки res.json() упал бы,
+	// и настоящий статус ответа потерялся бы за «Unexpected token» вместо понятного отказа
+	const isJson = (res.headers()['content-type'] ?? '').includes('application/json');
+	const result = isJson ? await res.json() : { type: 'non-json', body: (await res.text()).slice(0, 200) };
+	return { httpStatus: res.status(), result };
 }
 
 // data у failure/success сериализована devalue: плоский массив, корень — первый элемент.

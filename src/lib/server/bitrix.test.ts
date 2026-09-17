@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
+	allowHttpEnabled,
 	BitrixError,
 	bitrixRequest,
 	callLegacy,
@@ -101,6 +102,19 @@ describe('parseWebhookUrl', () => {
 		expect(parseWebhookUrl(local)).toBeNull();
 		vi.stubEnv('BITRIX_ALLOW_HTTP', '1');
 		expect(parseWebhookUrl(local)).toEqual({ url: local, portal: 'localhost:4779', userId: 1 });
+	});
+});
+
+describe('allowHttpEnabled', () => {
+	it('читает process.env при каждом вызове: значение, выставленное после импорта, видно сразу', () => {
+		vi.stubEnv('BITRIX_ALLOW_HTTP', '');
+		expect(allowHttpEnabled()).toBe(false);
+		vi.stubEnv('BITRIX_ALLOW_HTTP', '1');
+		expect(allowHttpEnabled()).toBe(true);
+		vi.stubEnv('BITRIX_ALLOW_HTTP', '0');
+		expect(allowHttpEnabled()).toBe(false);
+		vi.stubEnv('BITRIX_ALLOW_HTTP', 'true');
+		expect(allowHttpEnabled()).toBe(false);
 	});
 
 	it.each([
@@ -313,6 +327,33 @@ describe('транспорт', () => {
 
 	it('нет ответа до таймаута → timeout', async () => {
 		expect((await failure(hangingFetch(), 'legacy', 10)).kind).toBe('timeout');
+	});
+
+	// undici прячет причину в cause.code; сам текст undici копировать нельзя — в нём бывает адрес
+	it('машинный код причины уходит в code, сообщение undici — никуда', async () => {
+		const withCause = (code: unknown) =>
+			fakeFetch(() => {
+				throw Object.assign(new TypeError(`fetch failed: ${WH.url}`), { cause: Object.assign(new Error(`${WH.url} ${CODE}`), { code }) });
+			}).fetchFn;
+
+		const dns = await failure(withCause('ENOTFOUND'));
+		expect(dns).toMatchObject({ kind: 'network', code: 'ENOTFOUND' });
+		expect((await failure(withCause('CERT_HAS_EXPIRED'))).code).toBe('CERT_HAS_EXPIRED');
+
+		// Не код, а текст или число — не берём вовсе
+		expect((await failure(withCause('self signed certificate'))).code).toBeUndefined();
+		expect((await failure(withCause(42))).code).toBeUndefined();
+		expect((await failure(fakeFetch(() => { throw new TypeError('fetch failed'); }).fetchFn)).code).toBeUndefined();
+
+		// Системная ошибка без cause: код лежит прямо на ней
+		const direct = await failure(fakeFetch(() => { throw Object.assign(new Error('boom'), { code: 'ECONNRESET' }); }).fetchFn);
+		expect(direct).toMatchObject({ kind: 'network', code: 'ECONNRESET' });
+
+		for (const err of [dns, direct]) {
+			expect(err.message).not.toContain(CODE);
+			expect(err.message).not.toContain('bitrix24.ru');
+			expect(JSON.stringify(err)).not.toContain(CODE);
+		}
 	});
 
 	it('заголовки пришли, а тело не дочитано до таймаута → timeout', async () => {
@@ -529,6 +570,13 @@ describe('Битрикс24: функции портала', () => {
 			});
 		});
 
+		it('в профиле нет ни имени, ни фамилии — владелец показывается как «#id»', async () => {
+			const { opts } = portal(() => reply({ result: { ID: '7', NAME: '', LAST_NAME: '   ' }, time }));
+			await expect(verifyWebhook(hook, opts)).resolves.toMatchObject({ userId: 7, userName: '#7' });
+			const bare = portal(() => reply({ result: { ID: 42 }, time }));
+			await expect(verifyWebhook(hook, bare.opts)).resolves.toMatchObject({ userId: 42, userName: '#42' });
+		});
+
 		it('date_finish в UTC с Z → +00:00', async () => {
 			const { opts } = portal(() =>
 				reply({ result: { ID: '1', NAME: 'Анна', TIME_ZONE: '' }, time: { date_finish: '2026-09-17T09:36:12Z' } })
@@ -683,11 +731,22 @@ describe('Битрикс24: функции портала', () => {
 			expect(task.url).toBe('http://localhost:4779/workgroups/group/2014/tasks/task/view/745181/');
 		});
 
+		// Задача в портале уже создана, и терять её нельзя: негодную ссылку заменяем на карточку
+		// задачи в личном разделе владельца вебхука. Чужой хост туда не попадает
 		it.each([
 			['ссылка на чужой хост через @', { link: '@evil.com/tasks/1/' }],
 			['protocol-relative ссылка', { link: '//evil.com/tasks/1/' }],
 			['ссылки нет', { link: undefined }],
-			['ссылка не строка', { link: 42 }],
+			['ссылка не строка', { link: 42 }]
+		])('%s → ссылка на задачу в личном разделе владельца', async (_name, over) => {
+			const { opts } = portal(() => reply(item(over)));
+			await expect(createTask(hook, fields(), { timeZone: null, portalOffset: null }, 'k', opts)).resolves.toEqual({
+				id: 745181,
+				url: 'https://bitrix24.team/company/personal/user/1/tasks/task/view/745181/'
+			});
+		});
+
+		it.each([
 			['id не число', { id: '745181' }],
 			['id ноль', { id: 0 }]
 		])('%s → shape, секрета в сообщении нет', async (_name, over) => {

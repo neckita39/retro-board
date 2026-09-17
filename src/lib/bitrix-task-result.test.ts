@@ -80,8 +80,14 @@ describe('taskResultReaction — отказы экшена', () => {
 		expect(
 			taskResultReaction(failure({ bitrixError: 'rejected', message: 'Крайний срок в прошлом', field: 'deadline' }, 422))
 		).toEqual(form({ errorKey: 'bitrix.error.rejected', params: { message: 'Крайний срок в прошлом' }, field: 'deadline' }));
+	});
+
+	it('rejected без текста портала: вместо висящего двоеточия — «непонятный ответ»', () => {
 		expect(taskResultReaction(failure({ bitrixError: 'rejected', field: 'responsibleId' }, 422))).toEqual(
-			form({ errorKey: 'bitrix.error.rejected', params: { message: '' } })
+			form({ errorKey: 'bitrix.error.shape' })
+		);
+		expect(taskResultReaction(failure({ bitrixError: 'rejected', message: '', field: 'deadline' }, 422))).toEqual(
+			form({ errorKey: 'bitrix.error.shape', field: 'deadline' })
 		);
 	});
 
@@ -97,6 +103,17 @@ describe('taskResultReaction — отказы экшена', () => {
 	it('неизвестный вид или пустой ответ — тост ошибки, форма остаётся', () => {
 		expect(taskResultReaction(failure({ bitrixError: 'something_new' }))).toEqual({ type: 'toast', toastKey: 'bitrix.toast.error' });
 		expect(taskResultReaction({ type: 'failure', status: 500 })).toEqual({ type: 'toast', toastKey: 'bitrix.toast.error' });
+	});
+
+	it('общий тост ошибки заморожен: правка у одного вызывающего не ломает остальные', () => {
+		const first = taskResultReaction(failure({ bitrixError: 'something_new' })) as { toastKey: string };
+		expect(Object.isFrozen(first)).toBe(true);
+		expect(() => {
+			first.toastKey = 'hacked';
+		}).toThrow();
+		expect((taskResultReaction({ type: 'error', status: 500, error: new Error('boom') }) as { toastKey: string }).toastKey).toBe(
+			'bitrix.toast.error'
+		);
 	});
 });
 

@@ -48,6 +48,9 @@ function readBody(req) {
 		let data = '';
 		req.on('data', (chunk) => (data += chunk));
 		req.on('end', () => resolve(data));
+		// Оборванный запрос без обработчика error уронил бы весь мок: вызывающий разбирает
+		// пустое тело как {} и отвечает так же, как на запрос без тела
+		req.on('error', () => resolve(''));
 	});
 }
 
