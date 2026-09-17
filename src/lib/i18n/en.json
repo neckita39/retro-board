@@ -129,6 +129,16 @@
 	"apiExport.dislikes": "{n} dislike|{n} dislikes",
 	"apiExport.task": "Task",
 
+	"bitrix.draft.fromRetro": "From retro \"{board}\" · column \"{column}\"",
+	"bitrix.draft.fromRetroNoColumn": "From retro \"{board}\"",
+	"bitrix.draft.fromAnalysis": "From AI analysis \"{board}\"",
+	"bitrix.draft.author": "Author: {name}",
+	"bitrix.draft.votes": "{n} vote|{n} votes",
+	"bitrix.draft.against": "against: {n}",
+	"bitrix.draft.comments": "Comments:",
+	"bitrix.draft.anonymous": "Anonymous",
+	"bitrix.draft.photoCard": "Card from retro \"{board}\"",
+
 	"export.api": "API for agents",
 
 	"apiDocs.title": "API",

@@ -129,6 +129,16 @@
 	"apiExport.dislikes": "{n} дизлайк|{n} дизлайка|{n} дизлайков",
 	"apiExport.task": "Задача",
 
+	"bitrix.draft.fromRetro": "Из ретро «{board}» · колонка «{column}»",
+	"bitrix.draft.fromRetroNoColumn": "Из ретро «{board}»",
+	"bitrix.draft.fromAnalysis": "Из AI-анализа «{board}»",
+	"bitrix.draft.author": "Автор: {name}",
+	"bitrix.draft.votes": "{n} голос|{n} голоса|{n} голосов",
+	"bitrix.draft.against": "против: {n}",
+	"bitrix.draft.comments": "Комментарии:",
+	"bitrix.draft.anonymous": "Аноним",
+	"bitrix.draft.photoCard": "Карточка из ретро «{board}»",
+
 	"export.api": "API для агентов",
 
 	"apiDocs.title": "API",
