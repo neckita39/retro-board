@@ -1,7 +1,19 @@
 // Чистая часть интеграции с Битрикс24: статусы видов ошибок, разбор форм и
 // (задача 8) оркестрация создания задачи с внедрёнными зависимостями.
 // Без БД и $env — тестируется напрямую.
-import type { BitrixErrorKind, TaskFields } from './bitrix.js';
+import type { BitrixErrorKind, CallOptions, TaskFields, Webhook } from './bitrix.js';
+import type { CardTask } from '$lib/types.js';
+import {
+	BitrixError,
+	IMAGE_MAX_BYTES,
+	attachImage,
+	createTask,
+	idempotencyKey,
+	tagTask,
+	withUploadSlot
+} from './bitrix.js';
+import type { Cookies } from '@sveltejs/kit';
+import { canViewSpace } from './space-access.js';
 
 export type ActionErrorKind =
 	| BitrixErrorKind
@@ -124,4 +136,121 @@ export function parseTaskForm(form: FormData): ParsedTaskForm {
 		fields: { title, description, groupId, deadline, important: form.get('important') === 'on' },
 		source
 	};
+}
+
+/**
+ * Кто может создавать задачи с доски и проверять группу: создатель доски или
+ * пространства, и только с доступом к пространству (cookie retro_space_{slug}
+ * сверяется с access_token). Пустые токены старых записей прав не дают.
+ * Общая проверка для экшена createTask и GET /[slug]/bitrix/group.
+ */
+export function canCreateTask(
+	board: { slug: string; creatorToken: string },
+	space: { slug: string; passwordHash: string | null; creatorToken: string; accessToken: string },
+	cookies: Cookies
+): boolean {
+	const boardCookie = cookies.get(`retro_creator_${board.slug}`) ?? '';
+	const spaceCookie = cookies.get(`retro_space_creator_${space.slug}`) ?? '';
+	const lead =
+		(!!board.creatorToken && boardCookie === board.creatorToken) ||
+		(!!space.creatorToken && spaceCookie === space.creatorToken);
+	return lead && canViewSpace(space, cookies);
+}
+
+export interface CreateTaskDeps {
+	webhook: Webhook;
+	connection: { userId: number; timeZone: string | null; portalOffset: string | null };
+	card: { id: string; imageId: string | null };
+	fields: TaskFields;
+	source: TaskSource;
+	callOpts?: CallOptions;
+	saveTask(cardId: string, task: CardTask): Promise<boolean>; // UPDATE ... WHERE bitrix_task_id IS NULL; false — 0 строк
+	imageSize(imageId: string): Promise<number | null>; // octet_length без чтения байтов; null — нет строки
+	loadImage(imageId: string): Promise<{ mimeType: string; data: Buffer } | null>;
+	emit(cardId: string, task: CardTask): void; // emitBoard(slug, 'card:task', ...)
+	metric(name: string, value: number, type?: string): void;
+	now(): number;
+}
+
+export type CreateTaskOutcome =
+	| { ok: true; task: CardTask; imageAttached: boolean | null }
+	| { ok: false; kind: ActionErrorKind; field?: string; message?: string };
+
+/**
+ * Картинка карточки: best-effort. Любая неудача даёт false и метрику, задачу не отменяет.
+ * Размер проверяем без чтения байтов; слот загрузки берём до loadImage, чтобы в куче
+ * одновременно жила не больше одной картинки (контейнер с --max-old-space-size=256).
+ */
+async function attachCardImage(deps: CreateTaskDeps, imageId: string, taskId: number): Promise<boolean> {
+	try {
+		const size = await deps.imageSize(imageId);
+		if (size !== null && size > IMAGE_MAX_BYTES) {
+			deps.metric('retro.bitrix.task.image_skipped', 1);
+			return false;
+		}
+		const attached =
+			size !== null &&
+			(await withUploadSlot(async () => {
+				const image = await deps.loadImage(imageId);
+				if (!image) return false;
+				await attachImage(
+					deps.webhook,
+					deps.connection.userId,
+					taskId,
+					{ cardId: deps.card.id, mimeType: image.mimeType, data: image.data },
+					deps.callOpts
+				);
+				return true;
+			}));
+		deps.metric(attached ? 'retro.bitrix.task.image_attached' : 'retro.bitrix.task.image_failed', 1);
+		return attached;
+	} catch {
+		deps.metric('retro.bitrix.task.image_failed', 1);
+		return false;
+	}
+}
+
+/**
+ * Создание задачи из карточки после всех проверок экшена. Порядок важен:
+ * задача → запись на карточку → тег → картинка → метрики → рассылка card:task.
+ * Рассылка последней: сокет создателя тоже в комнате, и бейдж не должен
+ * появиться под ещё крутящейся модалкой.
+ */
+export async function createTaskFlow(deps: CreateTaskDeps): Promise<CreateTaskOutcome> {
+	const started = deps.now();
+	const { webhook, connection, card, fields, callOpts } = deps;
+
+	let task: CardTask;
+	try {
+		task = await createTask(
+			webhook,
+			fields,
+			{ timeZone: connection.timeZone, portalOffset: connection.portalOffset },
+			idempotencyKey(card.id, fields),
+			callOpts
+		);
+	} catch (err) {
+		if (err instanceof BitrixError) return { ok: false, kind: err.kind, field: err.field, message: err.message };
+		throw err;
+	}
+
+	// 0 строк — карточку удалили, пока шёл запрос: задача в портале осталась сиротой
+	if (!(await deps.saveTask(card.id, task))) {
+		deps.metric('retro.bitrix.task.orphaned', 1);
+		return { ok: false, kind: 'not_found' };
+	}
+
+	// Тег best-effort: v3 его не принимает, ставим старым REST после создания
+	try {
+		await tagTask(webhook, task.id, callOpts);
+	} catch {
+		deps.metric('retro.bitrix.task.tag_failed', 1);
+	}
+
+	const imageAttached = card.imageId ? await attachCardImage(deps, card.imageId, task.id) : null;
+
+	deps.metric(`retro.bitrix.task.created.${deps.source}`, 1);
+	deps.metric('retro.bitrix.task.duration_ms', deps.now() - started, 'ms');
+	deps.emit(card.id, task);
+	return { ok: true, task, imageAttached };
 }
