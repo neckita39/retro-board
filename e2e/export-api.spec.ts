@@ -26,7 +26,7 @@ test('board is fetchable as markdown and json; unknown slug is 404', async ({ pa
 
 test('space boards and AI analyses are fetchable as json and markdown', async ({ page }) => {
 	const space = await createSpace(page, 'API space');
-	const b1 = await createBoardInSpace(page, space.slug, 'Sprint 1');
+	const { slug: b1 } = await createBoardInSpace(page, space.slug, 'Sprint 1');
 	await addCard(page, "Didn't Go Well", 'flaky tests');
 	await createBoardInSpace(page, space.slug, 'Sprint 2');
 	await addCard(page, "Didn't Go Well", 'flaky again');
