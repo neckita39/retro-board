@@ -63,7 +63,9 @@ export async function createSpace(page: Page, name: string): Promise<{ slug: str
 }
 
 // Создаёт доску внутри пространства через модалку «New board». Остаётся на странице доски.
-export async function createBoardInSpace(page: Page, spaceSlug: string, title: string): Promise<string> {
+// adminUrl — ссылка с ?admin=: по ней другой браузер становится создателем доски (но не пространства).
+// Токен берём из cookie retro_creator_{slug}: ?admin страница сразу убирает из адреса.
+export async function createBoardInSpace(page: Page, spaceSlug: string, title: string): Promise<{ slug: string; adminUrl: string }> {
 	await page.goto(`/spaces/${spaceSlug}`);
 	await page.getByRole('button', { name: 'New board' }).first().click();
 	const modal = page.getByRole('dialog');
@@ -71,7 +73,11 @@ export async function createBoardInSpace(page: Page, spaceSlug: string, title: s
 	await modal.locator('button[type="submit"]').click();
 	await page.waitForURL(BOARD_URL);
 	await dismissToast(page);
-	return new URL(page.url()).pathname.slice(1);
+	const { origin, pathname } = new URL(page.url());
+	const slug = pathname.slice(1);
+	const creator = (await page.context().cookies(origin)).find((c) => c.name === `retro_creator_${slug}`);
+	if (!creator) throw new Error(`createBoardInSpace: нет cookie создателя для доски ${slug}`);
+	return { slug, adminUrl: `${origin}/${slug}?admin=${creator.value}` };
 }
 
 // Пространство с паролем. Создатель получает cookie доступа сразу.
@@ -87,4 +93,70 @@ export async function createLockedSpace(page: Page, name: string, password: stri
 	const adminUrl = page.url();
 	await dismissToast(page);
 	return { slug: new URL(adminUrl).pathname.split('/')[2], adminUrl };
+}
+
+// ── Битрикс24 ───────────────────────────────────────────────────────────────
+
+// Мок портала (e2e/mock-bitrix.mjs) и вебхук, который тест «вставляет» как пользователь.
+// http и localhost сервер принимает только с BITRIX_ALLOW_HTTP=1 (playwright.config.ts)
+export const BITRIX_MOCK = 'http://localhost:4779';
+export const BITRIX_WEBHOOK = `${BITRIX_MOCK}/rest/1/testcode/`;
+
+// PNG 16×16. Сервер пережимает его в WebP, поэтому на Диск уходит retro-{cardId}.webp
+export const CARD_PNG = 'e2e/fixtures/card.png';
+
+// Карточка с текстом и картинкой через форму колонки. У CardForm.submit() нет защиты
+// от раннего Enter: без ожидания /api/upload карточка ушла бы без картинки
+export async function addCardWithImage(page: Page, columnName: string, text: string, fixture: string = CARD_PNG) {
+	const col = column(page, columnName);
+	await col.getByRole('button', { name: /Add a card/ }).click();
+	const textarea = col.getByPlaceholder("What's on your mind?");
+	await textarea.fill(text);
+	const upload = page.waitForResponse(
+		(r) => new URL(r.url()).pathname === '/api/upload' && r.request().method() === 'POST'
+	);
+	// Скрытых input[type=file] в колонке несколько: у CardForm и у свёрнутой CommentForm каждой карточки.
+	// CardForm стоит в колонке раньше списка карточек, поэтому его поле первое
+	await col.locator('input[type="file"]').first().setInputFiles(fixture);
+	const response = await upload;
+	expect(response.status()).toBe(200);
+	await response.finished();
+	// Спиннер превью гаснет в finally, уже после записи imageId
+	await expect(col.locator('form svg.animate-spin')).toHaveCount(0);
+	await expect(col.getByText('Upload failed')).toHaveCount(0);
+	await textarea.press('Enter');
+	await expect(page.locator('.card-board', { hasText: text }).first().locator('img[src^="/api/image/"]')).toBeVisible();
+}
+
+// Раскрывает панель Битрикс24 на странице пространства. Триггер есть уже в SSR-разметке,
+// клик до гидрации может потеряться — повторяем, пока aria-expanded не станет true
+export async function openBitrixPanel(page: Page): Promise<Locator> {
+	const toggle = page.getByTestId('bitrix-panel-toggle');
+	await expect(async () => {
+		if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+		await expect(toggle).toHaveAttribute('aria-expanded', 'true', { timeout: 1_000 });
+	}).toPass({ timeout: 10_000 });
+	return page.getByTestId('bitrix-panel');
+}
+
+// Подключает мок-портал в панели пространства и ждёт состояние «подключено».
+// spaceUrl — обычный адрес /spaces/{slug} (без ?bitrix=1 и ?admin=): панель закрыта
+export async function connectBitrix(page: Page, spaceUrl: string, opts: { group?: number } = {}): Promise<Locator> {
+	await page.goto(spaceUrl);
+	const panel = await openBitrixPanel(page);
+	await panel.locator('input[name="webhook"]').fill(BITRIX_WEBHOOK);
+	if (opts.group !== undefined) await panel.locator('input[name="groupId"]').fill(String(opts.group));
+	await panel.getByRole('button', { name: 'Connect', exact: true }).click();
+	// Имя владельца вебхука из profile мока видно только в состоянии «подключено»
+	await expect(panel.getByText('Ivan Petrov')).toBeVisible({ timeout: 10_000 });
+	return panel;
+}
+
+// Открывает преформу задачи с карточки доски и возвращает её форму
+export async function openCardTaskModal(page: Page, cardText: string): Promise<Locator> {
+	const card = page.locator('.card-board', { hasText: cardText });
+	await card.getByTestId('card-task-button').click();
+	const form = page.getByTestId('bitrix-task-form');
+	await expect(form).toBeVisible();
+	return form;
 }

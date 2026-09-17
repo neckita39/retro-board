@@ -2,6 +2,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Seo from '$lib/components/Seo.svelte';
 	import JsonLd from '$lib/components/JsonLd.svelte';
+	import FormatTile from '$lib/components/FormatTile.svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { FORMATS } from '$lib/content/formats.js';
 	import { txt } from '$lib/content/localized.js';
@@ -41,27 +42,9 @@
 			</p>
 		</div>
 
-		<div class="grid gap-4 sm:grid-cols-2">
+		<div class="grid gap-4">
 			{#each FORMATS as format, i (format.slug)}
-				<a
-					href="/formats/{format.slug}"
-					class="flex flex-col gap-2.5 rounded-2xl border border-border bg-surface-card p-5 transition-colors hover:bg-surface-hover sm:p-6"
-					style="animation: fadeUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) {Math.min(i, 5) * 0.08}s both;"
-				>
-					<span class="font-heading text-[18px] font-bold text-text-primary">{txt(format.name)}</span>
-					<span class="text-sm leading-relaxed text-text-secondary">{txt(format.tagline)}</span>
-					<div class="mt-1 flex flex-wrap gap-1.5">
-						<span class="rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary">
-							{t('formats.meta.minutes', { n: format.minutes })}
-						</span>
-						<span class="rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary">
-							{txt(format.teamSize)}
-						</span>
-						<span class="rounded-full border border-border bg-surface px-2.5 py-[3px] text-xs font-semibold text-text-secondary">
-							{t('formats.meta.columns', { n: format.columns.length })}
-						</span>
-					</div>
-				</a>
+				<FormatTile {format} meta style="animation: fadeUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) {Math.min(i, 5) * 0.08}s both;" />
 			{/each}
 		</div>
 

@@ -43,6 +43,8 @@
 				{#if toast.action?.href}
 					<a
 						href={toast.action.href}
+						target={toast.action.external ? '_blank' : undefined}
+						rel={toast.action.external ? 'noopener' : undefined}
 						onclick={() => toastStore.dismiss(toast.id)}
 						class="self-start text-[13px] font-bold text-accent hover:underline"
 					>

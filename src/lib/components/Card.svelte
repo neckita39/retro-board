@@ -1,10 +1,12 @@
 <script lang="ts">
 	import VoteButtons from './VoteButtons.svelte';
 	import CommentList from './CommentList.svelte';
+	import TaskBadge from './TaskBadge.svelte';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
 	import { dndStore } from '$lib/stores/dnd.svelte.js';
+	import { bitrixTaskStore } from '$lib/stores/bitrix-task.svelte.js';
 	import type { Card, ColumnType } from '$lib/types.js';
 	import { TONE } from '$lib/formats.js';
 	import { txt } from '$lib/content/localized.js';
@@ -22,6 +24,13 @@
 	let otherColumns = $derived(boardStore.columns.filter((c) => c.id !== card.columnType));
 
 	let commentCount = $derived(boardStore.getCardComments(card.id).length);
+
+	let task = $derived(
+		card.bitrixTaskId && card.bitrixTaskUrl ? { id: card.bitrixTaskId, url: card.bitrixTaskUrl } : null
+	);
+	// «В задачу» видит создатель доски или пространства, только при подключённом Битрикс24
+	// и пока у карточки нет задачи (boardStore.bitrix приходит только им)
+	let canCreateTask = $derived(boardStore.isCreator && !!boardStore.bitrix && !card.bitrixTaskId);
 
 	function startEdit() {
 		editContent = card.content;
@@ -116,14 +125,30 @@
 				<div class="flex-1"></div>
 			{/if}
 			<!-- Действия всегда видны, без появления по ховеру. Кнопки 28px вылезают
-			     на 6px за паддинг карточки, чтобы глифы стояли вровень с первой строкой -->
-			<div class="-mr-1.5 -mt-1.5 flex shrink-0 gap-0.5">
+			     на 6px за паддинг карточки, чтобы глифы стояли вровень с первой строкой.
+			     relative — опора подсказок .icon-tip: плашка прижата к правому краю группы.
+			     title у этих кнопок нет намеренно: .icon-tip уже рисует подсказку из aria-label,
+			     а нативная всплыла бы поверх неё секундой позже. Доступное имя даёт aria-label.
+			     Верхняя группа — действия над карточкой, поэтому «В задачу» здесь, первой -->
+			<div class="relative -mr-1.5 -mt-1.5 flex shrink-0 gap-0.5">
+				{#if canCreateTask}
+					<button
+						onclick={() => bitrixTaskStore.open(card.id, 'card')}
+						class="btn-icon btn-icon-sm icon-tip"
+						aria-label={t('bitrix.card.create')}
+						data-testid="card-task-button"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2"/>
+							<path d="m9 12 2 2 4-4"/>
+						</svg>
+					</button>
+				{/if}
 				<button
 					onclick={() => (moveOpen = !moveOpen)}
-					class="btn-icon btn-icon-sm {moveOpen ? 'bg-surface-hover text-text-primary' : ''}"
+					class="btn-icon btn-icon-sm icon-tip {moveOpen ? 'bg-surface-hover text-text-primary' : ''}"
 					aria-label={t('card.move')}
 					aria-expanded={moveOpen}
-					title={t('card.move')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<polyline points="17 11 21 7 17 3"/>
@@ -134,9 +159,8 @@
 				</button>
 				<button
 					onclick={startEdit}
-					class="btn-icon btn-icon-sm"
+					class="btn-icon btn-icon-sm icon-tip"
 					aria-label={t('card.edit')}
-					title={t('card.edit')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M12 20h9"/>
@@ -145,11 +169,10 @@
 				</button>
 				<button
 					onclick={requestDelete}
-					class="btn-icon btn-icon-sm {deleteConfirming
+					class="btn-icon btn-icon-sm icon-tip {deleteConfirming
 						? 'bg-bad text-white hover:bg-bad hover:text-white hover:opacity-85'
 						: 'hover:bg-bad-bg hover:text-bad'}"
 					aria-label={deleteConfirming ? t('card.delete.confirm') : t('card.delete')}
-					title={deleteConfirming ? t('card.delete.confirm') : t('card.delete')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<line x1="18" y1="6" x2="6" y2="18"/>
@@ -185,10 +208,11 @@
 		/>
 	{/if}
 
-	<!-- Ряд действий — голоса, комментарии и автор, всегда видны.
+	<!-- Ряд действий — голоса, комментарии, задача и автор, всегда видны.
 	     Счётчик комментариев — нейтральная заливка: это состояние, а не действие,
-	     терракота остаётся кнопкам и таймеру. На телефоне пилюли выше ради тача -->
-	<div class="mt-3 flex items-center gap-2">
+	     терракота остаётся кнопкам и таймеру. На телефоне пилюли выше ради тача.
+	     flex-wrap нужен только паре «бейдж + автор»: она переносится целиком -->
+	<div class="mt-3 flex flex-wrap items-center gap-2">
 		<VoteButtons cardId={card.id} />
 		<button
 			onclick={() => (commentsOpen = !commentsOpen)}
@@ -205,8 +229,19 @@
 				</span>
 			{/key}
 		</button>
-		{#if card.authorName}
-			<span class="ml-auto min-w-0 truncate text-[13px] text-text-muted">{card.authorName}</span>
+		<!-- Пара «бейдж + автор» (заметка 14). Без задачи — остаток строки (basis 0): автор
+		     обрезается, а не переносится. С задачей на телефоне пара всегда на второй строке,
+		     на десктопе — только если не влезла. Бейдж видят все и независимо от пространства:
+		     он живёт на карточке. У карточек анализа автора нет, бейдж стоит последним -->
+		{#if task || card.authorName}
+			<div class="flex min-w-0 items-center gap-2 {task ? 'grow max-md:basis-full' : 'flex-1'}">
+				{#if task}
+					<TaskBadge {task} />
+				{/if}
+				{#if card.authorName}
+					<span class="ml-auto min-w-0 truncate text-[13px] text-text-muted">{card.authorName}</span>
+				{/if}
+			</div>
 		{/if}
 	</div>
 

@@ -31,4 +31,14 @@ describe('encrypt/decrypt на стороне SvelteKit', () => {
 		expect(encrypt(null)).toBeNull();
 		expect(encrypt('')).toBe('');
 	});
+
+	it('encryptionEnabled: true с ключом из 64 hex-символов', async () => {
+		const { encryptionEnabled } = await load(KEY);
+		expect(encryptionEnabled).toBe(true);
+	});
+
+	it('encryptionEnabled: false без ключа и с ключом не той длины', async () => {
+		expect((await load(undefined)).encryptionEnabled).toBe(false);
+		expect((await load('abcd')).encryptionEnabled).toBe(false);
+	});
 });

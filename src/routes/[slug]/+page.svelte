@@ -13,6 +13,7 @@
 	$effect(() => {
 		boardStore.setState(data);
 		boardStore.isCreator = data.isCreator;
+		boardStore.setBitrix(data.bitrix, data.bitrixOffer);
 	});
 
 	// Уведомления об AI-анализе пространства приходят и сюда

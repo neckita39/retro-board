@@ -49,6 +49,24 @@
 	--color-code-string: #9cbf8e;
 	--color-code-number: #8fb6d9;
 
+	/* Плитки форматов с иллюстрацией (.format-art): картинка одна на обе темы, значит и всё
+	   поверх неё одинаково в обеих темах — у этих токенов, как у блока кода, нет
+	   .dark-варианта. art-canvas — цвет пустой части картинок: scripts/format-art.mjs
+	   приводит к нему каждый файл, поэтому плитка шире картинки заливается им без шва.
+	   Остальные — светлые значения ink / text-secondary / surface-card / border и тонов
+	   колонок; терракота — светлый accent-hover: на лаванде у accent контраст 4.1:1 */
+	--color-art-canvas: #f4f4fe;
+	--color-art-ink: #211e1a;
+	--color-art-ink-secondary: #6b6a61;
+	--color-art-chip: #ffffff;
+	--color-art-chip-border: #e5e4dc;
+	--color-art-accent: #a94620;
+	--color-art-accent-bg: #f7e7de;
+	--color-art-well: #4c8c6a;
+	--color-art-bad: #c05b4d;
+	--color-art-improve: #5b72c0;
+	--color-art-plum: #9a5b8c;
+
 	/* Тени: всего два уровня, обе чернильные. Нулевой уровень — просто граница 1px.
 	   1 — меню, тосты, FAB, подсказки; 2 — модалка, боковая панель */
 	--shadow-1: 0 4px 14px rgba(33, 30, 26, 0.08);
@@ -181,6 +199,22 @@ html {
 		@apply rounded-2xl border border-border bg-surface-card p-4;
 	}
 
+	/* Плитка формата с иллюстрацией (formatArtBackground в style:background-image).
+	   Картинка 3:1 вписана по высоте и прижата вправо: иллюстрация видна целиком, остальное
+	   заливает art-canvas без шва. Иллюстрация — правые 56 % картинки, ≈1.68 × высоты
+	   плитки; ширину текста под это ограничивают FormatTile и FormatPicker */
+	.format-art {
+		@apply rounded-2xl border border-border bg-art-canvas bg-no-repeat;
+		background-size: auto 100%;
+		background-position: right center;
+	}
+	/* Строка компактного пикера (модалка «Новая доска»): картинка всегда 48px высотой,
+	   иллюстрация ≈81px на любой ширине — перенесённая на телефоне строка не растёт
+	   под картинку, а текст ограничен на 86px справа */
+	.format-art-row {
+		background-size: auto 48px;
+	}
+
 	.dropdown {
 		@apply rounded-2xl border border-border bg-surface-card py-1 shadow-1;
 	}
@@ -232,6 +266,25 @@ html {
 		       text-sm text-bad-strong;
 	}
 	.error-box-sm { @apply px-2.5 py-1.5 text-[13px]; }
+
+
+	/* ---------- TOOLTIPS ---------- */
+
+	/* Подсказка иконок карточки (заметка макета 11). Та же идиома, что у FocusTimer:
+	   чернильная плашка 13px под группой иконок, прижатая к её правому краю.
+	   relative стоит на группе, у самой кнопки позиции нет. Текст берётся из
+	   aria-label: он не дублируется в DOM и не попадает в текст карточки */
+	.icon-tip::after {
+		@apply pointer-events-none absolute right-0 top-full z-30 mt-1.5 whitespace-nowrap rounded-xl
+		       bg-text-primary px-3 py-2 text-[13px] font-normal leading-snug text-surface shadow-1
+		       opacity-0 transition-opacity duration-150;
+		content: attr(aria-label);
+	}
+	/* На таче ховер «залипает» после тапа, поэтому только для устройств с настоящим ховером */
+	@media (hover: hover) {
+		.icon-tip:hover::after { @apply opacity-100; }
+	}
+	.icon-tip:focus-visible::after { @apply opacity-100; }
 }
 
 body {
@@ -363,6 +416,31 @@ button, a, [role="button"], input[type="submit"] {
 }
 .collapsible > * {
 	overflow: hidden;
+}
+
+/* Плитка формата в узкой ячейке — иллюстрации не хватает места справа от текста.
+   .format-art-stack (плитки-ссылки, до md): картинка лентой во всю ширину под текстом,
+   ::after (3:1 от ширины контента) держит под неё место.
+   .format-art-foot (полный FormatPicker на /new, до sm): картинка высотой 72px в правом
+   нижнем углу, под неё нижний отступ 80px — список из пяти вариантов не растягивается
+   на два экрана. Компактным строкам модалки угол не нужен, у них .format-art-row.
+   Вне @layer: правила перебивают background-size базового .format-art и p-* утилиты */
+@media (width < 48rem) {
+	.format-art-stack {
+		background-size: 100% auto;
+		background-position: right bottom;
+	}
+	.format-art-stack::after {
+		content: '';
+		aspect-ratio: 3;
+	}
+}
+@media (width < 40rem) {
+	.format-art-foot {
+		background-size: auto 72px;
+		background-position: right bottom;
+		padding-bottom: 80px;
+	}
 }
 
 /* Respect reduced motion */

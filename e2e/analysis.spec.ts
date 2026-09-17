@@ -41,10 +41,10 @@ async function runAnalysis(page: Page): Promise<string> {
 
 async function seedSpace(page: Page, name: string) {
 	const space = await createSpace(page, name);
-	const b1 = await createBoardInSpace(page, space.slug, 'Sprint 1');
+	const { slug: b1 } = await createBoardInSpace(page, space.slug, 'Sprint 1');
 	await addCard(page, "Didn't Go Well", 'flaky tests');
 	await addCard(page, 'Went Well', 'deploys are smooth');
-	const b2 = await createBoardInSpace(page, space.slug, 'Sprint 2');
+	const { slug: b2 } = await createBoardInSpace(page, space.slug, 'Sprint 2');
 	await addCard(page, "Didn't Go Well", 'flaky tests again');
 	return { ...space, boards: [b1, b2] };
 }
@@ -291,7 +291,7 @@ test('a locked space hides the analysis from viewers without the password', asyn
 	const pageB = await ctxB.newPage();
 
 	const space = await createLockedSpace(pageA, 'Locked team', 's3cret');
-	const boardSlug = await createBoardInSpace(pageA, space.slug, 'Sprint 1');
+	const { slug: boardSlug } = await createBoardInSpace(pageA, space.slug, 'Sprint 1');
 	await addCard(pageA, "Didn't Go Well", 'flaky tests');
 	await createBoardInSpace(pageA, space.slug, 'Sprint 2');
 	await addCard(pageA, "Didn't Go Well", 'flaky tests again');

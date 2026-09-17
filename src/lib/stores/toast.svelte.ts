@@ -4,9 +4,10 @@ export type ToastKind = 'info' | 'success' | 'error';
 
 // Действие — ссылка (href) или кнопка (onClick), хотя бы одно из двух.
 // После onClick подпись на 2 секунды сменяется на «Скопировано!» (см. Toasts.svelte).
+// external — ссылка уводит с сайта (задача в Битрикс24): новая вкладка, rel="noopener".
 export type ToastAction =
-	| { label: string; href: string; onClick?: () => void | Promise<void> }
-	| { label: string; href?: string; onClick: () => void | Promise<void> };
+	| { label: string; href: string; onClick?: () => void | Promise<void>; external?: boolean }
+	| { label: string; href?: string; onClick: () => void | Promise<void>; external?: boolean };
 
 export interface ToastInput {
 	kind: ToastKind;

@@ -56,6 +56,7 @@ const spaces = pgTable('spaces', {
 	passwordHash: text('password_hash').notNull(),
 	creatorToken: text('creator_token').notNull().default(''),
 	lastFormat: text('last_format'),
+	accessToken: text('access_token').notNull().default(sql`gen_random_uuid()::text`),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -85,6 +86,8 @@ const cards = pgTable('cards', {
 	content: text('content').notNull(),
 	authorName: text('author_name'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
+	bitrixTaskId: integer('bitrix_task_id'),
+	bitrixTaskUrl: text('bitrix_task_url'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -371,16 +374,23 @@ bus.on('space', ({ spaceSlug, event, payload }) => {
 	io.to(`space:${spaceSlug}`).emit(event, payload);
 });
 
+// Канал доски: экшен createTask сообщает всем на доске о созданной задаче (card:task).
+// Комната доски — её slug без префикса, как в board:join.
+bus.on('board', ({ boardSlug, event, payload }) => {
+	if (typeof boardSlug !== 'string' || !boardSlug || typeof event !== 'string') return;
+	io.to(boardSlug).emit(event, payload);
+});
+
 io.on('connection', (socket) => {
 	metrics.wsConnections++;
 	let currentRoom = null;
 	let socketCreatorToken = '';
-	// Комната пространства: только статус AI-анализа, содержимого досок в ней нет,
-	// поэтому проверок доступа не делаем — slug пространства и так неугадываем
+	// Комната пространства: только статус AI-анализа. Пространство без пароля защищено
+	// неугадываемой ссылкой, пространство с паролем проверяется в space:join ниже
 	let currentSpace = null;
 
-	// Пространство с паролем: в комнату пускаем только с cookie доступа или
-	// cookie создателя (те же правила, что у страницы). Статус анализа несёт
+	// Пространство с паролем: в комнату пускаем только с cookie доступа, равной
+	// spaces.access_token, или cookie создателя (те же правила, что у страницы). Статус анализа несёт
 	// slug доски-анализа, а он должен быть виден лишь тем, кто прошёл пароль.
 	// ack: клиент запрашивает состояние по HTTP только после входа в комнату,
 	// иначе событие между fetch и join терялось бы.
@@ -393,7 +403,10 @@ io.on('connection', (socket) => {
 			if (space.passwordHash) {
 				const jar = parseCookies(socket.handshake?.headers?.cookie);
 				const creator = !!space.creatorToken && jar[`retro_space_creator_${slug}`] === space.creatorToken;
-				if (!creator && !jar[`retro_space_${slug}`]) return;
+				// Дубль равенства из canViewSpace (src/lib/server/space-access.ts): server.js
+				// не импортирует src/, меняйте обе строки вместе
+				const access = !!space.accessToken && jar[`retro_space_${slug}`] === space.accessToken;
+				if (!creator && !access) return;
 			}
 			if (currentSpace) socket.leave(`space:${currentSpace}`);
 			currentSpace = slug;
@@ -736,6 +749,15 @@ io.on('connection', (socket) => {
 		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
 		roomFocus.delete(currentRoom);
 		io.to(currentRoom).emit('focus:state', { cardId: null, endTime: null, duration: null, discussed: [] });
+	});
+
+	// --- Битрикс24: открыли преформу задачи — только счётчик ---
+	// В имя метрики попадает лишь значение из белого списка, клиентская строка — никогда
+	socket.on('bitrix:opened', (payload) => {
+		const source = payload?.source;
+		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
+		if (source !== 'card' && source !== 'summary') return;
+		metric('retro.bitrix.task.opened.' + source, 1);
 	});
 
 	socket.on('disconnect', () => {

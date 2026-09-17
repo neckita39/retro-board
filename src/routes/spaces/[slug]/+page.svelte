@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy, untrack } from 'svelte';
+	import { onMount, onDestroy, untrack, tick } from 'svelte';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { afterNavigate, invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import Header from '$lib/components/Header.svelte';
 	import SpacePasswordForm from '$lib/components/SpacePasswordForm.svelte';
+	import BitrixPanel from '$lib/components/BitrixPanel.svelte';
 	import SpaceBoardGrid from '$lib/components/SpaceBoardGrid.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import NewBoardModal from '$lib/components/NewBoardModal.svelte';
@@ -16,6 +18,7 @@
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
 	import { truncatedTitle } from '$lib/actions/truncated-title.js';
+	import { panelSuccessKey } from '$lib/bitrix-panel.js';
 
 	let { data, form } = $props();
 
@@ -80,6 +83,29 @@
 	let passwordOpen = $state(false);
 	let passwordShaking = $state(false);
 	let passwordSuccess = $state('');
+	let bitrixOpen = $state(false);
+	let bitrixSuccessKey = $state<string | null>(null);
+	let bitrixSuccessTimer: ReturnType<typeof setTimeout> | undefined;
+
+	// Подключено и работает — на триггере галочка вместо глифа-ссылки (заметка 1 макета)
+	let bitrixConnected = $derived(!!data.bitrix && !data.bitrix.lastError);
+
+	// Открыта одна панель за раз: Битрикс24 сворачивает пароль и наоборот
+	function openBitrix() {
+		bitrixOpen = true;
+		passwordOpen = false;
+	}
+
+	function toggleBitrix() {
+		if (bitrixOpen) bitrixOpen = false;
+		else openBitrix();
+	}
+
+	function togglePassword() {
+		passwordOpen = !passwordOpen;
+		if (passwordOpen) bitrixOpen = false;
+	}
+
 	let renaming = $state(false);
 	let renameValue = $state('');
 	let renameForm: HTMLFormElement | undefined = $state();
@@ -148,6 +174,30 @@
 				setTimeout(() => (passwordShaking = false), 600);
 			}
 		}
+	});
+
+	// Ответ экшенов Битрикс24, как у пароля: успех — бейдж у заголовка на 2,5 с;
+	// ошибка — панель должна быть видна (её могли свернуть, пока шёл запрос).
+	// Текст ошибки, рамку и shake рисует сама панель
+	$effect(() => {
+		if (!form?.bitrixAction) return;
+		if (form.bitrixSuccess) {
+			clearTimeout(bitrixSuccessTimer);
+			bitrixSuccessKey = panelSuccessKey(form.bitrixAction);
+			bitrixSuccessTimer = setTimeout(() => (bitrixSuccessKey = null), 2500);
+		} else if (form.bitrixError) {
+			openBitrix();
+		}
+	});
+
+	// Пункт «Подключить Битрикс24» в меню доски ведёт сюда с ?bitrix=1: панель
+	// раскрыта, фокус в поле вебхука. tick — дождаться снятия inert;
+	// preventScroll — поле внутри раскрывающегося collapsible с overflow:hidden
+	onMount(async () => {
+		if (!data.isCreator || page.url.searchParams.get('bitrix') !== '1') return;
+		openBitrix();
+		await tick();
+		document.getElementById('bitrix-webhook')?.focus({ preventScroll: true });
 	});
 
 	async function deleteSpace() {
@@ -242,6 +292,9 @@
 									{t(passwordSuccess === 'enabled' ? 'space.password.enabled' : 'space.password.disabled')}
 								</span>
 							{/if}
+							{#if bitrixSuccessKey}
+								<span class="badge badge-success badge-pop shrink-0">{t(bitrixSuccessKey)}</span>
+							{/if}
 						</div>
 						{#if spaceCreatedAt}
 							<p class="text-[15px] text-text-secondary">
@@ -250,7 +303,7 @@
 						{/if}
 					</div>
 					{#if data.isCreator}
-						<div class="flex items-center gap-3">
+						<div class="flex flex-wrap items-center gap-3">
 							{#if deleteConfirming}
 								<span class="text-[13px] text-text-secondary">{t('space.delete.confirm')}</span>
 								<button onclick={deleteSpace} class="btn btn-danger btn-md">
@@ -260,16 +313,34 @@
 									{t('card.cancel')}
 								</button>
 							{:else}
+								<!-- Битрикс24 — кнопка, а не тумблер: у подключения нет «вкл/выкл» без данных.
+								     Ряд 38px: [Битрикс24 ⌄] [Пароль ◯] [🗑] -->
+								<button
+									type="button"
+									onclick={toggleBitrix}
+									class="btn btn-secondary btn-md pr-3.5"
+									aria-expanded={bitrixOpen}
+									aria-controls="bitrix-panel"
+									data-testid="bitrix-panel-toggle"
+								>
+									{#if bitrixConnected}
+										<svg class="h-4 w-4 shrink-0 text-well" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+									{:else}
+										<svg class="h-4 w-4 shrink-0 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+									{/if}
+									{t('bitrix.panel.toggle')}
+									<svg class="h-3.5 w-3.5 shrink-0 text-text-muted transition-transform duration-200 {bitrixOpen ? 'rotate-180' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+								</button>
 								<!-- Переключатель показывает то состояние, которое панель ниже собирается
 								     подтвердить: открыли панель — тумблер уже «после» смены -->
 								<ToggleSwitch
 									checked={passwordOpen ? !data.hasPassword : data.hasPassword}
 									label={t('space.password.toggle')}
-									onchange={() => (passwordOpen = !passwordOpen)}
+									onchange={togglePassword}
 								/>
 								<!-- Delete button -->
 								<button
-									onclick={() => { deleteConfirming = true; passwordOpen = false; }}
+									onclick={() => { deleteConfirming = true; passwordOpen = false; bitrixOpen = false; }}
 									class="btn-icon btn-icon-lg btn-icon-bordered hover:bg-bad-bg hover:text-bad"
 									title={t('space.delete')}
 									aria-label={t('space.delete')}
@@ -345,6 +416,13 @@
 					</div>
 					</div>
 					</div>
+					<BitrixPanel
+						bitrix={data.bitrix ?? null}
+						encryptionEnabled={data.encryptionEnabled ?? false}
+						{form}
+						open={bitrixOpen}
+						onclose={() => (bitrixOpen = false)}
+					/>
 				{/if}
 				</div>
 

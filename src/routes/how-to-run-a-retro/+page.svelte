@@ -2,6 +2,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Seo from '$lib/components/Seo.svelte';
 	import JsonLd from '$lib/components/JsonLd.svelte';
+	import FormatTile from '$lib/components/FormatTile.svelte';
 	import { t } from '$lib/i18n/index.js';
 	import { GUIDE_INTRO, GUIDE_STEPS, GUIDE_MISTAKES, GUIDE_FAQ } from '$lib/content/guide.js';
 	import { FORMATS } from '$lib/content/formats.js';
@@ -90,15 +91,9 @@
 		<section class="flex flex-col gap-4">
 			<h2 class="font-heading text-[21px] font-bold text-text-primary">{t('guide.section.formats')}</h2>
 			<p class="text-[16px] leading-[1.7] text-text-primary">{t('guide.formats.desc')}</p>
-			<div class="grid gap-3 sm:grid-cols-2">
+			<div class="grid gap-3">
 				{#each FORMATS as format (format.slug)}
-					<a
-						href="/formats/{format.slug}"
-						class="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-card p-5 transition-colors hover:bg-surface-hover"
-					>
-						<span class="font-heading text-[16px] font-bold text-text-primary">{txt(format.name)}</span>
-						<span class="text-sm leading-relaxed text-text-secondary">{txt(format.tagline)}</span>
-					</a>
+					<FormatTile {format} />
 				{/each}
 			</div>
 		</section>

@@ -20,7 +20,25 @@ export interface Card {
 	imageId: string | null;
 	imageWidth: number | null;
 	imageHeight: number | null;
+	/** Задача Битрикс24, созданная из карточки; null — задачи нет */
+	bitrixTaskId: number | null;
+	bitrixTaskUrl: string | null;
 	createdAt: string;
+}
+
+/** Задача Битрикс24 карточки: id на портале и готовая ссылка на неё */
+export interface CardTask {
+	id: number;
+	url: string;
+}
+
+/** Подключение Битрикс24 пространства для преформы на доске — без секрета вебхука */
+export interface BitrixInfo {
+	spaceSlug: string;
+	portal: string;
+	userName: string;
+	groupId: number | null;
+	groupName: string | null;
 }
 
 export interface Vote {

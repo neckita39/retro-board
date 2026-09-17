@@ -15,6 +15,8 @@ const cardRows = [
 		content: 'CI is green',
 		authorName: 'Maria',
 		imageId: 'img-1',
+		bitrixTaskId: null,
+		bitrixTaskUrl: null,
 		createdAt: new Date('2026-07-01T10:00:00Z')
 	},
 	{
@@ -23,6 +25,8 @@ const cardRows = [
 		content: 'Fewer meetings',
 		authorName: null,
 		imageId: null,
+		bitrixTaskId: null,
+		bitrixTaskUrl: null,
 		createdAt: new Date('2026-07-01T11:00:00Z')
 	}
 ];
@@ -103,7 +107,7 @@ describe('toMarkdown', () => {
 describe('экспорт не-классического формата', () => {
 	const sailboat = { ...board, format: 'sailboat' };
 	const rows = [
-		{ id: 'c1', columnType: 'rocks', content: 'legacy auth expires', authorName: null, imageId: null, createdAt: new Date('2026-07-01T10:00:00Z') }
+		{ id: 'c1', columnType: 'rocks', content: 'legacy auth expires', authorName: null, imageId: null, bitrixTaskId: null, bitrixTaskUrl: null, createdAt: new Date('2026-07-01T10:00:00Z') }
 	];
 
 	it('ключи JSON — колонки формата в его порядке', () => {
@@ -120,5 +124,34 @@ describe('экспорт не-классического формата', () => 
 		expect(en).not.toContain('## Went Well');
 		const ru = toMarkdown(assembleExport(sailboat, rows, [], [], ORIGIN), 'ru');
 		expect(ru).toContain('## Рифы');
+	});
+});
+
+describe('задача Битрикс24 в экспорте', () => {
+	const TASK_URL = 'https://bitrix24.team/workgroups/group/2014/tasks/task/view/745181/';
+	const rows = [{ ...cardRows[0], bitrixTaskId: 745181, bitrixTaskUrl: TASK_URL }, cardRows[1]];
+
+	it('JSON: у карточки с задачей task = { id, url }, у карточки без задачи — null', () => {
+		const data = assembleExport(board, rows, [], [], ORIGIN);
+		expect(data.columns.went_well[0].task).toEqual({ id: 745181, url: TASK_URL });
+		expect(data.columns.improve[0].task).toBeNull();
+	});
+
+	it('JSON: id без ссылки задачей не считается', () => {
+		const data = assembleExport(board, [{ ...cardRows[1], bitrixTaskId: 7, bitrixTaskUrl: null }], [], [], ORIGIN);
+		expect(data.columns.improve[0].task).toBeNull();
+	});
+
+	it('Markdown: строка со ссылкой под карточкой — после картинки, перед комментариями', () => {
+		const md = toMarkdown(assembleExport(board, rows, [], commentRows, ORIGIN), 'en');
+		expect(md).toContain(
+			`- CI is green — *Maria*\n  ![image](https://x.test/api/image/img-1)\n  [Task #745181](${TASK_URL})\n  - Huge relief! — *Peter*\n`
+		);
+		expect(md.match(/\[Task #/g)).toHaveLength(1);
+	});
+
+	it('Markdown: подпись строки задачи на русском', () => {
+		const md = toMarkdown(assembleExport(board, rows, [], [], ORIGIN), 'ru');
+		expect(md).toContain(`  [Задача #745181](${TASK_URL})\n`);
 	});
 });
