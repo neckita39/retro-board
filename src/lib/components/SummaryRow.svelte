@@ -1,7 +1,9 @@
 <script lang="ts">
 	import CommentList from './CommentList.svelte';
 	import FocusTimer from './FocusTimer.svelte';
+	import TaskBadge from './TaskBadge.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
+	import { bitrixTaskStore } from '$lib/stores/bitrix-task.svelte.js';
 	import type { Card } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -44,6 +46,10 @@
 	// возражения: она объясняет, почему число разошлось с лайками. Без дизлайков
 	// «7 (7/-0)» — лишний шум, и так видно, что это семь лайков.
 	let scoreLabel = $derived(dislikes > 0 ? `${score} (${likes}/-${dislikes})` : `${score}`);
+
+	let task = $derived(
+		card.bitrixTaskId && card.bitrixTaskUrl ? { id: card.bitrixTaskId, url: card.bitrixTaskUrl } : null
+	);
 
 	// Строка сама подъезжает под взгляд, когда обсуждение доходит до неё
 	$effect(() => {
@@ -138,15 +144,19 @@
 			{/if}
 
 			{#if !focused}
+				<!-- При нехватке места первым уступает автор: у него нет shrink-0 -->
 				{#if card.authorName}
-					<span class="max-w-28 shrink-0 truncate text-[13px] text-text-muted">{card.authorName}</span>
+					<span class="min-w-0 max-w-28 truncate text-[13px] text-text-muted">{card.authorName}</span>
+				{/if}
+				{#if task}
+					<TaskBadge {task} size="sm" />
 				{/if}
 				{@render commentPill()}
 			{/if}
 		</div>
 
 		{#if focused}
-			<div class="mt-3 flex items-center gap-2 border-t border-border pt-2.5">
+			<div class="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-2.5">
 				{#if canControl}
 					<button onclick={onPrev} disabled={!hasPrev} class="btn btn-secondary btn-sm">
 						&larr; {t('focus.prev')}
@@ -162,6 +172,22 @@
 							{t('focus.stop')}
 						</button>
 					{/if}
+					<!-- «В задачу» открывает преформу, обсуждение и FocusTimer идут дальше.
+					     «Далее →» остаётся единственной терракотой -->
+					{#if boardStore.bitrix && !card.bitrixTaskId}
+						<button
+							onclick={() => bitrixTaskStore.open(card.id, 'summary')}
+							class="btn btn-secondary btn-sm pointer-events-auto"
+							data-testid="summary-task-button"
+						>
+							<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="m9 12 2 2 4-4" /></svg>
+							{t('bitrix.summary.create')}
+						</button>
+					{/if}
+				{/if}
+				<!-- После создания на том же месте бейдж 32, у всех участников -->
+				{#if task}
+					<TaskBadge {task} />
 				{/if}
 				<span class="ml-auto flex">{@render commentPill()}</span>
 			</div>

@@ -2,6 +2,7 @@
 	import Column from './Column.svelte';
 	import CardForm from './CardForm.svelte';
 	import Summary from './Summary.svelte';
+	import BitrixTaskModal from './BitrixTaskModal.svelte';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { TONE, ANALYSIS_FORMAT } from '$lib/formats.js';
 	import { txt } from '$lib/content/localized.js';
@@ -62,3 +63,6 @@
 <div class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface-card px-4 pb-[max(env(safe-area-inset-bottom),0.875rem)] pt-3 md:hidden">
 	<CardForm column={active} variant="composer" />
 </div>
+
+<!-- Преформа задачи Битрикс24: одна на доску, открывается из карточки и из Итогов -->
+<BitrixTaskModal />

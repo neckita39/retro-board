@@ -232,6 +232,25 @@ html {
 		       text-sm text-bad-strong;
 	}
 	.error-box-sm { @apply px-2.5 py-1.5 text-[13px]; }
+
+
+	/* ---------- TOOLTIPS ---------- */
+
+	/* Подсказка иконок карточки (заметка макета 11). Та же идиома, что у FocusTimer:
+	   чернильная плашка 13px под группой иконок, прижатая к её правому краю.
+	   relative стоит на группе, у самой кнопки позиции нет. Текст берётся из
+	   aria-label: он не дублируется в DOM и не попадает в текст карточки */
+	.icon-tip::after {
+		@apply pointer-events-none absolute right-0 top-full z-30 mt-1.5 whitespace-nowrap rounded-xl
+		       bg-text-primary px-3 py-2 text-[13px] font-normal leading-snug text-surface shadow-1
+		       opacity-0 transition-opacity duration-150;
+		content: attr(aria-label);
+	}
+	/* На таче ховер «залипает» после тапа, поэтому только для устройств с настоящим ховером */
+	@media (hover: hover) {
+		.icon-tip:hover::after { @apply opacity-100; }
+	}
+	.icon-tip:focus-visible::after { @apply opacity-100; }
 }
 
 body {
