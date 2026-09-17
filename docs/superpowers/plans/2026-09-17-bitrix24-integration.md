@@ -14,7 +14,7 @@
 
 - Только токены дизайн-системы (`DESIGN-SYSTEM.md`): радиусы 8/12/16/24/full, высоты 28/32/38/54, тени `shadow-1`/`shadow-2` или 1px `border-border`, никаких сырых цветов, тинтов, градиентов и `shadow-*` Tailwind.
 - Все пользовательские строки через `t('key')` (клиент) / `translate(locale, key)` (сервер и чистые модули); каждый ключ добавляется и в `src/lib/i18n/en.json`, и в `src/lib/i18n/ru.json` — `dictionaries.test.ts` ловит рассинхрон.
-- Слово «вебхук» допустимо только в панели пространства.
+- Слово «вебхук» допустимо только в панели пространства и в модальных текстах `bitrix.error.invalid_webhook` / `bitrix.error.scope`, которые задаёт Секция 2 спеки.
 - Секрет вебхука никогда не попадает в логи, сообщения ошибок, метрики, page data, экспорт, сокет.
 - Bitrix-вызовы: только POST + JSON, `redirect: 'manual'`, таймаут 15 с (30 с для загрузки файла), ошибка определяется по ключу `error` в теле, не по статусу.
 - `server.js` держит свою копию схемы: новые колонки `cards`/`spaces` добавляются и в `src/lib/server/db/schema.ts`, и в `server.js`.
@@ -60,7 +60,7 @@
 | `docker-compose.yml`, `.env.example` | `ENCRYPTION_KEY` локально, флаги | 11 |
 | `src/routes/changelog/+page.svelte`, `CLAUDE.md`, `DESIGN-SYSTEM.md` | документация, финальная проверка | 12 |
 
-Порядок зависимостей: 1 → 2 → 3 → 4 → 5 → 6; 7 после 1; 8 после 4, 5, 7; 9 после 1; 10 после 7, 8, 9; 11 после 10; 12 последней.
+Порядок зависимостей: 1 → 2 → 3 → 4 → 5 → 6; 7 после 1; 8 после 4, 5, 7; 9 после 1; 10 после 6, 7, 8, 9; 11 после 10; 12 после 11; 13 последней (фоны плиток форматов, добавлена по просьбе пользователя).
 
 ## Контракт имён (обязателен для всех задач)
 
@@ -347,8 +347,9 @@ export async function createTaskFlow(deps: CreateTaskDeps): Promise<CreateTaskOu
 - **Владение ключами i18n** (каждая задача добавляет в `en.json` и `ru.json` только свои ключи, тексты берутся из списка выше):
   - задача 1: `apiExport.task`;
   - задача 6: `bitrix.panel.*`, все `bitrix.error.*` (включая `_panel`-варианты), `bitrix.menu.connect`;
-  - задача 9: `bitrix.draft.*` (`bitrix.draft.votes` = `голос: {n}|голоса: {n}|голосов: {n}` → лучше `{n} голос|{n} голоса|{n} голосов`, EN `{n} vote|{n} votes`; `against` аналогично);
+  - задача 9: `bitrix.draft.*` (`bitrix.draft.votes` = `голос: {n}|голоса: {n}|голосов: {n}` → лучше `{n} голос|{n} голоса|{n} голосов`, EN `{n} vote|{n} votes`; `against` — «против: {n}» без форм множественного числа);
   - задача 10: `bitrix.card.*`, `bitrix.form.*`, `bitrix.summary.*`, `bitrix.toast.*`.
+- **Ключи тостов:** `bitrix.toast.forbidden/notFound` из спеки заменены на `bitrix.error.forbidden/not_found`; `bitrix.toast.error` — тост для `result.type === 'error'` (решение C9).
 - **Тесты без БД.** Юнит-тесты — только чистые модули (`bitrix.ts` через `fetchFn`, `bitrix-flows.ts` через deps, `bitrix-draft.ts`, `bus.ts`, `crypto.ts`, `space-access.ts` через фейковые cookies, `export.ts`). Экшены и эндпоинты — тонкие обёртки, их покрывает e2e (задача 11).
 - **Команды:** `npm test` (все юнит-тесты), `npx vitest run src/lib/server/bitrix.test.ts` (один файл), `npm run check`, `npm run build`, e2e `docker compose up -d db && npm run test:e2e` (или `npx playwright test e2e/bitrix.spec.ts`).
 
@@ -377,7 +378,7 @@ export async function createTaskFlow(deps: CreateTaskDeps): Promise<CreateTaskOu
 **Задача 5**
 
 - src/lib/server/bitrix-connection.ts: export function toConnection(row: typeof spaceBitrix.$inferSelect, decryptFn: (data: string) => string | null, allowHttpUrls?: boolean): BitrixConnection — чистое преобразование строки в подключение (decrypt → parseWebhookUrl, иначе webhook: null); loadConnection передаёт decrypt и process.env.BITRIX_ALLOW_HTTP === '1'
-- Переменная окружения BITRIX_LIMIT_MULTIPLIER (целое >= 1, по умолчанию 1; мусор, 0 и дроби → 1): читается в bitrix-limits.ts при импорте и умножает max у connectLimiter, groupLimiter, createIpLimiter и createSpaceLimiter. Только для e2e: задача 11 добавляет BITRIX_LIMIT_MULTIPLIER: '100' в env вебсервера приложения в playwright.config.ts (весь прогон идёт с одного IP, больше 5 подключений в минуту иначе получат rate_limited); в прод не ставится, в .env.example — по желанию задачи 11 одной строкой
+- ~~BITRIX_LIMIT_MULTIPLIER~~ — снято решением C1 предполётной проверки: e2e разводит лимиты заголовком x-forwarded-for, флаг не нужен.
 - Семантика publicInfo (сигнатура не меняется): lastError = c.lastError ?? (c.webhook ? null : 'invalid_webhook') — нерасшифрованный вебхук показывается панели как invalid_webhook
 - Семантика statusForKind: 'invalid_url' → 422 (в таблице статусов спеки вида нет)
 - Семантика parseTaskForm (сигнатура не меняется): cardId обязан быть UUID и приводится к нижнему регистру; в description \r\n и \r заменяются на \n до проверки лимита 20 000; значения-файлы считаются пустыми полями. parseGroupId принимает только 1..2147483647 (integer в Postgres)
