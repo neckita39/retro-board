@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('$app/environment', () => ({ browser: false }));
 
 import { boardStore } from './board.svelte.js';
-import type { Board, Card, Vote, Comment } from '$lib/types.js';
+import type { Board, Card, Vote, Comment, CardTask, BitrixInfo } from '$lib/types.js';
 
 const board: Board = {
 	id: 'b1',
@@ -300,5 +300,63 @@ describe('BoardStore', () => {
 			comments: []
 		});
 		expect(boardStore.getColumnCards('went_well', 'votes').map((c) => c.id)).toEqual(['c2', 'c1']);
+	});
+});
+
+describe('BoardStore — Битрикс24', () => {
+	const task: CardTask = { id: 745181, url: 'https://portal.bitrix24.ru/workgroups/group/2014/tasks/task/view/745181/' };
+	const info: BitrixInfo = {
+		spaceSlug: 'space-1',
+		portal: 'portal.bitrix24.ru',
+		userName: 'Никита Щербо',
+		groupId: 2014,
+		groupName: 'Платформа'
+	};
+
+	it('setBitrix выставляет подключение и предложение подключить, null сбрасывает', () => {
+		boardStore.setBitrix(info, false);
+		expect(boardStore.bitrix).toEqual(info);
+		expect(boardStore.bitrixOffer).toBe(false);
+
+		boardStore.setBitrix(null, true);
+		expect(boardStore.bitrix).toBeNull();
+		expect(boardStore.bitrixOffer).toBe(true);
+	});
+
+	it('setTask проставляет id и ссылку только своей карточке', () => {
+		boardStore.addCard(makeCard({ id: 'c1' }));
+		boardStore.addCard(makeCard({ id: 'c2' }));
+
+		boardStore.setTask('c1', task);
+
+		expect(boardStore.cards.find((c) => c.id === 'c1')).toMatchObject({ bitrixTaskId: 745181, bitrixTaskUrl: task.url });
+		expect(boardStore.cards.find((c) => c.id === 'c2')).toMatchObject({ bitrixTaskId: null, bitrixTaskUrl: null });
+	});
+
+	it('setTask не мутирует прежний объект карточки и не трогает остальные поля', () => {
+		boardStore.addCard(makeCard({ id: 'c1', content: 'Созвоны по часу' }));
+		const before = boardStore.cards[0];
+
+		boardStore.setTask('c1', task);
+
+		expect(before.bitrixTaskId).toBeNull();
+		expect(boardStore.cards[0]).not.toBe(before);
+		expect(boardStore.cards[0].content).toBe('Созвоны по часу');
+	});
+
+	it('setTask для неизвестной карточки и повтор той же задачи не пересоздают массив', () => {
+		boardStore.addCard(makeCard({ id: 'c1' }));
+
+		const initial = boardStore.cards;
+		boardStore.setTask('gone', task);
+		expect(boardStore.cards).toBe(initial);
+
+		boardStore.setTask('c1', task);
+		const patched = boardStore.cards;
+		expect(patched).not.toBe(initial);
+
+		// Создатель получает задачу дважды: из ответа экшена и по сокету card:task
+		boardStore.setTask('c1', task);
+		expect(boardStore.cards).toBe(patched);
 	});
 });

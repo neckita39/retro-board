@@ -3,6 +3,7 @@ import { boardStore } from './board.svelte.js';
 import { toastStore } from './toast.svelte.js';
 import { t } from '$lib/i18n/index.js';
 import { analysisTransition, PENDING_STALE_MS, type AnalysisState } from '$lib/analysis-state.js';
+import type { CardTask } from '$lib/types.js';
 
 class SocketStore {
 	socket = $state<Socket | null>(null);
@@ -75,6 +76,11 @@ class SocketStore {
 
 		this.socket.on('comment:created', ({ comment }) => {
 			boardStore.addComment(comment);
+		});
+
+		// Задачу Битрикс24 создал ведущий: бейдж появляется у всех без перезагрузки
+		this.socket.on('card:task', ({ cardId, task }: { cardId: string; task: CardTask }) => {
+			boardStore.setTask(cardId, task);
 		});
 
 		this.socket.on('users:count', ({ count }) => {
@@ -240,6 +246,12 @@ class SocketStore {
 
 	createComment(cardId: string, content: string, authorName?: string, imageId?: string) {
 		this.socket?.emit('comment:create', { cardId, content, authorName, imageId });
+	}
+
+	/** Счётчик открытий преформы задачи. Токен тот же, что ушёл в board:join, —
+	 *  сервер считает только создателя комнаты и только известный source */
+	trackTaskOpened(source: 'card' | 'summary') {
+		this.socket?.emit('bitrix:opened', { source, creatorToken: this.currentCreatorToken });
 	}
 
 	disconnect() {

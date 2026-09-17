@@ -1,4 +1,4 @@
-import type { Board, Card, Vote, Comment, BoardState } from '$lib/types.js';
+import type { Board, Card, Vote, Comment, BoardState, BitrixInfo, CardTask } from '$lib/types.js';
 import { findBoardFormat, type BoardColumn, type BoardFormat } from '$lib/formats.js';
 
 class BoardStore {
@@ -7,6 +7,10 @@ class BoardStore {
 	votes = $state<Vote[]>([]);
 	comments = $state<Comment[]>([]);
 	isCreator = $state(false);
+	/** Подключение Битрикс24 для преформы задачи; null — доска вне пространства, нет прав или не подключено */
+	bitrix = $state<BitrixInfo | null>(null);
+	/** Пункт меню «Подключить Битрикс24»: только создателю пространства, пока не подключено */
+	bitrixOffer = $state(false);
 
 	setState(data: BoardState) {
 		this.board = data.board;
@@ -25,6 +29,21 @@ class BoardStore {
 
 	updateCard(updated: Card) {
 		this.cards = this.cards.map((c) => (c.id === updated.id ? updated : c));
+	}
+
+	setBitrix(info: BitrixInfo | null, offer: boolean) {
+		this.bitrix = info;
+		this.bitrixOffer = offer;
+	}
+
+	/** Задача Битрикс24 у карточки. Создатель получает её дважды — из ответа экшена
+	 *  и по сокету card:task, — второй раз массив не пересоздаём */
+	setTask(cardId: string, task: CardTask) {
+		const card = this.cards.find((c) => c.id === cardId);
+		if (!card || (card.bitrixTaskId === task.id && card.bitrixTaskUrl === task.url)) return;
+		this.cards = this.cards.map((c) =>
+			c.id === cardId ? { ...c, bitrixTaskId: task.id, bitrixTaskUrl: task.url } : c
+		);
 	}
 
 	removeCard(cardId: string) {

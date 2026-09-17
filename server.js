@@ -374,6 +374,13 @@ bus.on('space', ({ spaceSlug, event, payload }) => {
 	io.to(`space:${spaceSlug}`).emit(event, payload);
 });
 
+// Канал доски: экшен createTask сообщает всем на доске о созданной задаче (card:task).
+// Комната доски — её slug без префикса, как в board:join.
+bus.on('board', ({ boardSlug, event, payload }) => {
+	if (typeof boardSlug !== 'string' || !boardSlug || typeof event !== 'string') return;
+	io.to(boardSlug).emit(event, payload);
+});
+
 io.on('connection', (socket) => {
 	metrics.wsConnections++;
 	let currentRoom = null;
@@ -742,6 +749,15 @@ io.on('connection', (socket) => {
 		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
 		roomFocus.delete(currentRoom);
 		io.to(currentRoom).emit('focus:state', { cardId: null, endTime: null, duration: null, discussed: [] });
+	});
+
+	// --- Битрикс24: открыли преформу задачи — только счётчик ---
+	// В имя метрики попадает лишь значение из белого списка, клиентская строка — никогда
+	socket.on('bitrix:opened', (payload) => {
+		const source = payload?.source;
+		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
+		if (source !== 'card' && source !== 'summary') return;
+		metric('retro.bitrix.task.opened.' + source, 1);
 	});
 
 	socket.on('disconnect', () => {
