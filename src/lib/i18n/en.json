@@ -8,6 +8,7 @@
 	"home.join": "Already have a board link?",
 	"home.join.placeholder": "Paste a link or board code",
 	"home.join.button": "Join",
+
 	"home.hero.badge1": "Open source",
 	"home.hero.badge2": "No signup",
 	"home.hero.title1": "Retrospectives,",
@@ -34,6 +35,7 @@
 	"home.mock.card4": "Quiet hours without meetings",
 	"home.mock.add": "+ Add",
 	"home.mock.names": "Boris,Irina,Timur,Roman,Igor,Xenia",
+
 	"new.title": "What are we creating?",
 	"new.subtitle": "No signup — the link appears right after creation.",
 	"new.board.title": "Board",
@@ -51,18 +53,21 @@
 	"format.recommended": "Recommended",
 	"format.classic.name": "Classic",
 	"format.classic.desc": "Went well, didn't go well, to improve. Not sure where to start? Take this one.",
+
 	"nav.features": "Features",
 	"nav.formats": "Formats",
 	"nav.guide": "How to run",
 	"nav.changelog": "Changelog",
 	"nav.api": "API",
 	"nav.feedback": "Feedback",
+
 	"nav.about": "About",
 	"nav.privacy": "Privacy",
 	"header.brand": "Retrospectrix",
 	"header.menu": "Menu",
 	"header.share": "Share",
 	"header.share.copied": "Copied ✓",
+
 	"column.went_well": "Went Well",
 	"column.didnt_go_well": "Didn't Go Well",
 	"column.improve": "To Improve",
@@ -72,6 +77,7 @@
 	"column.cards": "{n} card|{n} cards",
 	"column.sort.votes": "Sort by votes",
 	"column.sort.newest": "Sort by newest",
+
 	"card.edit": "Edit",
 	"card.delete": "Delete",
 	"card.move": "Move to",
@@ -81,14 +87,17 @@
 	"toast.close": "Dismiss",
 	"card.add": "Add",
 	"card.addCard": "Add a card…",
+
 	"comment.placeholder": "Add a comment...",
 	"comment.send": "Send",
 	"comment.count": "{n} comment|{n} comments",
 	"comment.add": "Comment",
+
 	"summary.title": "Summary",
 	"summary.empty": "No cards yet. Add some cards to see the summary.",
 	"summary.photo": "Photo",
 	"summary.discussing": "Discussing · {n} of {total}",
+
 	"focus.start": "Discuss",
 	"focus.stop": "End discussion",
 	"focus.next": "Next",
@@ -97,15 +106,20 @@
 	"focus.discussed": "Discussed",
 	"focus.disabled": "Add cards to start a discussion",
 	"focus.maxim": "Any argument that cannot be settled in five minutes cannot be settled by arguing",
+
 	"timer.min": "min",
 	"timer.start": "Start",
 	"timer.stop": "Stop",
+
 	"user.online": "{n} online",
+
 	"tooltip.theme": "Theme",
 	"tooltip.locale": "Language",
+
 	"export.title": "Export",
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
+
 	"apiExport.exported": "Exported",
 	"apiExport.noCards": "No cards",
 	"apiExport.noBoards": "No boards yet",
@@ -114,6 +128,7 @@
 	"apiExport.likes": "{n} like|{n} likes",
 	"apiExport.dislikes": "{n} dislike|{n} dislikes",
 	"apiExport.task": "Task",
+
 	"bitrix.draft.fromRetro": "From retro “{board}” · column “{column}”",
 	"bitrix.draft.fromRetroNoColumn": "From retro “{board}”",
 	"bitrix.draft.fromAnalysis": "From AI analysis “{board}”",
@@ -123,7 +138,9 @@
 	"bitrix.draft.comments": "Comments:",
 	"bitrix.draft.anonymous": "Anonymous",
 	"bitrix.draft.photoCard": "Card from retro “{board}”",
+
 	"export.api": "API for agents",
+
 	"apiDocs.title": "API",
 	"apiDocs.subtitle": "Read-only access to boards for scripts and AI agents",
 	"apiDocs.intro": "Every board is addressable by its board code — the same code that is in the link you share with your team. No API keys, no signup: the board code is the access key.",
@@ -152,18 +169,22 @@
 	"apiDocs.params.password": "for a password-protected space: the password, in this header",
 	"apiDocs.limits.password": "Password-protected space without a password — 401, wrong password — 403",
 	"apiDocs.back": "← Back",
+
 	"board.rename": "Rename board",
 	"board.rename.label": "Board title",
 	"board.delete": "Delete Board",
 	"board.delete.confirm": "Delete board?",
+
 	"admin.banner.title": "Board created — share the link with your team.",
 	"admin.banner.copy": "Copy link",
+
 	"copy.title": "Link",
 	"copy.link": "Link",
 	"copy.code": "Board code",
 	"copy.admin": "Admin link",
 	"copy.share": "Share link",
 	"copy.copied": "Copied!",
+
 	"space.title": "Spaces",
 	"space.subtitle": "Group your retros in one place to track progress over time.",
 	"space.create": "Create Space",
@@ -273,12 +294,14 @@
 	"space.admin.title": "Space created — share the link with your team.",
 	"space.admin.copy": "Copy link",
 	"space.board_count": "{n} board|{n} boards",
+
 	"name.title": "How should we call you?",
 	"name.desc": "Your name will appear on your cards. Next: share the link, add cards and vote for what matters.",
 	"name.placeholder": "Your name",
 	"name.save": "Save",
 	"name.skip": "Skip",
 	"name.greeting": "Hi, {name}!",
+
 	"formats.seo.title": "Retrospective formats: 4 that actually work",
 	"formats.seo.description": "Start Stop Continue, Mad Sad Glad, 4L and Sailboat — how they differ, when to pick which, and how to facilitate each one. Free online retrospective board, no signup.",
 	"formats.heading": "Retrospective formats",
@@ -346,6 +369,7 @@
 	"changelog.heading": "What's new",
 	"changelog.subtitle": "The project evolves in the open — every change is here.",
 	"changelog.back": "← Back",
+
 	"feedback.title": "Send Feedback",
 	"feedback.subtitle": "Have a suggestion, found a bug, or just want to say hi?",
 	"feedback.name": "Your name",
@@ -359,6 +383,7 @@
 	"feedback.error": "Something went wrong. Try again.",
 	"feedback.link": "Feedback",
 	"feedback.close": "Close",
+
 	"image.attach": "Attach image",
 	"image.remove": "Remove image",
 	"image.uploading": "Uploading...",
