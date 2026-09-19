@@ -13,6 +13,16 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.19',
+			date: '2026-09-19',
+			title: { en: 'Search', ru: 'Поиск' },
+			changes: [
+				{ en: 'Search the board: press the magnifier in the header or just «/», and the cards that match light up while the rest fade — nothing is hidden, so you still see which column the answer is in', ru: 'Поиск по доске: нажмите лупу в шапке или просто «/» — подходящие карточки подсветятся, остальные погаснут. Ничего не прячется, поэтому видно, в какой колонке нашлось' },
+				{ en: 'The search looks inside comments and author names too, not just the card text', ru: 'Поиск смотрит и в комментарии, и в имена авторов, а не только в текст карточки' },
+				{ en: 'The API page now has its own search over the list of requests', ru: 'На странице API появился поиск по списку запросов' }
+			]
+		},
+		{
 			version: '1.18',
 			date: '2026-09-19',
 			title: { en: 'Small conveniences', ru: 'Мелкие удобства' },

@@ -7,6 +7,7 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
+	import { searchStore } from '$lib/stores/search.svelte.js';
 	import { localeStore } from '$lib/stores/locale.svelte.js';
 	import { toastStore } from '$lib/stores/toast.svelte.js';
 	import { t } from '$lib/i18n/index.js';
@@ -333,6 +334,16 @@
 						{/if}
 					{/if}
 				</div>
+
+				<button
+					onclick={() => searchStore.toggle()}
+					class="btn-icon btn-icon-lg btn-icon-bordered"
+					aria-label={t('search.open')}
+					title={t('search.open')}
+					data-testid="board-search-toggle"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+				</button>
 
 				<!-- Share: the one dark action in the row -->
 				<button onclick={share} class="btn btn-dark btn-md hidden md:inline-flex">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Column from './Column.svelte';
+	import BoardSearch from './BoardSearch.svelte';
 	import CardForm from './CardForm.svelte';
 	import Summary from './Summary.svelte';
 	import BitrixTaskModal from './BitrixTaskModal.svelte';
@@ -27,6 +28,8 @@
 	// На телефоне рамки нет: колонки идут во всю ширину и упираются в композер
 	let isAnalysis = $derived(boardStore.board?.format === ANALYSIS_FORMAT);
 </script>
+
+<BoardSearch />
 
 <!-- Mobile segment tabs -->
 <div class="flex gap-1.5 px-4 pb-1 pt-3 md:hidden">

@@ -2,6 +2,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Seo from '$lib/components/Seo.svelte';
 	import { t } from '$lib/i18n/index.js';
+	import { normalizeQuery } from '$lib/search.js';
 
 	interface Endpoint {
 		id: string;
@@ -60,6 +61,18 @@
 	const shortPath = (path: string) => path.replace('/api/v1/', '').replace(/\{[a-zA-Z]+\}/, '…');
 	const isMarkdown = (path: string) => path.endsWith('.md');
 
+	// Поиск по списку: эндпоинтов шесть, но ищут их по делу («markdown», «анализ»,
+	// «пространство»), а не глазами по путям. Ищем и по названию действия, и по адресу
+	let query = $state('');
+	let shown = $derived.by(() => {
+		const q = normalizeQuery(query);
+		if (!q) return endpoints;
+		return endpoints.filter((e) => {
+			const hay = normalizeQuery(`${t(e.titleKey)} ${t(e.descKey)} ${e.path}`);
+			return q.split(' ').every((word) => hay.includes(word));
+		});
+	});
+
 	let selectedId = $state('md');
 	let selected = $derived(endpoints.find((e) => e.id === selectedId) ?? endpoints[0]);
 	let copied = $state(false);
@@ -84,7 +97,19 @@
 		<!-- Endpoint list -->
 		<div class="flex flex-col gap-1.5">
 			<span class="px-3 pb-2 text-xs font-bold uppercase tracking-[0.08em] text-text-muted">{t('apiDocs.endpoints.title')}</span>
-			{#each endpoints as endpoint (endpoint.id)}
+			<div class="mb-1.5 flex items-center gap-2 rounded-xl border border-border bg-surface-card px-3">
+				<svg class="h-4 w-4 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+				<input
+					bind:value={query}
+					type="text"
+					maxlength="60"
+					placeholder={t('apiDocs.search')}
+					aria-label={t('apiDocs.search')}
+					class="h-9 min-w-0 flex-1 border-none bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+					data-testid="api-search"
+				/>
+			</div>
+			{#each shown as endpoint (endpoint.id)}
 				<button
 					onclick={() => (selectedId = endpoint.id)}
 					aria-pressed={selectedId === endpoint.id}
@@ -99,6 +124,9 @@
 					</span>
 				</button>
 			{/each}
+			{#if shown.length === 0}
+				<p class="px-3 py-2 text-sm text-text-muted" data-testid="api-search-none">{t('apiDocs.search.none')}</p>
+			{/if}
 		</div>
 
 		<!-- Endpoint details -->

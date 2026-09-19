@@ -7,6 +7,8 @@
 	import { lightboxStore } from '$lib/stores/lightbox.svelte.js';
 	import { dndStore } from '$lib/stores/dnd.svelte.js';
 	import { bitrixTaskStore } from '$lib/stores/bitrix-task.svelte.js';
+	import { searchStore } from '$lib/stores/search.svelte.js';
+	import { cardMatches } from '$lib/search.js';
 	import type { Card, ColumnType } from '$lib/types.js';
 	import { TONE } from '$lib/formats.js';
 	import { txt } from '$lib/content/localized.js';
@@ -24,6 +26,13 @@
 	let otherColumns = $derived(boardStore.columns.filter((c) => c.id !== card.columnType));
 
 	let commentCount = $derived(boardStore.getCardComments(card.id).length);
+
+	// Поиск: совпавшую карточку обводим, остальные гасим. Не прячем — на ретро
+	// важно видеть, в какой колонке нашлось и сколько всего в колонке
+	let dimmed = $derived(
+		searchStore.active && !cardMatches(card, boardStore.getCardComments(card.id), searchStore.query)
+	);
+	let hit = $derived(searchStore.active && !dimmed);
 
 	let task = $derived(
 		card.bitrixTaskId && card.bitrixTaskUrl ? { id: card.bitrixTaskId, url: card.bitrixTaskUrl } : null
@@ -104,9 +113,12 @@
 	draggable={!editing}
 	ondragstart={handleDragStart}
 	ondragend={() => dndStore.end()}
+	data-search-hit={hit ? 'true' : undefined}
 	class="card-board card-interactive overflow-hidden transition-[opacity,transform] duration-200 {editing
 		? ''
-		: 'cursor-grab active:cursor-grabbing'} {dragging ? 'rotate-1 scale-[0.97] opacity-40' : ''}"
+		: 'cursor-grab active:cursor-grabbing'} {dragging ? 'rotate-1 scale-[0.97] opacity-40' : ''} {dimmed
+		? 'opacity-30'
+		: ''} {hit ? 'shadow-[inset_0_0_0_2px_var(--color-accent)]' : ''}"
 >
 	{#if editing}
 		<textarea

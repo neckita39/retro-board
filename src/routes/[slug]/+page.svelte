@@ -6,6 +6,7 @@
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { toastStore } from '$lib/stores/toast.svelte.js';
+	import { searchStore } from '$lib/stores/search.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 
 	let { data } = $props();
@@ -31,6 +32,9 @@
 	$effect(() => {
 		const slug = data.board.slug;
 		const token = data.creatorToken;
+		// Переход «Открыть» из уведомления не перемонтирует страницу — чужой
+		// поисковый запрос не должен уехать на новую доску
+		untrack(() => searchStore.reset());
 		const spaceSlug = data.analysis !== null ? (data.space?.slug ?? null) : null;
 		untrack(() => {
 			socketStore.connect();

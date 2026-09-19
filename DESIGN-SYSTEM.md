@@ -179,6 +179,9 @@ contexts. Every control in the right-hand row is 38px with radius 12.
   fill, `bad` when ≤20% or expired + `timer-pulse`), stop = `btn-icon btn-icon-sm` glyph 12.
   Idle (creator): stepper `−  [n]  +` and a `btn-primary` play button fill the same 38px chip
 - Participants (from `md`): ink avatar 32 + `+N` counter (see Avatar)
+- Search: magnifier `btn-icon btn-icon-lg btn-icon-bordered` before Share; it opens a sticky bar under the header
+  (`top-[57px]`, `border-b`, `bg-surface-card`) with a borderless input, a `tabular-nums` counter and a close button.
+  Hits get a 2px accent inset frame (as on a selected tile), the rest drop to `opacity-30` — never `display: none`
 - **Share is a visible ink button** (`btn btn-dark btn-md`, link icon, «Copied ✓» for 2s) — never
   in the overflow menu. Below `md` it is a 38×38 ink square
 - `⋯` = 38×38 bordered `rounded-xl`; the `dropdown` (w-52) holds: copy code, admin link, JSON,

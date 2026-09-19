@@ -141,6 +141,11 @@
 	"user.online": "{n} online",
 
 	"tooltip.locale": "Language",
+	"search.open": "Search the board",
+	"search.placeholder": "Search cards and comments",
+	"search.found": "{n} found",
+	"search.none": "nothing found",
+	"search.close": "Close search",
 
 	"export.title": "Export",
 	"export.json": "JSON",
@@ -176,6 +181,8 @@
 	"apiDocs.security.title": "Link = access",
 	"apiDocs.security.desc": "A standalone board, and a board in a space without a password, is readable by anyone who knows its code — exactly like the board page itself. If the space has a password, it locks the boards inside too: the X-Space-Password header is required.",
 	"apiDocs.endpoints.title": "Endpoints",
+	"apiDocs.search": "Find a request",
+	"apiDocs.search.none": "Nothing found",
 	"apiDocs.copy": "Copy",
 	"apiDocs.md.title": "Get a board as Markdown",
 	"apiDocs.md.desc": "Returns the board as Markdown: columns, cards, votes and comments. Give this URL to an AI agent to turn your retro into a list of action items. No authentication — access by board code.",
