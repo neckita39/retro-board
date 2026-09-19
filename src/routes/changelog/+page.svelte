@@ -13,6 +13,15 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.16',
+			date: '2026-09-19',
+			title: { en: 'One light theme', ru: 'Одна светлая тема' },
+			changes: [
+				{ en: 'The app now always uses the light theme — the switch is gone from the header and from the board menu', ru: 'Приложение теперь всегда в светлой теме — переключатель убран из шапки и из меню доски' },
+				{ en: 'If you had the dark theme on, the interface turns light by itself; there is nothing to do', ru: 'Если у вас была включена тёмная тема, интерфейс станет светлым сам — делать ничего не нужно' }
+			]
+		},
+		{
 			version: '1.15',
 			date: '2026-09-17',
 			title: { en: 'Format illustrations', ru: 'Иллюстрации форматов' },

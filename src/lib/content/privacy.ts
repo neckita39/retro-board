@@ -40,8 +40,8 @@ export const PRIVACY_SECTIONS: { title: Localized; body: Localized }[] = [
 	{
 		title: { en: 'Cookies and local storage', ru: 'Куки и локальное хранилище' },
 		body: {
-			en: 'The service sets one technical session cookie (retro_visit) to count unique visits. Your language, theme and name live in the browser localStorage and never leave your device by themselves. There are no advertising or cross-site trackers.',
-			ru: 'Сервис ставит одну техническую сессионную куку (retro_visit), чтобы считать уникальные визиты. Язык, тема и имя живут в localStorage браузера и сами по себе никуда не отправляются. Рекламных и сквозных трекеров нет.'
+			en: 'The service sets one technical session cookie (retro_visit) to count unique visits. Your language and name live in the browser localStorage and never leave your device by themselves. There are no advertising or cross-site trackers.',
+			ru: 'Сервис ставит одну техническую сессионную куку (retro_visit), чтобы считать уникальные визиты. Язык и имя живут в localStorage браузера и сами по себе никуда не отправляются. Рекламных и сквозных трекеров нет.'
 		}
 	},
 	{

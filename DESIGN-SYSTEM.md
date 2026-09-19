@@ -32,9 +32,9 @@ Five scales replace the old scatter. Every screen and shared component follows a
    Avatars are ink (`bg-text-primary`). Overlays use `bg-scrim` / `bg-scrim-strong`.
    Only tokens: no `red-500`, `black/30`, `white`, hex values, and no opacity tints of tokens
    such as `text-text-primary/85` or `bg-surface-card/50`.
-   The one sanctioned use of `white` is *on a saturated fill that stays saturated in both themes*:
-   `text-white` on `bg-accent` / `bg-bad` / tone tabs, and the `bg-white` knob of `ToggleSwitch`
-   on its `accent` / `border-strong` track (a `surface-card` knob would vanish on the dark track).
+   The one sanctioned use of `white` is *on a saturated fill*: `text-white` on `bg-accent` /
+   `bg-bad` / tone tabs, and the `bg-white` knob of `ToggleSwitch` on its `accent` /
+   `border-strong` track.
    Never `white` as a surface, border, overlay or tint (`white/80`).
 5. **Font sizes** — eight sizes: 11 · 13 · 14 · 15 · 17 · 21 · 32 · 40 (see Typography).
    16 is allowed only on 54px form controls; 18 only for the brand.
@@ -44,7 +44,7 @@ Five scales replace the old scatter. Every screen and shared component follows a
 Warm "paper" palette. Green/red/blue are reserved for column semantics;
 terracotta is the only action accent; plum is the fourth column.
 
-### Light Mode
+### Tokens
 | Token | Value | Usage |
 |-------|-------|-------|
 | `surface` | `#F7F6F2` | Page background, chips (timer, focus timer), comment bubbles |
@@ -75,19 +75,10 @@ terracotta is the only action accent; plum is the fourth column.
 | `shadow-1` | `0 4px 14px rgba(33,30,26,0.08)` | Level 1 shadow (utility `shadow-1`) |
 | `shadow-2` | `0 14px 34px rgba(33,30,26,0.24)` | Level 2 shadow (utility `shadow-2`) |
 
-### Dark Mode
-Overrides in the `.dark` class, derived from the same warm palette:
-- Surfaces are warm dark browns (`#191713`, `#211E1A`, `#2B2721`); borders `#343029` / `#443F36`
-- `accent` becomes `#D97A50` (lighter terracotta for contrast), `accent-bg` `#3C2A20`
-- Column colors lighten one step (`well #5FA37D`, `bad #CE7263`, `improve #7C90D6`,
-  `plum #B57AA6`); tints become deep muted versions; `*-strong` tint-text tokens flip to light shades
-- Scrims and shadows stay ink — they are not redefined
-
 ### Art tokens (format illustrations)
-A format illustration is the same picture in both themes, so everything drawn on top of it uses
-`art-*` tokens that have **no** `.dark` override (like the code block tokens of the API page).
-Values are the light-theme ones; the tile frame (`border-border`, hover, selected accent) is not
-art and follows the theme.
+The illustration sits on a lavender canvas, not on the paper background, so everything drawn on
+top of it uses `art-*` tokens instead of the page ones. The tile frame (`border-border`, hover,
+selected accent) is not art and uses the ordinary tokens.
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -96,7 +87,7 @@ art and follows the theme.
 | `art-ink-secondary` | `#6B6A61` | Taglines, descriptions, chip text (5.0:1) |
 | `art-chip` / `art-chip-border` | `#FFFFFF` / `#E5E4DC` | Meta chips on `/formats` |
 | `art-accent` / `art-accent-bg` | `#A94620` / `#F7E7DE` | «Learn more» and «Recommended» — the light `accent-hover`: `accent` itself is 4.1:1 on the canvas |
-| `art-well` / `art-bad` / `art-improve` / `art-plum` | `#4C8C6A` / `#C05B4D` / `#5B72C0` / `#9A5B8C` | Column stripes on picker options (`TONE[tone].art`); the dark-theme tones fall to 2.7–3.1:1 on the canvas |
+| `art-well` / `art-bad` / `art-improve` / `art-plum` | `#4C8C6A` / `#C05B4D` / `#5B72C0` / `#9A5B8C` | Column stripes on picker options (`TONE[tone].art`) — the ordinary column tones, which keep their contrast on the canvas |
 
 ## Typography
 
@@ -168,12 +159,12 @@ contexts. Every control in the right-hand row is 38px with radius 12.
 
 **Site pages** (`/`, `/new`, `/formats`, `/how-to-run-a-retro`, `/changelog`, `/api`, `/feedback`):
 ```
-[Brand]  [Formats · How to run · Changelog · API · Feedback]      [GitHub] [EN] [Theme] [CTA]
+[Brand]  [Formats · How to run · Changelog · API · Feedback]            [GitHub] [EN] [CTA]
 ```
 - Brand: Unbounded 18/800; below `sm` it collapses to a 28px ink square with the first letter
   (the name stays in the accessibility tree)
 - Nav (from `lg`): 14/500 secondary, `gap-[22px]`; active page: 700 ink + `border-b-2 border-accent`
-- GitHub, EN and Theme are `btn-icon btn-icon-lg btn-icon-bordered` (38, bordered)
+- GitHub and EN are `btn-icon btn-icon-lg btn-icon-bordered` (38, bordered)
 - CTA «Create board» = `btn btn-primary btn-md` (`showCreate`); `/new` shows nav only, no CTA
 
 **Board** (`/[slug]`):
@@ -192,7 +183,7 @@ contexts. Every control in the right-hand row is 38px with radius 12.
   in the overflow menu. Below `md` it is a 38×38 ink square
 - `⋯` = 38×38 bordered `rounded-xl`; the `dropdown` (w-52) holds: copy code, admin link, JSON,
   Markdown, API, «Space analysis» (`AnalyzeButton variant="menu"`, star `text-improve`),
-  EN + Theme toggles, rename, «Connect Bitrix24» (space creator, space without a connection: link
+  the EN toggle, rename, «Connect Bitrix24» (space creator, space without a connection: link
   glyph 16 muted → `/spaces/{slug}?bitrix=1`), delete (`text-bad hover:bg-bad-bg`, inline confirm
   with `btn-sm`)
 - Mobile: title Unbounded 17/800 (links to the space or `/`), subtitle 13 muted
@@ -200,7 +191,7 @@ contexts. Every control in the right-hand row is 38px with radius 12.
 
 **Space** (`/spaces/[slug]`):
 ```
-[Brand]                       [EN] [Theme] [✦ Space analysis] [+ New board]
+[Brand]                             [EN] [✦ Space analysis] [+ New board]
 ```
 - The space name is shown once — in the page H1, not in the header; no lock badge in the header;
   no GitHub button (`showNav` is off)
@@ -381,7 +372,7 @@ Name prompt and onboarding tip are **one** card under the board header (`Onboard
   picture is always 48px high at the right (illustration ≈ 81px), text `max-w-[calc(100%-86px)]` at
   every width — a row that wraps on a phone does not grow under the picture. Never give compact rows
   the corner: 80px padding per row pushed the modal to 1004px on a 375px phone
-- Never on an illustrated tile: a hover fill (`hover:bg-surface-hover`), tints, or theme tokens
+- Never on an illustrated tile: a hover fill (`hover:bg-surface-hover`), tints, or page tokens
   (`text-text-primary`, `badge-accent`, `bg-well`) for anything drawn over the picture
 
 ### Create screen (`/new`, `FormatPicker.svelte`)
@@ -669,7 +660,7 @@ base + size + variant. Override any property with inline Tailwind.
 | `.btn-icon-sm` | 28px (`h-7 w-7`) — glyph 16 (sort glyph 14): card actions, pencils, attach, stop, close in chips/toasts |
 | `.btn-icon-md` | 32px (`h-8 w-8`) |
 | `.btn-icon-lg` | 38px (`h-[38px] w-[38px] rounded-xl`) — header-row icon buttons, modal/panel close |
-| `.btn-icon-bordered` | Adds `border border-border bg-surface-card text-text-secondary` — GitHub, EN, Theme, delete space, close buttons |
+| `.btn-icon-bordered` | Adds `border border-border bg-surface-card text-text-secondary` — GitHub, EN, delete space, close buttons |
 
 **Example:** `<button class="btn btn-primary btn-md w-full">Submit</button>`
 
@@ -768,3 +759,5 @@ base + size + variant. Override any property with inline Tailwind.
 - Different header layouts on different pages
 - Placeholder-only form labels
 - Hardcoded English text in mockups when UI is in Russian
+- **Dark-mode utilities** — `dark:*` in any tracked file, markup or markdown: there is one light
+  theme, and Tailwind compiles those classes into the bundle wherever it finds them

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import ThemeToggle from './ThemeToggle.svelte';
 	import LocaleToggle from './LocaleToggle.svelte';
 	import Timer from './Timer.svelte';
 	import AnalyzeButton from './AnalyzeButton.svelte';
@@ -387,10 +386,9 @@
 								<AnalyzeButton spaceSlug={analysis.spaceSlug} variant="menu" onSubmit={() => (menuOpen = false)} />
 							{/if}
 							<hr class="my-1 border-border" />
-							<!-- Language & theme live in the menu on the board — the header is for board actions -->
+							<!-- Language lives in the menu on the board — the header is for board actions -->
 							<div class="flex items-center gap-1.5 px-3 py-1.5">
 								<LocaleToggle />
-								<ThemeToggle />
 							</div>
 							{#if boardStore.isCreator}
 								<hr class="my-1 border-border" />
@@ -446,7 +444,6 @@
 					</a>
 				{/if}
 				<LocaleToggle />
-				<ThemeToggle />
 
 				{#if analysis}
 					<AnalyzeButton spaceSlug={analysis.spaceSlug} compact />

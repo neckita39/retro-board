@@ -4,7 +4,10 @@
 @import './fonts.css';
 @import 'tailwindcss';
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Автопоиск классов у Tailwind обходит весь репозиторий и читает tracked-markdown
+   наравне с .svelte. Планы в docs/ — история, а не разметка: без этой строки утилиты
+   из их примеров кода попадают в прод-бандл (так туда уехала амбровая палитра). */
+@source not "../docs";
 
 @theme {
 	--color-surface: #f7f6f2;
@@ -40,21 +43,20 @@
 	--color-scrim: rgba(33, 30, 26, 0.4);
 	--color-scrim-strong: rgba(33, 30, 26, 0.85);
 
-	/* Блок кода на странице API: чернильная плашка одинакова в обеих темах,
-	   поэтому у этих токенов нет .dark-варианта. Единственное место с «цветами
-	   подсветки» — сырые hex в разметке запрещены */
+	/* Блок кода на странице API: чернильная плашка на бумажном фоне. Единственное
+	   место с «цветами подсветки» — сырые hex в разметке запрещены */
 	--color-code-bg: #211e1a;
 	--color-code-fg: #d8d2c4;
 	--color-code-key: #e0a470;
 	--color-code-string: #9cbf8e;
 	--color-code-number: #8fb6d9;
 
-	/* Плитки форматов с иллюстрацией (.format-art): картинка одна на обе темы, значит и всё
-	   поверх неё одинаково в обеих темах — у этих токенов, как у блока кода, нет
-	   .dark-варианта. art-canvas — цвет пустой части картинок: scripts/format-art.mjs
-	   приводит к нему каждый файл, поэтому плитка шире картинки заливается им без шва.
-	   Остальные — светлые значения ink / text-secondary / surface-card / border и тонов
-	   колонок; терракота — светлый accent-hover: на лаванде у accent контраст 4.1:1 */
+	/* Плитки форматов с иллюстрацией (.format-art): всё поверх картинки рисуется своими
+	   токенами, а не общими, — холст картинки лавандовый, а фон страницы бумажный.
+	   art-canvas — цвет пустой части картинок: scripts/format-art.mjs приводит к нему
+	   каждый файл, поэтому плитка шире картинки заливается им без шва. Остальные
+	   повторяют ink / text-secondary / surface-card / border и тона колонок; терракота —
+	   accent-hover: у самого accent на лаванде контраст 4.1:1 */
 	--color-art-canvas: #f4f4fe;
 	--color-art-ink: #211e1a;
 	--color-art-ink-secondary: #6b6a61;
@@ -87,34 +89,6 @@ html {
 
 .font-heading {
 	font-family: 'Unbounded', 'Golos Text', sans-serif;
-}
-
-.dark {
-	--color-surface: #191713;
-	--color-surface-card: #211e1a;
-	--color-surface-hover: #2b2721;
-	--color-text-primary: #edeae1;
-	--color-text-secondary: #a8a499;
-	--color-text-muted: #7a766b;
-	--color-border: #343029;
-	--color-border-strong: #443f36;
-
-	--color-accent: #d97a50;
-	--color-accent-hover: #e28b63;
-	--color-accent-bg: #3c2a20;
-
-	--color-well: #5fa37d;
-	--color-well-bg: #1e2b23;
-	--color-well-strong: #85bf9f;
-	--color-bad: #ce7263;
-	--color-bad-bg: #342420;
-	--color-bad-strong: #dc9385;
-	--color-improve: #7c90d6;
-	--color-improve-bg: #21273a;
-	--color-improve-strong: #9dade4;
-	--color-plum: #b57aa6;
-	--color-plum-bg: #33222f;
-	--color-plum-strong: #d3a3c6;
 }
 
 /* ============================================================
@@ -292,9 +266,6 @@ body {
 	color: var(--color-text-primary);
 	overflow-x: hidden;
 	-webkit-font-smoothing: antialiased;
-	transition:
-		background-color 0.6s cubic-bezier(0.25, 1, 0.5, 1),
-		color 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* Cursor on clickable elements */

@@ -1,7 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import { themeStore } from '$lib/stores/theme.svelte.js';
-	import { browser } from '$app/environment';
 	import { onNavigate } from '$app/navigation';
 	import Lightbox from '$lib/components/Lightbox.svelte';
 	import FeedbackPanel from '$lib/components/FeedbackPanel.svelte';
@@ -9,12 +7,6 @@
 	import Toasts from '$lib/components/Toasts.svelte';
 
 	let { children } = $props();
-
-	$effect(() => {
-		if (browser) {
-			themeStore.apply();
-		}
-	});
 
 	// Smooth crossfade between pages via View Transitions API
 	onNavigate((navigation) => {

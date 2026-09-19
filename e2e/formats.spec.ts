@@ -43,9 +43,12 @@ test('a board created from a format link uses that format end to end', async ({ 
 	await expect(page.getByRole('radio', { name: /Sailboat/ })).toBeChecked();
 });
 
-// Иллюстрация формата — фон плитки, один и тот же в обеих темах: art-токены не
-// переопределяются в .dark, поэтому цвет текста и фона плитки после переключения темы
-// тот же, а заголовок страницы (обычный токен) — другой.
+// Всё поверх иллюстрации рисуется art-токенами, а не общими: холст картинки лавандовый,
+// а фон страницы бумажный. Проверяем значения дословно — подмена art-* на обычные токены
+// (text-text-primary, bg-surface-card) обязана валить тест.
+const ART_CANVAS = 'rgb(244, 244, 254)'; // --color-art-canvas #F4F4FE
+const ART_INK = 'rgb(33, 30, 26)'; // --color-art-ink #211E1A
+
 async function colors(tile: Locator) {
 	const title = tile.locator('.font-heading').first();
 	return {
@@ -54,7 +57,7 @@ async function colors(tile: Locator) {
 	};
 }
 
-test('format tiles on /formats show their illustration and ignore the theme', async ({ page }) => {
+test('format tiles on /formats show their illustration and use art tokens', async ({ page }) => {
 	await initStorage(page);
 	await page.goto('/formats');
 	await expect(page.getByTestId('format-tile')).toHaveCount(4);
@@ -72,16 +75,10 @@ test('format tiles on /formats show their illustration and ignore the theme', as
 	expect(res.headers()['content-type']).toBe('image/webp');
 	expect(res.headers()['cache-control']).toBe('public,max-age=31536000,immutable');
 
-	const heading = page.getByRole('heading', { level: 1 });
-	const light = await colors(tile);
-	const headingLight = await heading.evaluate((el) => getComputedStyle(el).color);
-
-	await page.getByRole('button', { name: 'Theme', exact: true }).click();
-	await expect(heading).not.toHaveCSS('color', headingLight);
-	expect(await colors(tile)).toEqual(light);
+	expect(await colors(tile)).toEqual({ text: ART_INK, background: ART_CANVAS });
 });
 
-test('every option of the format picker, classic included, has its illustration in both themes', async ({ page }) => {
+test('every option of the format picker, classic included, has its illustration', async ({ page }) => {
 	await initStorage(page);
 	await page.goto('/new');
 	const options = page.getByTestId('format-option');
@@ -94,10 +91,7 @@ test('every option of the format picker, classic included, has its illustration 
 	}
 
 	const classic = page.locator('[data-testid="format-option"][data-format="classic"]');
-	const light = await colors(classic);
-	await page.getByRole('button', { name: 'Theme', exact: true }).click();
-	await expect(page.locator('html')).toHaveClass(/dark/);
-	expect(await colors(classic)).toEqual(light);
+	expect(await colors(classic)).toEqual({ text: ART_INK, background: ART_CANVAS });
 });
 
 // Картинка 3:1 вписана по высоте и прижата вправо; иллюстрация — её правые 56 %, то есть
