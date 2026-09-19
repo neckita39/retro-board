@@ -74,7 +74,9 @@ Secrets configured in GitHub: SSH_HOST, SSH_USER, SSH_KEY, SSH_PORT, PROJECT_PAT
 - **Image attachments**: attach images to cards/comments, auto-compressed via Sharp, stored in PostgreSQL bytea, lightbox viewer
 - **Timer**: discussion timer with visual countdown
 - **Focus mode**: creator presses "Обсудить" in Summary — the discussed card is highlighted on every participant's screen, others dim, page auto-scrolls, own 5-minute timer per card, visited cards get a checkmark. Room state in memory (`roomFocus` in server.js), navigation logic in `src/lib/focus.ts`
+- **Card drafts**: an unfinished card survives a reload. `src/lib/drafts.ts` keeps it in `localStorage` under `retro_draft_{boardSlug}:{column}` — never sent to the server, never shown to anyone else; the image is not kept (a file cannot go into localStorage). `CardForm.svelte` restores it once per key and auto-expands, `Escape` sets the card aside and keeps the text, only «Cancel» clears it. Every localStorage access is wrapped in try/catch: a private window throws
 - **Export**: JSON and Markdown
+- **Copy the summary**: the board `⋯` menu copies the Markdown export straight to the clipboard (`copySummary` in `Header.svelte`, toast on success or failure). It prefers `ClipboardItem` with a promise — Safari drops clipboard permission after an `await`, so handing it the promise keeps the user gesture alive
 - **Changelog**: `/changelog` — user-facing changelog with timeline UI
 - **Feedback**: `/feedback` — form that sends notifications to Telegram bot
 - **Visit analytics**: `retro.guest.from_web` (one per visit, session cookie `retro_visit`) plus `retro.guest.source.{google|yandex|search_other|social|direct|other}` by referrer; bots filtered. Pure logic in `src/lib/server/visitors.ts`, wired in `src/hooks.server.ts`

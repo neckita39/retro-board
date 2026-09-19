@@ -145,6 +145,9 @@
 	"export.title": "Экспорт",
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
+	"export.copySummary": "Скопировать итоги",
+	"export.copied": "Итоги скопированы — можно вставлять в чат",
+	"export.copyFailed": "Не удалось скопировать. Попробуйте ещё раз",
 
 	"apiExport.exported": "Экспортировано",
 	"apiExport.noCards": "Нет карточек",

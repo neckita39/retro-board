@@ -7,6 +7,8 @@
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { feedbackStore } from '$lib/stores/feedback.svelte.js';
+	import { localeStore } from '$lib/stores/locale.svelte.js';
+	import { toastStore } from '$lib/stores/toast.svelte.js';
 	import { t } from '$lib/i18n/index.js';
 	import { normalizeTitle, TITLE_MAX } from '$lib/titles.js';
 	import { ANALYSIS_FORMAT } from '$lib/formats.js';
@@ -133,6 +135,32 @@
 		a.download = '';
 		a.click();
 		menuOpen = false;
+	}
+
+	// «Скопировать итоги» — тот же Markdown, что и в экспорте, но сразу в буфер:
+	// чаще всего итоги ретро несут в чат команды, а не сохраняют файлом.
+	// Safari теряет право на запись в буфер после await, поэтому, если браузер
+	// умеет ClipboardItem с промисом, отдаём ему промис — жест остаётся «живым»
+	async function copySummary() {
+		if (!boardStore.board) return;
+		menuOpen = false;
+		const url = `/${boardStore.board.slug}/export?format=md&lang=${localeStore.locale}`;
+		try {
+			if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+				const blob = fetch(url).then((r) => {
+					if (!r.ok) throw new Error(String(r.status));
+					return r.blob().then((b) => new Blob([b], { type: 'text/plain' }));
+				});
+				await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })]);
+			} else {
+				const res = await fetch(url);
+				if (!res.ok) throw new Error(String(res.status));
+				await navigator.clipboard.writeText(await res.text());
+			}
+			toastStore.push({ kind: 'success', text: t('export.copied') });
+		} catch {
+			toastStore.push({ kind: 'error', text: t('export.copyFailed') });
+		}
 	}
 
 	async function copyText(text: string) {
@@ -371,6 +399,14 @@
 							>
 								<span class="flex h-4 w-4 items-center justify-center text-[11px] font-bold text-text-muted">MD</span>
 								{t('export.markdown')}
+							</button>
+							<button
+								onclick={copySummary}
+								class="dropdown-item"
+								data-testid="menu-copy-summary"
+							>
+								<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+								{t('export.copySummary')}
 							</button>
 							<a
 								href="/api"

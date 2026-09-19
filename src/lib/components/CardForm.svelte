@@ -2,6 +2,8 @@
 	import { socketStore } from '$lib/stores/socket.svelte.js';
 	import { boardStore } from '$lib/stores/board.svelte.js';
 	import { browser } from '$app/environment';
+	import { untrack } from 'svelte';
+	import { draftKey, readDraft, writeDraft, clearDraft } from '$lib/drafts.js';
 	import type { ColumnType } from '$lib/types.js';
 	import { t } from '$lib/i18n/index.js';
 
@@ -16,6 +18,42 @@
 	let uploading = $state(false);
 	let uploadError = $state('');
 	let fileInputRef = $state<HTMLInputElement | null>(null);
+
+	// Черновик: недописанная карточка переживает перезагрузку вкладки. Живёт только
+	// в localStorage этого человека — на сервер не уходит и другим не видна.
+	// Картинку не запоминаем: файл в localStorage не положишь, а imageId без
+	// превью выглядел бы как потерянное вложение
+	let key = $derived(boardStore.board?.slug ? draftKey(boardStore.board.slug, column) : '');
+	let restoredFor = $state('');
+
+	$effect(() => {
+		const k = key;
+		if (!k || !browser) return;
+		untrack(() => {
+			if (restoredFor === k) return;
+			restoredFor = k;
+			const saved = readDraft(k);
+			if (!saved) return;
+			content = saved;
+			// Разворачиваем сами: иначе про черновик никто не узнает
+			if (variant === 'column') expanded = true;
+		});
+	});
+
+	$effect(() => {
+		const k = key;
+		const text = content;
+		if (!k || !browser) return;
+		// Пишем только после восстановления, иначе пустое поле затрёт сохранённое
+		untrack(() => {
+			if (restoredFor === k) writeDraft(k, text);
+		});
+	});
+
+	function discardDraft() {
+		content = '';
+		if (key) clearDraft(key);
+	}
 
 	$effect(() => {
 		if (expanded && textareaRef) {
@@ -69,7 +107,7 @@
 		if (!boardStore.board) return;
 		const authorName = browser ? localStorage.getItem('retro_name') || '' : '';
 		socketStore.createCard(boardStore.board.id, column, text, authorName || undefined, imageId || undefined);
-		content = '';
+		discardDraft();
 		removeImage();
 		expanded = false;
 	}
@@ -79,9 +117,10 @@
 			e.preventDefault();
 			submit();
 		}
+		// Escape откладывает, а не стирает: текст останется черновиком и вернётся
+		// при следующем открытии доски. Стирает только явная «Отмена»
 		if (e.key === 'Escape') {
 			expanded = false;
-			content = '';
 			removeImage();
 		}
 	}
@@ -187,7 +226,7 @@
 			<div class="flex gap-2">
 				<button
 					type="button"
-					onclick={() => { expanded = false; content = ''; removeImage(); }}
+					onclick={() => { expanded = false; discardDraft(); removeImage(); }}
 					class="btn btn-secondary btn-sm"
 				>
 					{t('card.cancel')}

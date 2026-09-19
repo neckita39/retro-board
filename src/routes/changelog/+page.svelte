@@ -13,6 +13,16 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.18',
+			date: '2026-09-19',
+			title: { en: 'Small conveniences', ru: 'Мелкие удобства' },
+			changes: [
+				{ en: 'A card you started writing is no longer lost: refresh the tab or come back later and your unfinished text is waiting in the same column', ru: 'Начатая карточка больше не теряется: обновите вкладку или вернитесь позже — недописанный текст ждёт в той же колонке' },
+				{ en: 'Escape now just puts the card aside and keeps the text; only «Cancel» throws it away', ru: 'Escape теперь просто откладывает карточку и сохраняет текст — стирает только «Отмена»' },
+				{ en: '«Copy the summary» in the board menu puts the whole retro into the clipboard as Markdown, ready to paste into the team chat', ru: '«Скопировать итоги» в меню доски кладёт всё ретро в буфер как Markdown — сразу можно вставить в чат команды' }
+			]
+		},
+		{
 			version: '1.17',
 			date: '2026-09-19',
 			title: { en: 'The space password now locks the boards', ru: 'Пароль пространства закрывает и доски' },

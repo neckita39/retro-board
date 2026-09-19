@@ -145,6 +145,9 @@
 	"export.title": "Export",
 	"export.json": "JSON",
 	"export.markdown": "Markdown",
+	"export.copySummary": "Copy the summary",
+	"export.copied": "Summary copied — paste it into your team chat",
+	"export.copyFailed": "Could not copy. Please try again",
 
 	"apiExport.exported": "Exported",
 	"apiExport.noCards": "No cards",
