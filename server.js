@@ -269,6 +269,16 @@ const httpServer = createServer(async (req, res) => {
 	const imageMatch = req.method === 'GET' && req.url?.match(/^\/api\/image\/([0-9a-f-]{36})$/);
 	if (imageMatch) {
 		try {
+			// Вложение карточки из пространства с паролем — только тем, кто его ввёл:
+			// иначе доска закрыта, а её картинки скачиваются по голому uuid
+			const space = await spaceOfImage(imageMatch[1]);
+			const locked = !!space?.passwordHash;
+			if (locked && !spaceAllowedByCookies(space, req.headers.cookie)) {
+				res.writeHead(403, { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' });
+				res.end(JSON.stringify({ error: 'Forbidden' }));
+				return;
+			}
+
 			const [image] = await db
 				.select({ data: images.data, mimeType: images.mimeType })
 				.from(images)
@@ -281,10 +291,19 @@ const httpServer = createServer(async (req, res) => {
 				return;
 			}
 
+			// Ответ уходит до общего блока заголовков ниже, поэтому нужные ставим тут:
+			// раньше картинки теряли и nosniff, и X-Frame-Options, и Referrer-Policy
 			res.writeHead(200, {
 				'Content-Type': image.mimeType,
-				'Cache-Control': 'public, max-age=31536000, immutable',
-				'Content-Length': image.data.length
+				// Закрытое пространство — не в общий кэш прокси, только в браузер посетителя
+				'Cache-Control': locked
+					? 'private, max-age=31536000, immutable'
+					: 'public, max-age=31536000, immutable',
+				'Content-Length': image.data.length,
+				'X-Content-Type-Options': 'nosniff',
+				'X-Frame-Options': 'DENY',
+				'Referrer-Policy': 'strict-origin-when-cross-origin',
+				'X-Robots-Tag': 'noindex, nofollow'
 			});
 			res.end(image.data);
 		} catch (err) {
@@ -395,6 +414,35 @@ function spaceAllowedByCookies(space, cookieHeader) {
 	const creator = !!space.creatorToken && jar[`retro_space_creator_${space.slug}`] === space.creatorToken;
 	const access = !!space.accessToken && jar[`retro_space_${space.slug}`] === space.accessToken;
 	return creator || access;
+}
+
+// Пространство, которому принадлежит картинка: через карточку или через комментарий.
+// null — картинку ещё никуда не прикрепили (свежая загрузка) или её доска вне
+// пространства. Ищем по image_id: индексы на нём — drizzle/0009_image_access.sql
+async function spaceOfImage(imageId) {
+	const fields = {
+		slug: spaces.slug,
+		passwordHash: spaces.passwordHash,
+		creatorToken: spaces.creatorToken,
+		accessToken: spaces.accessToken
+	};
+	const [viaCard] = await db
+		.select(fields)
+		.from(cards)
+		.innerJoin(boards, eq(cards.boardId, boards.id))
+		.innerJoin(spaces, eq(boards.spaceId, spaces.id))
+		.where(eq(cards.imageId, imageId))
+		.limit(1);
+	if (viaCard) return viaCard;
+	const [viaComment] = await db
+		.select(fields)
+		.from(comments)
+		.innerJoin(cards, eq(comments.cardId, cards.id))
+		.innerJoin(boards, eq(cards.boardId, boards.id))
+		.innerJoin(spaces, eq(boards.spaceId, spaces.id))
+		.where(eq(comments.imageId, imageId))
+		.limit(1);
+	return viaComment ?? null;
 }
 
 // Пускать ли сокет на доску: своя доска — по неугадываемой ссылке, доска внутри

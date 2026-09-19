@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { addCard, createBoard, createBoardInSpace, createLockedSpace, createSpace, dismissToast, initStorage } from './helpers';
+import { addCard, addCardWithImage, createBoard, createBoardInSpace, createLockedSpace, createSpace, dismissToast, initStorage } from './helpers';
 
 const MOCK = 'http://localhost:4778';
 
@@ -293,6 +293,14 @@ test('a locked space hides the analysis from viewers without the password', asyn
 	const space = await createLockedSpace(pageA, 'Locked team', 's3cret');
 	const { slug: boardSlug } = await createBoardInSpace(pageA, space.slug, 'Sprint 1');
 	await addCard(pageA, "Didn't Go Well", 'flaky tests');
+	// Вложение закрытого пространства не должно скачиваться по голому uuid
+	await addCardWithImage(pageA, 'Went Well', 'screenshot of the green build');
+	const imageUrl = await pageA
+		.locator('.card-board', { hasText: 'screenshot of the green build' })
+		.locator('img')
+		.first()
+		.getAttribute('src');
+	expect(imageUrl).toMatch(/^\/api\/image\//);
 	await createBoardInSpace(pageA, space.slug, 'Sprint 2');
 	await addCard(pageA, "Didn't Go Well", 'flaky tests again');
 
@@ -317,6 +325,11 @@ test('a locked space hides the analysis from viewers without the password', asyn
 	});
 	expect(right.status()).toBe(200);
 	expect(JSON.stringify(await right.json())).toContain('flaky tests');
+	// Картинка карточки — тоже за паролем, и не уходит в общий кэш прокси
+	expect((await pageB.request.get(imageUrl!)).status()).toBe(403);
+	const mine = await pageA.request.get(imageUrl!);
+	expect(mine.status()).toBe(200);
+	expect(mine.headers()['cache-control']).toBe('private, max-age=31536000, immutable');
 
 	await pageA.goto(`/spaces/${space.slug}`);
 	await setMock(pageA, 'ok', 1_500);

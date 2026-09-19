@@ -13,7 +13,7 @@ import { error } from '@sveltejs/kit';
 import type { Cookies } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from './db/index.js';
-import { boards, spaces } from './db/schema.js';
+import { boards, cards, comments, spaces } from './db/schema.js';
 import { canViewSpace } from './space-access.js';
 import { verifyPassword } from './password.js';
 
@@ -63,4 +63,36 @@ export async function guardBoardByHeader(boardSlug: string, request: Request): P
 	const password = request.headers.get('x-space-password') ?? '';
 	if (!password) throw error(401, 'Password required');
 	if (!(await verifyPassword(password, space.passwordHash))) throw error(403, 'Wrong password');
+}
+
+/**
+ * Пространство, которому принадлежит картинка: через карточку или через комментарий.
+ * null — картинку ещё никуда не прикрепили (свежая загрузка) или её доска вне
+ * пространства. Ищем по image_id, индексы — drizzle/0009_image_access.sql.
+ */
+export async function spaceOfImage(imageId: string): Promise<BoardSpace | null> {
+	const fields = {
+		slug: spaces.slug,
+		name: spaces.name,
+		passwordHash: spaces.passwordHash,
+		creatorToken: spaces.creatorToken,
+		accessToken: spaces.accessToken
+	};
+	const [viaCard] = await db
+		.select(fields)
+		.from(cards)
+		.innerJoin(boards, eq(cards.boardId, boards.id))
+		.innerJoin(spaces, eq(boards.spaceId, spaces.id))
+		.where(eq(cards.imageId, imageId))
+		.limit(1);
+	if (viaCard) return viaCard;
+	const [viaComment] = await db
+		.select(fields)
+		.from(comments)
+		.innerJoin(cards, eq(comments.cardId, cards.id))
+		.innerJoin(boards, eq(cards.boardId, boards.id))
+		.innerJoin(spaces, eq(boards.spaceId, spaces.id))
+		.where(eq(comments.imageId, imageId))
+		.limit(1);
+	return viaComment ?? null;
 }

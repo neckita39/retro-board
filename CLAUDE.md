@@ -95,7 +95,7 @@ Secrets configured in GitHub: SSH_HOST, SSH_USER, SSH_KEY, SSH_PORT, PROJECT_PAT
 2. `POST /api/upload` — server validates magic bytes, compresses with Sharp (WebP 80%), stores in `images` table (bytea)
 3. Response: `{ imageId, width, height }`
 4. Client sends `card:create` / `comment:create` via Socket.IO with `imageId`
-5. Image served via `/api/image/{id}` with immutable cache headers
+5. Image served via `/api/image/{id}` with immutable cache headers. If the image belongs to a card or comment on a board inside a password-protected space (`spaceOfImage` in `board-access.ts`, indexes in `drizzle/0009_image_access.sql`), it needs the same access cookie — 403 otherwise — and is served `private` so no shared proxy caches it for a year
 6. Image serving handled in `server.js` (raw HTTP, bypasses SvelteKit)
 7. Upload goes through SvelteKit route (BODY_SIZE_LIMIT=20MB env var)
 
