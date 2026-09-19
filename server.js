@@ -2,6 +2,7 @@ import { handler } from './build/handler.js';
 import { isIndexable } from './seo-paths.js';
 import { isValidColumn } from './board-formats.js';
 import { normalizeTitle } from './titles.js';
+import { viewCard, viewCards, visibleComments } from './blind.js';
 import { createServer } from 'http';
 import { EventEmitter } from 'events';
 import { Server as SocketIOServer } from 'socket.io';
@@ -19,6 +20,7 @@ import {
 	pgEnum,
 	unique,
 	integer,
+	boolean,
 	customType
 } from 'drizzle-orm/pg-core';
 
@@ -67,6 +69,7 @@ const boards = pgTable('boards', {
 	creatorToken: text('creator_token').notNull().default(''),
 	spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'set null' }),
 	format: text('format').notNull().default('classic'),
+	blind: boolean('blind').notNull().default(false),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -85,6 +88,7 @@ const cards = pgTable('cards', {
 	columnType: text('column_type').notNull(),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
+	authorSession: text('author_session'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
 	bitrixTaskId: integer('bitrix_task_id'),
 	bitrixTaskUrl: text('bitrix_task_url'),
@@ -419,6 +423,57 @@ function spaceAllowedByCookies(space, cookieHeader) {
 // Пространство, которому принадлежит картинка: через карточку или через комментарий.
 // null — картинку ещё никуда не прикрепили (свежая загрузка) или её доска вне
 // пространства. Ищем по image_id: индексы на нём — drizzle/0009_image_access.sql
+// Рассылка карточки: в слепом вводе одна и та же карточка уходит автору целиком,
+// остальным — рубашкой, поэтому шлём каждому сокету отдельно. Вне режима это
+// обычный broadcast, но всё равно через viewCard — он снимает author_session,
+// который наружу не должен уходить никогда.
+async function emitCard(room, event, card, blind) {
+	if (!room) return;
+	if (!blind) {
+		io.to(room).emit(event, { card: viewCard(card, false, '') });
+		return;
+	}
+	const sockets = await io.in(room).fetchSockets();
+	for (const s of sockets) {
+		s.emit(event, { card: viewCard(card, true, s.data?.session || '') });
+	}
+}
+
+// Чужую рубашку нельзя ни править, ни удалять, ни комментировать: в интерфейсе
+// её и не видно, но клиент мог бы прислать событие руками
+function hiddenFromViewer(card, session) {
+	return card.blind && card.authorSession !== session;
+}
+
+// Доска целиком глазами каждого: нужна после переключения слепого ввода
+async function emitCardsState(room, boardRow) {
+	const rows = await db.query.cards.findMany({ where: eq(cards.boardId, boardRow.id) });
+	const ids = rows.map((c) => c.id);
+	const rowComments = ids.length
+		? await db.select().from(comments).where(inArray(comments.cardId, ids))
+		: [];
+	const imageIds = [...new Set([...rows, ...rowComments].map((c) => c.imageId).filter(Boolean))];
+	const metas = {};
+	if (imageIds.length) {
+		const found = await db
+			.select({ id: images.id, width: images.width, height: images.height })
+			.from(images)
+			.where(inArray(images.id, imageIds));
+		for (const m of found) metas[m.id] = m;
+	}
+	const decryptedCards = rows.map((c) => decryptCard(c, c.imageId ? metas[c.imageId] : null));
+	const decryptedComments = rowComments.map((c) => decryptComment(c, c.imageId ? metas[c.imageId] : null));
+	const sockets = await io.in(room).fetchSockets();
+	for (const s of sockets) {
+		const visible = viewCards(decryptedCards, boardRow.blind, s.data?.session || '');
+		s.emit('cards:state', {
+			blind: boardRow.blind,
+			cards: visible,
+			comments: visibleComments(decryptedComments, visible)
+		});
+	}
+}
+
 async function spaceOfImage(imageId) {
 	const fields = {
 		slug: spaces.slug,
@@ -457,7 +512,7 @@ async function boardAllowed(board, cookieHeader) {
 async function boardOfRoom(room) {
 	if (typeof room !== 'string' || !room) return null;
 	const [row] = await db
-		.select({ id: boards.id, format: boards.format })
+		.select({ id: boards.id, format: boards.format, blind: boards.blind })
 		.from(boards)
 		.where(eq(boards.slug, room))
 		.limit(1);
@@ -469,7 +524,13 @@ async function cardOfRoom(cardId, room) {
 	if (typeof room !== 'string' || !room) return null;
 	if (typeof cardId !== 'string' || !UUID.test(cardId)) return null;
 	const [row] = await db
-		.select({ id: cards.id, boardId: boards.id, format: boards.format })
+		.select({
+			id: cards.id,
+			boardId: boards.id,
+			format: boards.format,
+			blind: boards.blind,
+			authorSession: cards.authorSession
+		})
 		.from(cards)
 		.innerJoin(boards, eq(cards.boardId, boards.id))
 		.where(and(eq(cards.id, cardId), eq(boards.slug, room)))
@@ -506,8 +567,11 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('board:join', async ({ slug, creatorToken: joinToken }) => {
+	socket.on('board:join', async ({ slug, creatorToken: joinToken, sessionId }) => {
 		socketCreatorToken = joinToken || '';
+		// Идентификатор браузера — в socket.data: его читает fetchSockets при адресной
+		// рассылке. Наружу он не уходит, только сверяется с cards.author_session
+		socket.data.session = typeof sessionId === 'string' ? sessionId.slice(0, 100) : '';
 		if (currentRoom) {
 			socket.leave(currentRoom);
 			const users = roomUsers.get(currentRoom);
@@ -586,6 +650,12 @@ io.on('connection', (socket) => {
 				for (const m of imageMetas) imageMetaMap[m.id] = m;
 			}
 
+			// Слепой ввод: чужие карточки уходят рубашкой, комментарии к ним — не уходят
+			const visibleCards = viewCards(
+				boardCards.map((c) => decryptCard(c, c.imageId ? imageMetaMap[c.imageId] : null)),
+				board.blind,
+				socket.data.session || ''
+			);
 			socket.emit('board:state', {
 				// Whitelist board fields — never leak creatorToken to visitors
 				board: {
@@ -594,11 +664,15 @@ io.on('connection', (socket) => {
 					title: board.title,
 					format: board.format,
 					spaceId: board.spaceId,
+					blind: board.blind,
 					createdAt: board.createdAt
 				},
-				cards: boardCards.map(c => decryptCard(c, c.imageId ? imageMetaMap[c.imageId] : null)),
+				cards: visibleCards,
 				votes: boardVotes,
-				comments: boardComments.map(c => decryptComment(c, c.imageId ? imageMetaMap[c.imageId] : null))
+				comments: visibleComments(
+					boardComments.map((c) => decryptComment(c, c.imageId ? imageMetaMap[c.imageId] : null)),
+					visibleCards
+				)
 			});
 
 			const timer = roomTimers.get(slug);
@@ -648,10 +722,12 @@ io.on('connection', (socket) => {
 					columnType: column,
 					content: encrypt(content || ''),
 					authorName: encrypt(authorName) || null,
+					// Автора берём из сокета, а не из payload: он и так свой, но так честнее
+					authorSession: socket.data.session || null,
 					imageId: hasImage ? imgId : null
 				})
 				.returning();
-			if (currentRoom) io.to(currentRoom).emit('card:created', { card: decryptCard(card, imageMeta) });
+			await emitCard(currentRoom, 'card:created', decryptCard(card, imageMeta), owner.blind);
 			metric('retro.card.created', 1);
 		} catch (err) {
 			logger.error({ err, event: 'card:create' }, 'Failed to create card');
@@ -664,6 +740,7 @@ io.on('connection', (socket) => {
 		const hasColumn = columnType !== undefined;
 		const owner = await cardOfRoom(cardId, currentRoom);
 		if (!owner) return;
+		if (hiddenFromViewer(owner, socket.data.session || '')) return;
 		if (hasColumn && !isValidColumn(owner.format, columnType)) return;
 		if (!hasContent && imgId === undefined && !hasColumn) return; // must update something
 		if (hasContent && content.length > 2000) return;
@@ -694,14 +771,15 @@ io.on('connection', (socket) => {
 				const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, card.imageId)).limit(1);
 				imageMeta = img || null;
 			}
-			if (currentRoom) io.to(currentRoom).emit('card:updated', { card: decryptCard(card, imageMeta) });
+			await emitCard(currentRoom, 'card:updated', decryptCard(card, imageMeta), owner.blind);
 		} catch (err) {
 			logger.error({ err, event: 'card:update', cardId }, 'Failed to update card');
 		}
 	});
 
 	socket.on('card:delete', async ({ cardId }) => {
-		if (!(await cardOfRoom(cardId, currentRoom))) return;
+		const target = await cardOfRoom(cardId, currentRoom);
+		if (!target || hiddenFromViewer(target, socket.data.session || '')) return;
 		try {
 			await db.delete(cards).where(eq(cards.id, cardId));
 			// Удалённой карточке нечего делать в отметках обсуждения
@@ -713,7 +791,8 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('vote:toggle', async ({ cardId, type, sessionId }) => {
-		if (!(await cardOfRoom(cardId, currentRoom))) return;
+		const target = await cardOfRoom(cardId, currentRoom);
+		if (!target || hiddenFromViewer(target, socket.data.session || '')) return;
 		try {
 			const existing = await db.query.votes.findFirst({
 				where: and(eq(votes.cardId, cardId), eq(votes.sessionId, sessionId), eq(votes.type, type))
@@ -749,7 +828,8 @@ io.on('connection', (socket) => {
 		if (!hasContent && !hasImage) return;
 		if (hasContent && content.length > 1000) return;
 		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
-		if (!(await cardOfRoom(cardId, currentRoom))) return;
+		const parent = await cardOfRoom(cardId, currentRoom);
+		if (!parent || hiddenFromViewer(parent, socket.data.session || '')) return;
 		let imageMeta = null;
 		if (hasImage) {
 			const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, imgId)).limit(1);
@@ -809,6 +889,26 @@ io.on('connection', (socket) => {
 	});
 
 	// --- Обсуждение: фокус на одной карточке, общий для всей комнаты ---
+
+	// Слепой ввод включает и выключает ведущий — как таймер и обсуждение
+	socket.on('board:blind', async (payload) => {
+		if (!currentRoom || !isRoomCreator(payload?.creatorToken)) return;
+		const blind = payload?.blind === true;
+		const room = currentRoom;
+		try {
+			const [board] = await db
+				.update(boards)
+				.set({ blind })
+				.where(eq(boards.slug, room))
+				.returning({ id: boards.id, blind: boards.blind });
+			if (!board) return;
+			io.to(room).emit('board:blind', { blind: board.blind });
+			// Состав видимого поменялся у всех сразу — пересобираем каждому свой
+			await emitCardsState(room, board);
+		} catch (err) {
+			logger.error({ err, event: 'board:blind', slug: room }, 'Failed to toggle blind writing');
+		}
+	});
 
 	function isRoomCreator(creatorToken) {
 		const roomToken = roomCreatorTokens.get(currentRoom) || '';

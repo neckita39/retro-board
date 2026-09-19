@@ -146,6 +146,10 @@
 	"search.found": "{n} found",
 	"search.none": "nothing found",
 	"search.close": "Close search",
+	"blind.start": "Start blind writing",
+	"blind.reveal": "Reveal all cards",
+	"blind.card": "Card is hidden",
+	"blind.notice": "Blind writing: you only see your own cards. The facilitator will reveal the rest once everyone has written",
 
 	"export.title": "Export",
 	"export.json": "JSON",

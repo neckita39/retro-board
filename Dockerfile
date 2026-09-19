@@ -18,7 +18,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/build ./build
-COPY server.js seo-paths.js board-formats.js titles.js migrate.js entrypoint.sh ./
+COPY server.js seo-paths.js board-formats.js titles.js blind.js migrate.js entrypoint.sh ./
 COPY drizzle ./drizzle
 RUN chmod +x entrypoint.sh
 

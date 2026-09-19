@@ -6,6 +6,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { statePayload } from '$lib/server/analysis.js';
 import type { AnalysisState } from '$lib/analysis-state.js';
 import { canViewSpace } from '$lib/server/space-access.js';
+import { viewCards, visibleComments } from '$lib/blind.js';
 import { decrypt } from '$lib/server/crypto.js';
 import { metric } from '$lib/server/statsd.js';
 import { emitBoard } from '$lib/server/bus.js';
@@ -142,6 +143,19 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		throw redirect(303, `/spaces/${lockedSpaceSlug}?next=${params.slug}`);
 	}
 
+	const pageCards = viewCards(
+		boardCards.map((c) => ({
+			...c,
+			content: decrypt(c.content) ?? c.content,
+			authorName: decrypt(c.authorName),
+			imageWidth: c.imageId ? (imageMeta[c.imageId]?.width ?? null) : null,
+			imageHeight: c.imageId ? (imageMeta[c.imageId]?.height ?? null) : null,
+			createdAt: c.createdAt.toISOString()
+		})),
+		board.blind,
+		''
+	);
+
 	const adminLink = isCreator ? `${url.origin}/${params.slug}?admin=${board.creatorToken}` : null;
 
 	return {
@@ -150,6 +164,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			slug: board.slug,
 			title: board.title,
 			format: board.format,
+			blind: board.blind,
 			createdAt: board.createdAt.toISOString()
 		},
 		space,
@@ -163,26 +178,25 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		bitrix,
 		bitrixOffer,
 		creatorToken: isCreator ? board.creatorToken : null,
-		cards: boardCards.map((c) => ({
-			...c,
-			content: decrypt(c.content) ?? c.content,
-			authorName: decrypt(c.authorName),
-			imageWidth: c.imageId ? (imageMeta[c.imageId]?.width ?? null) : null,
-			imageHeight: c.imageId ? (imageMeta[c.imageId]?.height ?? null) : null,
-			createdAt: c.createdAt.toISOString()
-		})),
+		// Слепой ввод: сервер не знает, кто смотрит (идентификатор браузера живёт
+		// в localStorage), поэтому в первом кадре прячем всё. Свои карточки вернёт
+		// сокет — он знает сессию из board:join
+		cards: pageCards,
 		votes: boardVotes.map((v) => ({
 			...v,
 			createdAt: v.createdAt.toISOString()
 		})),
-		comments: boardComments.map((c) => ({
-			...c,
-			content: decrypt(c.content) ?? c.content,
-			authorName: decrypt(c.authorName),
-			imageWidth: c.imageId ? (imageMeta[c.imageId]?.width ?? null) : null,
-			imageHeight: c.imageId ? (imageMeta[c.imageId]?.height ?? null) : null,
-			createdAt: c.createdAt.toISOString()
-		}))
+		comments: visibleComments(
+			boardComments.map((c) => ({
+				...c,
+				content: decrypt(c.content) ?? c.content,
+				authorName: decrypt(c.authorName),
+				imageWidth: c.imageId ? (imageMeta[c.imageId]?.width ?? null) : null,
+				imageHeight: c.imageId ? (imageMeta[c.imageId]?.height ?? null) : null,
+				createdAt: c.createdAt.toISOString()
+			})),
+			pageCards
+		)
 	};
 };
 

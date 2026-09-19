@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, pgEnum, unique, integer, customType } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, pgEnum, unique, integer, boolean, customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 const bytea = customType<{ data: Buffer }>({
@@ -30,6 +30,8 @@ export const boards = pgTable('boards', {
 	spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'set null' }),
 	// Id из board-formats.js; фиксируется при создании
 	format: text('format').notNull().default('classic'),
+	// Слепой ввод: карточку видит только её автор, пока ведущий не выключит режим
+	blind: boolean('blind').notNull().default(false),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -93,6 +95,9 @@ export const cards = pgTable('cards', {
 	columnType: text('column_type').notNull(),
 	content: text('content').notNull(),
 	authorName: text('author_name'),
+	// Идентификатор браузера автора (тот же, что у голосов). Нужен только чтобы
+	// показать человеку его собственные карточки в слепом вводе; наружу не уходит
+	authorSession: text('author_session'),
 	imageId: uuid('image_id').references(() => images.id, { onDelete: 'set null' }),
 	// Задача Битрикс24 из карточки: id и готовая ссылка, считаются один раз при создании
 	bitrixTaskId: integer('bitrix_task_id'),

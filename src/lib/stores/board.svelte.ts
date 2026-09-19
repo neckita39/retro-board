@@ -23,6 +23,23 @@ class BoardStore {
 		if (this.board) this.board = { ...this.board, title };
 	}
 
+	/** Слепой ввод включили или выключили */
+	setBlind(blind: boolean) {
+		if (this.board) this.board = { ...this.board, blind };
+	}
+
+	/** Новый набор видимого после переключения режима: у каждого он свой */
+	setVisible(blind: boolean, cards: Card[], comments: Comment[]) {
+		if (this.board) this.board = { ...this.board, blind };
+		this.cards = cards;
+		this.comments = comments;
+	}
+
+	/** Идёт ли слепой ввод на этой доске */
+	get blind(): boolean {
+		return this.board?.blind === true;
+	}
+
 	addCard(card: Card) {
 		this.cards = [...this.cards, card];
 	}

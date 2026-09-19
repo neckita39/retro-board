@@ -13,6 +13,16 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.20',
+			date: '2026-09-19',
+			title: { en: 'Blind writing', ru: 'Слепой ввод' },
+			changes: [
+				{ en: 'The facilitator can turn on blind writing from the board menu: everyone sees only their own cards, the rest lie face down until «Reveal all cards»', ru: 'Ведущий может включить слепой ввод в меню доски: каждый видит только свои карточки, остальные лежат рубашкой до «Показать все карточки»' },
+				{ en: 'It stops anchoring — when the first card says «releases», everyone starts writing about releases. Now everyone writes their own mind first', ru: 'Это снимает якорение: когда первая карточка про релизы, все начинают писать про релизы. Теперь каждый сначала пишет своё' },
+				{ en: 'Face-down cards keep their place in the column, so you can see that your colleagues are already writing', ru: 'Карточки-рубашки занимают своё место в колонке, поэтому видно, что коллеги уже пишут' }
+			]
+		},
+		{
 			version: '1.19',
 			date: '2026-09-19',
 			title: { en: 'Search', ru: 'Поиск' },

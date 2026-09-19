@@ -108,6 +108,19 @@
 	}
 </script>
 
+<!-- Рубашка слепого ввода: место в колонке занято, содержимого нет.
+     Карточку не прячем совсем — видно, что коллеги уже пишут -->
+{#if card.hidden}
+	<div class="card-board flex items-center gap-2.5 px-3.5 py-3.5" data-testid="card-hidden">
+		<svg class="h-4 w-4 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+			<path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+			<path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+			<line x1="2" y1="2" x2="22" y2="22"/>
+		</svg>
+		<span class="text-sm text-text-muted">{t('blind.card')}</span>
+	</div>
+{:else}
 <div
 	role="article"
 	draggable={!editing}
@@ -259,3 +272,4 @@
 
 	<CommentList cardId={card.id} expanded={commentsOpen} />
 </div>
+{/if}

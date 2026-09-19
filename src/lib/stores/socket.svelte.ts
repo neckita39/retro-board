@@ -1,5 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import { boardStore } from './board.svelte.js';
+import { getSessionId } from '$lib/session.js';
 import { toastStore } from './toast.svelte.js';
 import { t } from '$lib/i18n/index.js';
 import { analysisTransition, PENDING_STALE_MS, type AnalysisState } from '$lib/analysis-state.js';
@@ -39,7 +40,8 @@ class SocketStore {
 			if (this.everConnected && this.currentSlug) {
 				this.socket?.emit('board:join', {
 					slug: this.currentSlug,
-					creatorToken: this.currentCreatorToken
+					creatorToken: this.currentCreatorToken,
+					sessionId: getSessionId()
 				});
 			}
 			if (this.everConnected && this.currentSpace) this.emitSpaceJoin(this.currentSpace);
@@ -56,6 +58,16 @@ class SocketStore {
 
 		this.socket.on('board:renamed', ({ title }) => {
 			boardStore.setTitle(title);
+		});
+
+		// Слепой ввод переключили: признак приходит сразу, а карточки —
+		// следом отдельным cards:state, у каждого свой набор видимого
+		this.socket.on('board:blind', ({ blind }) => {
+			boardStore.setBlind(blind);
+		});
+
+		this.socket.on('cards:state', ({ blind, cards, comments }) => {
+			boardStore.setVisible(blind, cards, comments);
 		});
 
 		this.socket.on('card:created', ({ card }) => {
@@ -192,7 +204,8 @@ class SocketStore {
 		}
 		this.currentSlug = slug;
 		this.currentCreatorToken = creatorToken ?? '';
-		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '' });
+		// sessionId — чтобы сервер знал, какие карточки в слепом вводе мои
+		this.socket?.emit('board:join', { slug, creatorToken: creatorToken ?? '', sessionId: getSessionId() });
 	}
 
 	clearTimerLocal() {
@@ -202,6 +215,10 @@ class SocketStore {
 
 	createCard(boardId: string, column: string, content: string, authorName?: string, imageId?: string) {
 		this.socket?.emit('card:create', { boardId, column, content, authorName, imageId });
+	}
+
+	setBlind(blind: boolean, creatorToken?: string | null) {
+		this.socket?.emit('board:blind', { blind, creatorToken: creatorToken ?? '' });
 	}
 
 	updateCard(cardId: string, content: string, imageId?: string | null) {

@@ -8,6 +8,8 @@ export interface Board {
 	title: string;
 	/** Id формата из board-formats.js; у досок до форматов — 'classic' */
 	format: string;
+	/** Слепой ввод: карточку видит только её автор, пока ведущий не выключит режим */
+	blind?: boolean;
 	createdAt: string;
 }
 
@@ -23,6 +25,8 @@ export interface Card {
 	/** Задача Битрикс24, созданная из карточки; null — задачи нет */
 	bitrixTaskId: number | null;
 	bitrixTaskUrl: string | null;
+	/** Рубашка слепого ввода: содержимое не пришло, потому что карточка чужая */
+	hidden?: boolean;
 	createdAt: string;
 }
 

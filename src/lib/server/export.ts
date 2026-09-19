@@ -5,6 +5,7 @@ import { decrypt } from '$lib/server/crypto.js';
 import { translate, type Locale } from '$lib/i18n/index.js';
 import { createRateLimiter } from '$lib/server/ratelimit.js';
 import { findBoardFormat } from '$lib/formats.js';
+import { viewCards, visibleComments } from '$lib/blind.js';
 import type { CardTask } from '$lib/types.js';
 
 // Shared across export.md / export.json routes: 30 requests per IP per minute
@@ -119,7 +120,10 @@ export async function loadBoardExport(slug: string, origin: string): Promise<Boa
 		]);
 	}
 
-	return assembleExport(board, boardCards, boardVotes, boardComments, origin);
+	// Пока слепой ввод включён, карточки видны только авторам — значит и в экспорте
+	// их текста быть не должно, иначе режим обходится одной ссылкой
+	const visible = viewCards(boardCards, board.blind, '');
+	return assembleExport(board, visible, boardVotes, visibleComments(boardComments, visible), origin);
 }
 
 export function toMarkdown(data: BoardExport, lang: Locale = 'en'): string {
