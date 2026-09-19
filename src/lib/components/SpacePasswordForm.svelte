@@ -2,7 +2,13 @@
 	import { t } from '$lib/i18n/index.js';
 	import { enhance } from '$app/forms';
 
-	let { spaceName, error: formError = '' }: { spaceName: string; error?: string } = $props();
+	// error — код ошибки экшена ('wrong_password' | 'too_many'), а не готовая строка:
+	// переводит сама форма. next — слаг доски, на которую вернуть после пароля
+	let {
+		spaceName,
+		error: formError = '',
+		next = null
+	}: { spaceName: string; error?: string; next?: string | null } = $props();
 
 	let shaking = $state(false);
 
@@ -30,6 +36,9 @@
 		<p class="mt-1 text-sm text-text-secondary">{t('space.password.title')}</p>
 
 		<form method="POST" action="?/verify" use:enhance={handleSubmit} class="mt-5 space-y-3">
+			{#if next}
+				<input type="hidden" name="next" value={next} />
+			{/if}
 			<input
 				type="password"
 				name="password"
@@ -42,7 +51,7 @@
 			/>
 			{#if formError}
 				<p class="text-left text-[13px] text-bad animate-[shake_0.5s_ease]">
-					{t('space.password.error')}
+					{formError === 'too_many' ? t('space.password.tooMany') : t('space.password.error')}
 				</p>
 			{/if}
 			<button

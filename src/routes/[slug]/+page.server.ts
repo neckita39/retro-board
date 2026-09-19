@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db/index.js';
 import { boards, cards, votes, comments, spaces, images, spaceAnalyses } from '$lib/server/db/schema.js';
@@ -68,9 +68,10 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	let spaceId: string | null = null;
 	let spaceCreator = false;
 	let analysis: AnalysisState | null = null;
-	// Кнопка анализа и его статус — только тем, кто имеет доступ к пространству:
-	// доска открыта по ссылке всем, а пароль пространства защищает именно его содержимое
+	// Пароль пространства закрывает и доски внутри него: без доступа отдавать
+	// содержимое нельзя, поэтому уводим на форму пароля, а она вернёт обратно (?next=)
 	let spaceViewable = false;
+	let lockedSpaceSlug: string | null = null;
 	if (board.spaceId) {
 		const s = await db.query.spaces.findFirst({
 			where: eq(spaces.id, board.spaceId)
@@ -81,6 +82,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			const spaceCookie = cookies.get(`retro_space_creator_${s.slug}`) ?? '';
 			spaceCreator = !!s.creatorToken && spaceCookie === s.creatorToken;
 			spaceViewable = canViewSpace(s, cookies);
+			if (!spaceViewable) lockedSpaceSlug = s.slug;
 			if (spaceViewable) {
 				// Статус AI-анализа пространства: уведомления должны приходить и на досках
 				const rows = await db
@@ -132,6 +134,12 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		} else {
 			bitrixOffer = spaceCreator;
 		}
+	}
+
+	// Редирект здесь, а не сразу после canViewSpace: ?admin= выше уже выдал создателю
+	// доски его cookie, поэтому после ввода пароля он вернётся сюда ведущим
+	if (lockedSpaceSlug) {
+		throw redirect(303, `/spaces/${lockedSpaceSlug}?next=${params.slug}`);
 	}
 
 	const adminLink = isCreator ? `${url.origin}/${params.slug}?admin=${board.creatorToken}` : null;

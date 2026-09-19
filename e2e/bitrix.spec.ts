@@ -532,16 +532,13 @@ test('11. закрытое пространство: создатель доск
 	await pageA.keyboard.press('Escape');
 	await expect(formA).toHaveCount(0);
 
-	// B открыл admin-ссылку доски: cookie retro_creator_{slug} есть, retro_space_{slug} нет
+	// B открыл admin-ссылку доски: cookie retro_creator_{slug} есть, retro_space_{slug} нет.
+	// Пароль пространства закрывает и доску, поэтому содержимого не видно вовсе —
+	// токен создателя доски сам по себе доступа не даёт
 	await initStorage(pageB);
 	await pageB.goto(board.adminUrl);
-	await dismissToast(pageB);
-	const cardB = cardOnBoard(pageB, 'Secret roadmap item');
-	await expect(cardB).toBeVisible();
-	await expect(cardB.getByTestId('card-task-button')).toHaveCount(0);
-	await pageB.getByRole('button', { name: 'Menu' }).click();
-	await expect(pageB.getByRole('button', { name: 'Rename board' })).toBeVisible();
-	await expect(pageB.getByTestId('menu-bitrix-connect')).toHaveCount(0);
+	await expect(pageB).toHaveURL(new RegExp(`/spaces/${space.slug}\\?next=${board.slug}$`));
+	await expect(cardOnBoard(pageB, 'Secret roadmap item')).toHaveCount(0);
 
 	const form = { cardId, title: 'Hijacked task', description: '', groupId: '', deadline: '', source: 'card' };
 	for (const p of [pageB, pageC]) {
@@ -555,6 +552,18 @@ test('11. закрытое пространство: создатель доск
 	const calls = await bitrixCalls(pageA);
 	expect(callsOf(calls, 'tasks.task.add')).toHaveLength(0);
 	expect(callsOf(calls, 'sonet_group.get')).toHaveLength(0);
+
+	// Пароль введён — форма возвращает B на ту доску, с которой он пришёл (?next=),
+	// и он становится ведущим: токен создателя доски снова в деле, «В задачу» на месте
+	await pageB.getByPlaceholder('Password').fill('s3cret');
+	await pageB.getByRole('button', { name: 'Enter' }).click();
+	await pageB.waitForURL(`**/${board.slug}`);
+	const cardB = cardOnBoard(pageB, 'Secret roadmap item');
+	await expect(cardB).toBeVisible();
+	await expect(cardB.getByTestId('card-task-button')).toBeVisible();
+	await pageB.getByRole('button', { name: 'Menu' }).click();
+	await expect(pageB.getByRole('button', { name: 'Rename board' })).toBeVisible();
+	await expect(pageB.getByTestId('menu-bitrix-connect')).toHaveCount(0);
 
 	await ctxA.close();
 	await ctxB.close();

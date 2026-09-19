@@ -9,7 +9,8 @@
 	import { browser } from '$app/environment';
 	import { isValidFormat } from '$lib/formats.js';
 
-	let { data } = $props();
+	// form — ответ провалившегося экшена createSpace (например, короткий пароль)
+	let { data, form } = $props();
 
 	boardStore.board = null;
 
@@ -179,12 +180,15 @@
 								type="password"
 								name="password"
 								required={passwordEnabled}
-								minlength="1"
+								minlength="6"
 								maxlength="100"
 								placeholder={t('space.create.password')}
-								class="input input-lg"
+								class="input input-lg {form?.spaceError === 'short_password' ? 'border-bad' : ''}"
 								tabindex={passwordEnabled ? 0 : -1}
 							/>
+							<p class="mt-1.5 text-[13px] {form?.spaceError === 'short_password' ? 'text-bad' : 'text-text-muted'}">
+								{form?.spaceError === 'short_password' ? t('space.password.short') : t('space.password.hint')}
+							</p>
 						</div>
 					</div>
 

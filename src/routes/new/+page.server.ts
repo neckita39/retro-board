@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { boards, spaces } from '$lib/server/db/schema.js';
 import { metric } from '$lib/server/statsd.js';
 import { hashPassword } from '$lib/server/password.js';
+import { spacePasswordError } from '$lib/server/space-access.js';
 import { nanoid } from 'nanoid';
 import { isValidFormat, DEFAULT_FORMAT } from '$lib/formats.js';
 import type { PageServerLoad, Actions } from './$types.js';
@@ -49,6 +50,10 @@ export const actions: Actions = {
 		const password = (formData.get('password') as string)?.trim() || null;
 
 		if (!name) return fail(400, { spaceError: 'name_required' });
+		// Пароль необязателен, но если его задают — он закрывает и доски пространства,
+		// поэтому к нему та же планка, что и в enablePassword
+		const policyError = password ? spacePasswordError(password) : null;
+		if (policyError) return fail(400, { spaceError: policyError });
 
 		const slug = nanoid(21);
 		const creatorToken = nanoid(32);

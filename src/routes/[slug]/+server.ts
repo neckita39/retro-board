@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { boards, spaces } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { guardBoardByCookies } from '$lib/server/board-access.js';
 import type { RequestHandler } from './$types.js';
 
 export const DELETE: RequestHandler = async ({ params, cookies }) => {
@@ -10,6 +11,10 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	});
 
 	if (!board) throw error(404, 'Board not found');
+
+	// Пароль пространства — единственный способ отозвать доступ. Создатель доски,
+	// потерявший доступ к пространству, не должен сносить доску по старой cookie
+	await guardBoardByCookies(params.slug, cookies);
 
 	const token = cookies.get(`retro_creator_${params.slug}`) ?? '';
 	let allowed = !!board.creatorToken && token === board.creatorToken;

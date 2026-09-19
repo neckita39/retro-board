@@ -59,7 +59,6 @@
 	// В списке слева: без префикса /api/v1/ и с «…» вместо id
 	const shortPath = (path: string) => path.replace('/api/v1/', '').replace(/\{[a-zA-Z]+\}/, '…');
 	const isMarkdown = (path: string) => path.endsWith('.md');
-	const isSpace = (path: string) => path.includes('/spaces/');
 
 	let selectedId = $state('md');
 	let selected = $derived(endpoints.find((e) => e.id === selectedId) ?? endpoints[0]);
@@ -89,12 +88,15 @@
 				<button
 					onclick={() => (selectedId = endpoint.id)}
 					aria-pressed={selectedId === endpoint.id}
-					class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors {selectedId === endpoint.id
+					class="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors {selectedId === endpoint.id
 						? 'border border-border bg-surface-card'
 						: 'border border-transparent hover:bg-surface-hover'}"
 				>
-					<span class="rounded-md bg-well-bg px-[7px] py-[3px] text-[11px] font-extrabold text-well-strong">{endpoint.method}</span>
-					<span class="min-w-0 truncate font-mono text-[13px] {selectedId === endpoint.id ? 'font-semibold text-text-primary' : 'text-text-secondary'}">{shortPath(endpoint.path)}</span>
+					<span class="mt-[3px] shrink-0 self-start rounded-md bg-well-bg px-[7px] py-[3px] text-[11px] font-extrabold text-well-strong">{endpoint.method}</span>
+					<span class="flex min-w-0 flex-col gap-0.5">
+						<span class="text-[13px] leading-snug {selectedId === endpoint.id ? 'font-semibold text-text-primary' : 'font-medium text-text-primary'}">{t(endpoint.titleKey)}</span>
+						<span class="truncate font-mono text-[11px] text-text-muted">{shortPath(endpoint.path)}</span>
+					</span>
 				</button>
 			{/each}
 		</div>
@@ -192,23 +194,20 @@
 			<p class="text-sm leading-relaxed text-text-secondary">{t('apiDocs.format.note')}</p>
 
 			<!-- Parameters -->
-			{#if isMarkdown(selected.path) || isSpace(selected.path)}
-				<div class="flex flex-col gap-2">
-					<h2 class="font-heading text-base font-bold text-text-primary">{t('apiDocs.params.title')}</h2>
-					{#if isMarkdown(selected.path)}
-						<p class="text-sm text-text-secondary">
-							<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">?lang=en|ru</code>
-							— {t('apiDocs.params.lang')}
-						</p>
-					{/if}
-					{#if isSpace(selected.path)}
-						<p class="text-sm text-text-secondary">
-							<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">X-Space-Password</code>
-							— {t('apiDocs.params.password')}
-						</p>
-					{/if}
-				</div>
-			{/if}
+			<div class="flex flex-col gap-2">
+				<h2 class="font-heading text-base font-bold text-text-primary">{t('apiDocs.params.title')}</h2>
+				{#if isMarkdown(selected.path)}
+					<p class="text-sm text-text-secondary">
+						<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">?lang=en|ru</code>
+						— {t('apiDocs.params.lang')}
+					</p>
+				{/if}
+				<!-- Заголовок нужен и доскам: пароль пространства закрывает их тоже -->
+				<p class="text-sm text-text-secondary">
+					<code class="rounded-md bg-surface-hover px-1.5 py-0.5 font-mono text-[12px] text-text-primary">X-Space-Password</code>
+					— {t('apiDocs.params.password')}
+				</p>
+			</div>
 
 			<!-- Limits -->
 			<div class="flex flex-col gap-2">

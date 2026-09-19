@@ -1,8 +1,16 @@
 import { error } from '@sveltejs/kit';
-import { loadBoardExport, toMarkdown } from '$lib/server/export.js';
+import { loadBoardExport, toMarkdown, exportRateLimiter } from '$lib/server/export.js';
+import { guardBoardByCookies } from '$lib/server/board-access.js';
 import type { RequestHandler } from './$types.js';
 
-export const GET: RequestHandler = async ({ params, url }) => {
+export const GET: RequestHandler = async ({ params, url, cookies, getClientAddress }) => {
+	// Лимитера тут не было, в отличие от соседнего /api/v1/boards/*
+	if (!exportRateLimiter.check(getClientAddress())) {
+		throw error(429, 'Too many requests');
+	}
+	// Доска внутри пространства с паролем — только с cookie доступа
+	await guardBoardByCookies(params.slug, cookies);
+
 	const format = url.searchParams.get('format') || 'json';
 	const lang = url.searchParams.get('lang') === 'ru' ? 'ru' : 'en';
 

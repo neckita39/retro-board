@@ -29,7 +29,13 @@ import {
 } from '$lib/server/analysis.js';
 import { emitSpace } from '$lib/server/bus.js';
 import { runAnalysisJob } from '$lib/server/analysis-job.js';
-import { canViewSpace } from '$lib/server/space-access.js';
+import {
+	canViewSpace,
+	grantSpaceAccess,
+	safeNextBoardSlug,
+	spacePasswordError
+} from '$lib/server/space-access.js';
+import { spaceVerifyLimiter } from '$lib/server/space-limits.js';
 import {
 	allowHttpEnabled,
 	BitrixError,
@@ -109,6 +115,8 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 			authenticated: false,
 			isCreator: false,
 			hasPassword: true,
+			// Пришли по ссылке на доску внутри пространства — вернём на неё после пароля
+			next: safeNextBoardSlug(url.searchParams.get('next')),
 			boards: [],
 			showCreatedToast: false,
 			adminLink: null,
@@ -226,7 +234,13 @@ export const actions: Actions = {
 		return { renamed: true };
 	},
 
-	verify: async ({ request, params, cookies }) => {
+	verify: async ({ request, params, cookies, getClientAddress }) => {
+		// Пароль закрывает и доски пространства, поэтому перебор ограничен:
+		// scrypt на каждую попытку — ещё и нагрузка на процессор
+		if (!spaceVerifyLimiter.check(getClientAddress())) {
+			return fail(429, { error: 'too_many' });
+		}
+
 		const formData = await request.formData();
 		const password = formData.get('password') as string;
 
@@ -245,11 +259,12 @@ export const actions: Actions = {
 		}
 
 		// Пароль верный — выдаём текущий токен доступа; после следующего enablePassword он перестанет действовать
-		cookies.set(`retro_space_${params.slug}`, space.accessToken, {
-			path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365
-		});
+		grantSpaceAccess(space, cookies);
 
-		throw redirect(303, `/spaces/${params.slug}`);
+		// Пришёл по ссылке на доску — возвращаем на неё, а не на витрину пространства.
+		// Значение валидируется как слаг доски: произвольный путь тут был бы open redirect
+		const next = safeNextBoardSlug(formData.get('next') as string | null);
+		throw redirect(303, next ? `/${next}` : `/spaces/${params.slug}`);
 	},
 
 	disablePassword: async ({ request, params, cookies }) => {
@@ -282,7 +297,8 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const password = (formData.get('password') as string)?.trim();
-		if (!password) return fail(400, { passwordAction: 'enable', passwordError: 'empty_password' });
+		const policyError = spacePasswordError(password);
+		if (policyError) return fail(400, { passwordAction: 'enable', passwordError: policyError });
 
 		const passwordHash = await hashPassword(password);
 		// Новый пароль — новый токен доступа: cookie, выданные раньше (в том числе

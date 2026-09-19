@@ -169,7 +169,7 @@
 				passwordOpen = false;
 				passwordSuccess = form.passwordAction === 'disable' ? 'disabled' : 'enabled';
 				setTimeout(() => (passwordSuccess = ''), 2500);
-			} else if (form.passwordError === 'wrong_password') {
+			} else if (form.passwordError === 'wrong_password' || form.passwordError === 'short_password') {
 				passwordShaking = true;
 				setTimeout(() => (passwordShaking = false), 600);
 			}
@@ -230,7 +230,7 @@
 	/>
 
 	{#if !data.authenticated}
-		<SpacePasswordForm spaceName={data.space.name} error={form?.error === 'wrong_password' ? t('space.password.error') : ''} />
+		<SpacePasswordForm spaceName={data.space.name} error={form?.error ?? ''} next={data.next ?? null} />
 	{:else}
 		<main class="flex-1 px-4 pb-16 sm:px-7">
 			<div class="mx-auto flex max-w-[1360px] flex-col gap-7 pt-9 sm:pt-10">
@@ -400,9 +400,10 @@
 										type="password"
 										name="password"
 										required
+										minlength="6"
 										maxlength="100"
 										placeholder={t('space.password.enable.placeholder')}
-										class="input input-md flex-1"
+										class="input input-md flex-1 {form?.passwordAction === 'enable' && form?.passwordError === 'short_password' ? 'border-bad' : ''}"
 									/>
 									<button type="submit" class="btn btn-primary btn-md">
 										{t('space.password.enable')}
@@ -411,6 +412,11 @@
 										{t('card.cancel')}
 									</button>
 								</div>
+								<p class="mt-1.5 text-[13px] {form?.passwordAction === 'enable' && form?.passwordError === 'short_password' ? 'text-bad' : 'text-text-muted'}">
+									{form?.passwordAction === 'enable' && form?.passwordError === 'short_password'
+										? t('space.password.short')
+										: t('space.password.hint')}
+								</p>
 							</form>
 						{/if}
 					</div>

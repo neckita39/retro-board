@@ -1,12 +1,16 @@
 import { error } from '@sveltejs/kit';
 import { loadBoardExport, exportRateLimiter } from '$lib/server/export.js';
+import { guardBoardByHeader } from '$lib/server/board-access.js';
 import { metric } from '$lib/server/statsd.js';
 import type { RequestHandler } from './$types.js';
 
-export const GET: RequestHandler = async ({ params, url, getClientAddress }) => {
+export const GET: RequestHandler = async ({ params, request, url, getClientAddress }) => {
 	if (!exportRateLimiter.check(getClientAddress())) {
 		throw error(429, 'Too many requests');
 	}
+
+	// Доска закрытого пространства требует тот же заголовок, что и /api/v1/spaces/*
+	await guardBoardByHeader(params.slug, request);
 
 	const data = await loadBoardExport(params.slug, url.origin);
 	if (!data) {

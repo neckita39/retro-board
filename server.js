@@ -381,6 +381,54 @@ bus.on('board', ({ boardSlug, event, payload }) => {
 	io.to(boardSlug).emit(event, payload);
 });
 
+// Любая запись разрешена только в ту доску, в комнату которой сокет действительно вошёл.
+// board:join проверяет пароль пространства, поэтому привязка к комнате и есть проверка
+// доступа. Раньше boardId и cardId брались прямо из payload: этого хватало, чтобы писать
+// и удалять в любой доске продукта, зная только её id, вообще не заходя в комнату.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Доступ к пространству по cookie рукопожатия. Дубль равенства из canViewSpace
+// (src/lib/server/space-access.ts): server.js не импортирует src/, меняйте обе.
+function spaceAllowedByCookies(space, cookieHeader) {
+	if (!space.passwordHash) return true;
+	const jar = parseCookies(cookieHeader);
+	const creator = !!space.creatorToken && jar[`retro_space_creator_${space.slug}`] === space.creatorToken;
+	const access = !!space.accessToken && jar[`retro_space_${space.slug}`] === space.accessToken;
+	return creator || access;
+}
+
+// Пускать ли сокет на доску: своя доска — по неугадываемой ссылке, доска внутри
+// пространства с паролем — только тем, кто пароль ввёл
+async function boardAllowed(board, cookieHeader) {
+	if (!board.spaceId) return true;
+	const space = await db.query.spaces.findFirst({ where: eq(spaces.id, board.spaceId) });
+	if (!space) return true;
+	return spaceAllowedByCookies(space, cookieHeader);
+}
+
+async function boardOfRoom(room) {
+	if (typeof room !== 'string' || !room) return null;
+	const [row] = await db
+		.select({ id: boards.id, format: boards.format })
+		.from(boards)
+		.where(eq(boards.slug, room))
+		.limit(1);
+	return row ?? null;
+}
+
+// Карточка существует И лежит в доске этой комнаты; иначе null
+async function cardOfRoom(cardId, room) {
+	if (typeof room !== 'string' || !room) return null;
+	if (typeof cardId !== 'string' || !UUID.test(cardId)) return null;
+	const [row] = await db
+		.select({ id: cards.id, boardId: boards.id, format: boards.format })
+		.from(cards)
+		.innerJoin(boards, eq(cards.boardId, boards.id))
+		.where(and(eq(cards.id, cardId), eq(boards.slug, room)))
+		.limit(1);
+	return row ?? null;
+}
+
 io.on('connection', (socket) => {
 	metrics.wsConnections++;
 	let currentRoom = null;
@@ -400,14 +448,7 @@ io.on('connection', (socket) => {
 		try {
 			const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, slug) });
 			if (!space) return;
-			if (space.passwordHash) {
-				const jar = parseCookies(socket.handshake?.headers?.cookie);
-				const creator = !!space.creatorToken && jar[`retro_space_creator_${slug}`] === space.creatorToken;
-				// Дубль равенства из canViewSpace (src/lib/server/space-access.ts): server.js
-				// не импортирует src/, меняйте обе строки вместе
-				const access = !!space.accessToken && jar[`retro_space_${slug}`] === space.accessToken;
-				if (!creator && !access) return;
-			}
+			if (!spaceAllowedByCookies(space, socket.handshake?.headers?.cookie)) return;
 			if (currentSpace) socket.leave(`space:${currentSpace}`);
 			currentSpace = slug;
 			socket.join(`space:${slug}`);
@@ -447,6 +488,20 @@ io.on('connection', (socket) => {
 				if (ghosts) {
 					ghosts.delete(socket.id);
 					if (ghosts.size === 0) roomUsers.delete(slug);
+				}
+				currentRoom = null;
+				return;
+			}
+
+			// Пароль пространства закрывает и доски внутри: без него комната не отдаёт
+			// board:state, а значит и запись в неё невозможна (вся запись привязана к комнате)
+			if (!(await boardAllowed(board, socket.handshake?.headers?.cookie))) {
+				socket.leave(slug);
+				const locked = roomUsers.get(slug);
+				if (locked) {
+					locked.delete(socket.id);
+					io.to(slug).emit('users:count', { count: locked.size });
+					if (locked.size === 0) roomUsers.delete(slug);
 				}
 				currentRoom = null;
 				return;
@@ -519,15 +574,16 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('card:create', async ({ boardId, column, content, authorName, imageId: imgId }) => {
+	socket.on('card:create', async ({ column, content, authorName, imageId: imgId }) => {
 		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
 		const hasImage = imgId && typeof imgId === 'string';
 		if (!hasContent && !hasImage) return;
 		if (hasContent && content.length > 2000) return;
 		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
+		// Доска берётся из комнаты, а не из payload: boardId клиента не доверяем.
 		// Колонка обязана существовать в формате этой доски — иначе карточка
 		// исчезнет с экрана у всех, а в базе останется
-		const [owner] = await db.select({ format: boards.format }).from(boards).where(eq(boards.id, boardId)).limit(1);
+		const owner = await boardOfRoom(currentRoom);
 		if (!owner || !isValidColumn(owner.format, column)) return;
 		// Validate imageId exists
 		let imageMeta = null;
@@ -540,7 +596,7 @@ io.on('connection', (socket) => {
 			const [card] = await db
 				.insert(cards)
 				.values({
-					boardId,
+					boardId: owner.id,
 					columnType: column,
 					content: encrypt(content || ''),
 					authorName: encrypt(authorName) || null,
@@ -558,15 +614,9 @@ io.on('connection', (socket) => {
 		const hasContent = content && typeof content === 'string' && content.trim().length > 0;
 		const hasImage = imgId && typeof imgId === 'string';
 		const hasColumn = columnType !== undefined;
-		if (hasColumn) {
-			const [owner] = await db
-				.select({ format: boards.format })
-				.from(cards)
-				.innerJoin(boards, eq(cards.boardId, boards.id))
-				.where(eq(cards.id, cardId))
-				.limit(1);
-			if (!owner || !isValidColumn(owner.format, columnType)) return;
-		}
+		const owner = await cardOfRoom(cardId, currentRoom);
+		if (!owner) return;
+		if (hasColumn && !isValidColumn(owner.format, columnType)) return;
 		if (!hasContent && imgId === undefined && !hasColumn) return; // must update something
 		if (hasContent && content.length > 2000) return;
 
@@ -603,6 +653,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('card:delete', async ({ cardId }) => {
+		if (!(await cardOfRoom(cardId, currentRoom))) return;
 		try {
 			await db.delete(cards).where(eq(cards.id, cardId));
 			// Удалённой карточке нечего делать в отметках обсуждения
@@ -614,6 +665,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('vote:toggle', async ({ cardId, type, sessionId }) => {
+		if (!(await cardOfRoom(cardId, currentRoom))) return;
 		try {
 			const existing = await db.query.votes.findFirst({
 				where: and(eq(votes.cardId, cardId), eq(votes.sessionId, sessionId), eq(votes.type, type))
@@ -649,6 +701,7 @@ io.on('connection', (socket) => {
 		if (!hasContent && !hasImage) return;
 		if (hasContent && content.length > 1000) return;
 		if (authorName && (typeof authorName !== 'string' || authorName.length > 100)) return;
+		if (!(await cardOfRoom(cardId, currentRoom))) return;
 		let imageMeta = null;
 		if (hasImage) {
 			const [img] = await db.select({ id: images.id, width: images.width, height: images.height }).from(images).where(eq(images.id, imgId)).limit(1);

@@ -13,6 +13,18 @@
 
 	const releases: Release[] = [
 		{
+			version: '1.17',
+			date: '2026-09-19',
+			title: { en: 'The space password now locks the boards', ru: 'Пароль пространства закрывает и доски' },
+			changes: [
+				{ en: 'A password on a space now protects every board inside it, not just the list of boards. Open a board link without the password and you are asked for it — and sent straight to that board once you enter it', ru: 'Пароль пространства теперь защищает каждую доску внутри, а не только список досок. Откройте ссылку на доску без пароля — его спросят, а после ввода сразу откроется та самая доска' },
+				{ en: 'Changing the password now really revokes access: links handed out earlier stop working until the new password is entered', ru: 'Смена пароля теперь действительно отзывает доступ: розданные раньше ссылки перестают работать, пока не введён новый пароль' },
+				{ en: 'The export and the API follow the same rule — a board in a locked space needs the space password', ru: 'Экспорт и API подчиняются тому же правилу: доска в закрытом пространстве требует пароль пространства' },
+				{ en: 'A space password must now be at least 6 characters, and repeated guesses are throttled', ru: 'Пароль пространства теперь не короче 6 символов, а частые попытки подбора притормаживаются' },
+				{ en: 'The API page now lists what each endpoint does, not just its address', ru: 'На странице API в списке теперь написано, что делает каждый запрос, а не только его адрес' }
+			]
+		},
+		{
 			version: '1.16',
 			date: '2026-09-19',
 			title: { en: 'One light theme', ru: 'Одна светлая тема' },

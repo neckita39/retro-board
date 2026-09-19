@@ -296,13 +296,27 @@ test('a locked space hides the analysis from viewers without the password', asyn
 	await createBoardInSpace(pageA, space.slug, 'Sprint 2');
 	await addCard(pageA, "Didn't Go Well", 'flaky tests again');
 
-	// B знает ссылку на доску, но не пароль пространства
+	// B знает ссылку на доску, но не пароль пространства. Пароль закрывает и доски:
+	// вместо содержимого — форма пароля, и она помнит, куда вернуть после ввода
 	await initStorage(pageB);
 	await pageB.goto(`/${boardSlug}`);
-	await expect(pageB.getByRole('heading', { name: 'Went Well' })).toBeVisible();
-	await pageB.getByRole('button', { name: 'Menu' }).click();
-	await expect(pageB.getByTestId('analyze-button')).toHaveCount(0);
+	await expect(pageB).toHaveURL(new RegExp(`/spaces/${space.slug}\\?next=${boardSlug}$`));
+	await expect(pageB.getByRole('heading', { name: 'Locked team' })).toBeVisible();
+	await expect(pageB.getByRole('heading', { name: 'Went Well' })).toHaveCount(0);
+	await expect(pageB.locator('.card-board', { hasText: 'flaky tests' })).toHaveCount(0);
 	expect((await pageB.request.get(`/spaces/${space.slug}/analysis`)).status()).toBe(403);
+	// Экспорт доски мимо страницы тоже закрыт — и браузерный, и API
+	expect((await pageB.request.get(`/${boardSlug}/export?format=json`)).status()).toBe(403);
+	expect((await pageB.request.get(`/api/v1/boards/${boardSlug}/export.json`)).status()).toBe(401);
+	const wrong = await pageB.request.get(`/api/v1/boards/${boardSlug}/export.md`, {
+		headers: { 'X-Space-Password': 'nope' }
+	});
+	expect(wrong.status()).toBe(403);
+	const right = await pageB.request.get(`/api/v1/boards/${boardSlug}/export.json`, {
+		headers: { 'X-Space-Password': 's3cret' }
+	});
+	expect(right.status()).toBe(200);
+	expect(JSON.stringify(await right.json())).toContain('flaky tests');
 
 	await pageA.goto(`/spaces/${space.slug}`);
 	await setMock(pageA, 'ok', 1_500);
